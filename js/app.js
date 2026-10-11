@@ -3,6 +3,8 @@
   const { BAUWERKE, TEILE, block } = window.HogwartsModell;
   const ALLE = BAUWERKE.concat(TEILE);
   const R = window.HogwartsRender;
+  // Ablageort der .litematic-Dateien (für die Online-Version auf GitHub umgestellt)
+  const DOWNLOAD = window.HOGWARTS_DOWNLOAD || { basis: 'schematics/', attr: 'download' };
   const $ = (s, el) => (el || document).querySelector(s);
 
   /* ---------- Modelle (werden einmal berechnet) ---------- */
@@ -231,12 +233,12 @@
 
   /* ---------- Downloads & Platzierung ---------- */
   function zeigeDownloads() {
-    $('#downloads').innerHTML = `<a class="download gesamt" href="schematics/hogwarts-gesamt.litematic" download>` +
+    $('#downloads').innerHTML = `<a class="download gesamt" href="${DOWNLOAD.basis}hogwarts-gesamt.litematic" ${DOWNLOAD.attr}>` +
       `<strong>Gesamtprojekt</strong><span>Alle ${BAUWERKE.length} Bauwerke als Regionen in einer Datei – Berg, Schloss, Viadukt und Außengelände ` +
       `stehen schon an der richtigen Stelle. Einmal platzieren, fertig.</span><span>500 × 211 × 500</span>` +
       `<span class="datei">⬇ hogwarts-gesamt.litematic</span></a>` + ALLE.map((b) => {
       const m = modell(b.id);
-      return `<a class="download" href="schematics/${b.datei}" download><strong>${b.titel}</strong>` +
+      return `<a class="download" href="${DOWNLOAD.basis}${b.datei}" ${DOWNLOAD.attr}><strong>${b.titel}</strong>` +
         `<span>${b.text}</span><span>${m.sx} × ${m.sy} × ${m.sz} · ${zahl(m.bloeckeGesamt())} Blöcke</span>` +
         `<span class="datei">⬇ ${b.datei}</span></a>`;
     }).join('');
