@@ -1,15 +1,22 @@
 (function () {
   'use strict';
-  const { BAUWERKE, block } = window.HogwartsModell;
+  const { BAUWERKE, TEILE, block } = window.HogwartsModell;
+  const ALLE = BAUWERKE.concat(TEILE);
   const R = window.HogwartsRender;
   const $ = (s, el) => (el || document).querySelector(s);
 
   /* ---------- Modelle (werden einmal berechnet) ---------- */
   const cache = {};
-  const modell = (id) => cache[id] || (cache[id] = BAUWERKE.find((b) => b.id === id).erstelle());
-  const bauwerk = (id) => BAUWERKE.find((b) => b.id === id);
+  const modell = (id) => {
+    if (!cache[id]) {
+      const b = ALLE.find((e) => e.id === id);
+      cache[id] = TEILE.includes(b) ? b.erstelle(modell('berg')) : b.erstelle();
+    }
+    return cache[id];
+  };
+  const bauwerk = (id) => ALLE.find((b) => b.id === id);
 
-  const PLATZ = Object.fromEntries(BAUWERKE.map((b) => [b.id, b.lage]));
+  const PLATZ = Object.fromEntries(ALLE.map((b) => [b.id, b.lage]));
 
   const zahl = (n) => n.toLocaleString('de-DE');
   function stapel(n) {
@@ -188,7 +195,7 @@
 
   function richteViewerEin() {
     const sel = $('#viewerAuswahl');
-    sel.innerHTML = BAUWERKE.map((b) => `<option value="${b.id}">${b.titel}</option>`).join('');
+    sel.innerHTML = ALLE.map((b) => `<option value="${b.id}">${b.titel}</option>`).join('');
     sel.addEventListener('change', () => {
       viewer.id = sel.value;
       const m = modell(viewer.id);
@@ -227,13 +234,13 @@
     $('#downloads').innerHTML = `<a class="download gesamt" href="schematics/hogwarts-gesamt.litematic" download>` +
       `<strong>Gesamtprojekt</strong><span>Alle ${BAUWERKE.length} Bauwerke als Regionen in einer Datei – Berg, Schloss, Viadukt und Außengelände ` +
       `stehen schon an der richtigen Stelle. Einmal platzieren, fertig.</span><span>500 × 211 × 500</span>` +
-      `<span class="datei">⬇ hogwarts-gesamt.litematic</span></a>` + BAUWERKE.map((b) => {
+      `<span class="datei">⬇ hogwarts-gesamt.litematic</span></a>` + ALLE.map((b) => {
       const m = modell(b.id);
       return `<a class="download" href="schematics/${b.datei}" download><strong>${b.titel}</strong>` +
         `<span>${b.text}</span><span>${m.sx} × ${m.sy} × ${m.sz} · ${zahl(m.bloeckeGesamt())} Blöcke</span>` +
         `<span class="datei">⬇ ${b.datei}</span></a>`;
     }).join('');
-    $('#platzierung tbody').innerHTML = BAUWERKE.map((b) => {
+    $('#platzierung tbody').innerHTML = ALLE.map((b) => {
       const m = modell(b.id), [x, y, z] = PLATZ[b.id];
       return `<tr><td>${b.titel}</td><td>${x}</td><td>${y}</td><td>${z}</td><td>${m.sx}×${m.sy}×${m.sz}</td></tr>`;
     }).join('');
@@ -242,7 +249,7 @@
   /* ---------- Start ---------- */
   async function start() {
     const msel = $('#materialAuswahl');
-    msel.innerHTML = BAUWERKE.map((b) => `<option value="${b.id}">${b.titel}</option>`).join('') +
+    msel.innerHTML = ALLE.map((b) => `<option value="${b.id}">${b.titel}</option>`).join('') +
       '<option value="alle">Alle Bauwerke</option>';
     msel.addEventListener('change', zeigeMaterial);
     zeigeAbschnitte();

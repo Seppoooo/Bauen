@@ -826,6 +826,24 @@
   ];
   for (const b of BAUWERKE) b.lage = LAGE[b.id];
 
+  // Berg in zwei deckungsgleiche Teile zerlegen: erst Gelände formen, dann Wald setzen
+  const VEGETATION = new Set(['spruce_log', 'oak_log', 'spruce_leaves', 'oak_leaves', 'poppy', 'dandelion', 'cornflower', 'fern']);
+  function bergTeil(wald, berg) {
+    const quelle = berg || erzeugeBerg();
+    const m = new Modell(quelle.sx, quelle.sy, quelle.sz);
+    const abb = quelle.keys.map((k) => (k !== 'air' && VEGETATION.has(k) === wald ? m.id(k) : 0));
+    for (let i = 0; i < quelle.daten.length; i++) m.daten[i] = abb[quelle.daten[i]];
+    return m;
+  }
+  const TEILE = [
+    { id: 'gelaende', titel: 'Berg – nur Gelände', datei: 'hogwarts-berg-gelaende.litematic', lage: [0, 0, 0],
+      erstelle: (berg) => bergTeil(false, berg),
+      text: 'Berg ohne Bäume und Blumen: Fels, Erde, Gras, See, Strand, Wege und Wasserfall-Quellen. Zuerst bauen.' },
+    { id: 'wald', titel: 'Berg – nur Wald', datei: 'hogwarts-berg-wald.litematic', lage: [0, 0, 0],
+      erstelle: (berg) => bergTeil(true, berg),
+      text: '1.427 Fichten, 700 Eichen, Blumen und Farne – gleicher Ursprung wie das Gelände, passt exakt darauf.' }
+  ];
+
   // Alle Bauwerke an ihrer Lage zu einem Gesamtmodell zusammensetzen (für Vorschau)
   function erzeugeGesamt(bereich) {
     const [bx0, bz0, bx1, bz1] = bereich || [0, 0, 499, 499];
@@ -847,5 +865,5 @@
     return g;
   }
 
-  return { BLOECKE, block, Modell, BAUWERKE, erzeugeGesamt, gelaendeHoehe, PLATEAU_Y };
+  return { BLOECKE, block, Modell, BAUWERKE, TEILE, erzeugeGesamt, gelaendeHoehe, PLATEAU_Y };
 });

@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const { BAUWERKE, block } = require('../js/modell.js');
+const { BAUWERKE, TEILE, block } = require('../js/modell.js');
 
 const DATA_VERSION = 3465; // Minecraft 1.20.1 – neuere Versionen werden von Litematica automatisch hochkonvertiert
 
@@ -153,6 +153,13 @@ if (require.main === module) {
     const daten = schreibeNbt(litematic('Hogwarts – ' + b.titel, b.text, [{ name: b.titel, modell: m, pos: [0, 0, 0] }]));
     fs.writeFileSync(path.join(ziel, b.datei), daten);
     console.log(`${b.datei.padEnd(36)} ${m.sx}×${m.sy}×${m.sz}  ${m.bloeckeGesamt()} Blöcke  ${(daten.length / 1024).toFixed(0)} KB`);
+  }
+  const berg = teile.find((t) => t.name === BAUWERKE.find((b) => b.id === 'berg').titel).modell;
+  for (const t of TEILE) {
+    const m = t.erstelle(berg);
+    const daten = schreibeNbt(litematic('Hogwarts – ' + t.titel, t.text, [{ name: t.titel, modell: m, pos: [0, 0, 0] }]));
+    fs.writeFileSync(path.join(ziel, t.datei), daten);
+    console.log(`${t.datei.padEnd(36)} ${m.sx}×${m.sy}×${m.sz}  ${m.bloeckeGesamt()} Blöcke  ${(daten.length / 1024).toFixed(0)} KB`);
   }
   const gesamt = schreibeNbt(litematic('Hogwarts – Gesamtprojekt',
     'Berg, Hauptschloss, Viadukt, Hagrids Hütte, Gewächshäuser und Quidditch-Feld an ihrer richtigen Lage (500 × 500 Blöcke).', teile));

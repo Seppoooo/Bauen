@@ -20,6 +20,8 @@ Eine Website mit einer detaillierten Bauanleitung für ein riesiges Hogwarts-Sch
 | Bauwerk | Größe (X × Y × Z) | Lage im Areal (X / Y / Z) | Datei |
 |---|---|---|---|
 | Berg & Gelände | 500 × 130 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg.litematic` |
+| ↳ nur Gelände (zuerst bauen) | 500 × 130 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg-gelaende.litematic` |
+| ↳ nur Wald (1.427 Fichten, 700 Eichen, Blumen) | 500 × 130 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg-wald.litematic` |
 | Hauptschloss | 181 × 100 × 151 | 160 / 111 / 110 | `schematics/hogwarts-hauptschloss.litematic` |
 | Viadukt (Brücke) | 11 × 76 × 123 | 245 / 42 / 261 | `schematics/hogwarts-bruecke.litematic` |
 | Hagrids Hütte | 23 × 22 × 17 | 330 / 6 / 438 | `schematics/hogwarts-hagrids-huette.litematic` |
