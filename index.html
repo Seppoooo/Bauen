@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hogwarts – Minecraft Bauplan</title>
+  <meta name="description" content="Riesiger Hogwarts-Bauplan für Minecraft (Überleben): Lageplan, Grundrisse, Materialliste, Bauabschnitte, Ebenen-Viewer und Litematica-Schematics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ Poster oben: Hauptbild + Detailansichten ============ -->
+<section class="poster-oben">
+  <div class="hero" id="hero">
+    <svg class="hero-berge" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="bergFern" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#6f6a8f"/><stop offset="1" stop-color="#3b3d5e"/>
+        </linearGradient>
+        <linearGradient id="bergNah" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a4c63"/><stop offset="1" stop-color="#1a2638"/>
+        </linearGradient>
+      </defs>
+      <path d="M0 300 L80 250 L150 270 L240 200 L320 260 L420 220 L520 270 L640 190 L760 255 L860 215 L1000 260 L1000 600 L0 600Z" fill="url(#bergFern)" opacity=".7"/>
+      <path d="M0 380 L120 330 L210 360 L300 320 L700 325 L800 350 L900 300 L1000 340 L1000 600 L0 600Z" fill="url(#bergNah)" opacity=".85"/>
+    </svg>
+    <img id="heroBild" class="hero-schloss" src="assets/gesamtansicht.webp" width="1748" height="1300"
+         alt="Gesamtansicht: Hogwarts auf dem Berg mit Viadukt, See, Wäldern, Quidditch-Feld und Hagrids Hütte">
+    <div class="hero-titel">
+      <h1>Hogwarts – Minecraft</h1>
+      <p class="unterzeile">Bauplan | Eigener Stil | Überleben | Riesig</p>
+      <p class="klein">Auf einem gewaltigen Berg. Mit allem, was dazugehört.</p>
+    </div>
+    <p class="hero-spruch">Träume groß…<br>und baue sie!</p>
+    <p class="hero-hinweis" id="heroStatus">Gesamtansicht aus dem Blockmodell · 500 × 500 Blöcke</p>
+  </div>
+
+  <div class="details">
+    <figure class="detail" data-ansicht="innenhof"><figcaption>Innenhof</figcaption><canvas></canvas></figure>
+    <figure class="detail" data-ansicht="halle"><figcaption>Große Halle</figcaption><canvas></canvas></figure>
+    <figure class="detail" data-ansicht="bibliothek"><figcaption>Bibliothek</figcaption><canvas></canvas></figure>
+    <figure class="detail" data-ansicht="hauptschloss"><figcaption>Hauptschloss (Nachtlicht)</figcaption><canvas></canvas></figure>
+  </div>
+</section>
+
+<!-- ============ Poster unten: 4 Spalten ============ -->
+<section class="poster-unten">
+  <article class="tafel" id="lageplan">
+    <h2>Lageplan <small>(Draufsicht)</small></h2>
+    <div class="lageplan-inhalt">
+      <div id="lageplanSvg" class="lageplan-karte"></div>
+      <ol class="legende" id="legende"></ol>
+    </div>
+    <p class="fussnote">Gesamtareal: 500 × 500 Blöcke<br>Höhe: Berg 110 Blöcke, mit Schloss ca. 210 Blöcke (vom Tal bis zur Turmspitze)</p>
+  </article>
+
+  <article class="tafel" id="grundrisse">
+    <h2>Grundrisse Hauptschloss <small>(Maße in Blöcken)</small></h2>
+    <div class="grundriss-raster">
+      <figure data-y="6"><figcaption>Erdgeschoss <span>181 × 151</span></figcaption><canvas></canvas></figure>
+      <figure data-y="12"><figcaption>1. Obergeschoss <span>181 × 151</span></figcaption><canvas></canvas></figure>
+      <figure data-y="18"><figcaption>2. Obergeschoss <span>181 × 151</span></figcaption><canvas></canvas></figure>
+      <figure data-y="dach"><figcaption>Dachaufsicht <span>181 × 151</span></figcaption><canvas></canvas></figure>
+    </div>
+    <p class="fussnote">Antippen öffnet die Ebene im Ebenen-Viewer.</p>
+  </article>
+
+  <article class="tafel" id="material">
+    <h2>Materialliste <small id="materialTitel">(Hauptschloss)</small></h2>
+    <label class="auswahl">Bauwerk:
+      <select id="materialAuswahl"></select>
+    </label>
+    <ul class="materialliste" id="materialListe"></ul>
+    <p class="fussnote" id="materialSumme"></p>
+    <p class="fussnote">Exakt gezählt aus dem Modell. Wähle „Berg &amp; Gelände", um die Blöcke für den Berg zu sehen (als 3–4 Blöcke dicke Hülle gebaut, innen hohl).</p>
+  </article>
+
+  <article class="tafel" id="bauabschnitte">
+    <h2>Bauabschnitte</h2>
+    <ol class="abschnitte" id="abschnitte"></ol>
+    <p class="fortschritt"><span id="fortschrittText">0 / 7 erledigt</span><span class="balken"><span id="fortschrittBalken"></span></span></p>
+    <p class="viel-erfolg">Viel Erfolg beim Bauen!</p>
+  </article>
+</section>
+
+<!-- ============ Ebenen-Viewer ============ -->
+<section class="bereich" id="viewer">
+  <h2>Ebenen-Viewer – Block für Block nachbauen</h2>
+  <p class="einleitung">Wie der Ebenen-Modus von Litematica: Wähle ein Bauwerk und gehe Ebene für Ebene von unten nach oben.
+    Jede Kachel ist ein Block. Gelbe Linien markieren alle 10 Blöcke. Mit der Maus (oder dem Finger) siehst du Koordinate und Block.
+    Tasten: <kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> oder <kbd>+</kbd>/<kbd>−</kbd>.</p>
+
+  <div class="viewer-leiste">
+    <label>Bauwerk <select id="viewerAuswahl"></select></label>
+    <div class="ebenen-steuerung">
+      <button type="button" id="ebeneRunter" aria-label="Ebene runter">▼</button>
+      <label>Ebene <input type="range" id="ebeneRegler" min="0" max="99" value="4"></label>
+      <button type="button" id="ebeneHoch" aria-label="Ebene hoch">▲</button>
+      <output id="ebeneAnzeige">Y 4</output>
+    </div>
+    <label>Zoom <input type="range" id="zoomRegler" min="2" max="18" value="5"></label>
+    <label class="haken"><input type="checkbox" id="rasterHaken" checked> Raster</label>
+  </div>
+
+  <div class="viewer-flaeche">
+    <div class="viewer-ebene">
+      <div class="scroller" id="ebeneScroller"><canvas id="ebeneCanvas"></canvas></div>
+      <p class="info" id="ebeneInfo">Zeige auf einen Block …</p>
+    </div>
+    <aside class="viewer-seite">
+      <h3>3D bis zu dieser Ebene</h3>
+      <div class="iso-box"><canvas id="isoCanvas"></canvas></div>
+      <h3>Blöcke in dieser Ebene</h3>
+      <ul class="materialliste kompakt" id="ebeneMaterial"></ul>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ Litematica ============ -->
+<section class="bereich" id="litematica">
+  <h2>Litematica-Schematics</h2>
+  <p class="einleitung">Alle Bauwerke als <strong>.litematic</strong>-Datei – Block für Block identisch mit den Plänen auf dieser Seite.
+    Die Dateien sind für Minecraft 1.20.1 erstellt; Litematica wandelt sie in neueren Versionen automatisch um.</p>
+  <div class="downloads" id="downloads"></div>
+
+  <div class="zwei-spalten">
+    <div class="tafel">
+      <h3>So lädst du die Schematic</h3>
+      <ol class="schritte">
+        <li>Installiere <strong>Fabric</strong>, dazu die Mods <strong>Litematica</strong> und <strong>MaLiLib</strong> (passend zu deiner Minecraft-Version).</li>
+        <li>Lege die heruntergeladenen <code>.litematic</code>-Dateien in den Ordner <code>.minecraft/schematics</code>.</li>
+        <li>Im Spiel <kbd>M</kbd> drücken → <em>Schematics laden</em> → Datei wählen → <em>Schematic laden</em>.</li>
+        <li>Unter <em>Platzierungen verwalten</em> den Ursprung auf die Koordinaten aus der Tabelle rechts setzen
+          (Areal-Ursprung + Versatz).</li>
+        <li>Im Litematica-Menü die <em>Render-Ebenen</em> auf „Einzelne Ebene" stellen und Ebene für Ebene bauen –
+          genau wie im Ebenen-Viewer oben.</li>
+        <li>Die <em>Materialliste</em> der Platzierung zeigt dir, was dir noch fehlt. Mit <em>Easy Place</em> setzt du Blöcke direkt an die richtige Stelle.</li>
+      </ol>
+    </div>
+    <div class="tafel">
+      <h3>Platzierung im Areal (500 × 500)</h3>
+      <p class="klein">Ursprung ist jeweils die Nordwest-Ecke unten, relativ zum Areal-Ursprung (Seegrund = Y 0, Wasser bis Y 3, Talboden Y 5). Lege das Areal so, dass Y 0 etwa auf Höhe 60 liegt – dann endet die höchste Turmspitze bei ca. Y 270.</p>
+      <table class="tabelle" id="platzierung">
+        <thead><tr><th>Bauwerk</th><th>X</th><th>Y</th><th>Z</th><th>Größe</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="klein">Am einfachsten: die Datei <code>hogwarts-gesamt.litematic</code> laden – sie enthält alle Bauwerke als Regionen bereits an der richtigen Stelle.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="fuss">
+  <p>Hogwarts – Minecraft Bauplan · Fan-Projekt, nicht offiziell mit Minecraft oder Harry Potter verbunden.
+    Modell und Schematics werden aus <code>js/modell.js</code> erzeugt (<code>node tools/erzeuge-litematic.js</code>).</p>
+</footer>
+
+<script src="js/modell.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+:root {
+  --nacht: #0a1a33;
+  --tafel: #0e2346;
+  --tafel-rand: #2a4a7c;
+  --linie: rgba(140, 180, 240, 0.25);
+  --text: #e8eefb;
+  --text-leise: #a9b8d6;
+  --gold: #e9c46a;
+  --gold-dunkel: #b8913a;
+  --akzent: #58c4ff;
+  --schrift-titel: 'Cinzel', 'Times New Roman', serif;
+  --schrift-text: 'EB Garamond', Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--nacht);
+  color: var(--text);
+  font-family: var(--schrift-text);
+  font-size: 17px;
+  line-height: 1.45;
+}
+h1, h2, h3 { font-family: var(--schrift-titel); font-weight: 700; letter-spacing: .02em; margin: 0 0 .5em; }
+h2 { font-size: 1.15rem; color: #fff; border-bottom: 1px solid var(--linie); padding-bottom: .35em; }
+h2 small { font-family: var(--schrift-text); font-weight: 400; color: var(--text-leise); font-size: .8em; }
+h3 { font-size: 1rem; color: var(--gold); }
+code, kbd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; }
+kbd { background: #1d3561; border: 1px solid var(--tafel-rand); border-radius: 4px; padding: 0 .35em; }
+a { color: var(--gold); }
+canvas { image-rendering: pixelated; }
+
+/* ---------- Poster oben ---------- */
+.poster-oben {
+  display: grid;
+  grid-template-columns: minmax(0, 2.6fr) minmax(0, 1fr);
+  gap: 3px;
+  background: #000;
+}
+.hero {
+  position: relative;
+  min-height: 620px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 18% 62%, rgba(255, 190, 90, .95) 0%, rgba(255, 140, 60, .55) 14%, rgba(180, 80, 90, .25) 32%, transparent 55%),
+    linear-gradient(180deg, #1b2450 0%, #3c3f7a 30%, #9a5a6d 55%, #e39a5e 72%, #f0b56a 80%);
+}
+.hero-berge { position: absolute; inset: 0; width: 100%; height: 100%; }
+.wasserfall { fill: url(#fall); }
+.gischt { fill: rgba(235, 245, 255, .35); }
+.hero-schloss {
+  position: absolute;
+  left: 50%; top: 4%;
+  transform: translateX(-50%);
+  width: min(98%, 1060px);
+  height: auto;
+  filter: drop-shadow(0 0 22px rgba(255, 190, 110, .22)) drop-shadow(0 10px 14px rgba(0, 0, 0, .55));
+}
+.hero-titel {
+  position: absolute; left: 18px; top: 14px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .7);
+}
+.hero-titel h1 { font-size: clamp(1.5rem, 3.2vw, 2.4rem); margin: 0; }
+.hero-titel .unterzeile { margin: .1em 0; font-size: 1.05rem; }
+.hero-titel .klein { margin: 0; font-size: .9rem; color: #f3e6d6; }
+.hero-spruch {
+  position: absolute; right: 22px; top: 22px; margin: 0;
+  font-family: 'Dancing Script', cursive; font-size: clamp(1.1rem, 2.2vw, 1.7rem);
+  color: #fff4e3; transform: rotate(-6deg); text-align: right;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .6);
+}
+.hero-hinweis {
+  position: absolute; right: 14px; bottom: 8px; margin: 0;
+  font-size: .8rem; color: rgba(255, 255, 255, .7);
+}
+
+.details { display: grid; grid-template-rows: repeat(4, 1fr); gap: 3px; }
+.detail {
+  position: relative; margin: 0; overflow: hidden; min-height: 130px; cursor: pointer;
+  background: radial-gradient(ellipse at 50% 120%, #4a3a2a 0%, #1a2340 60%, #0d1530 100%);
+}
+.detail[data-ansicht="innenhof"] {
+  background: linear-gradient(180deg, #5d7fb8 0%, #b98a7a 70%, #6f5a4a 100%);
+}
+.detail canvas {
+  position: absolute; inset: 0; margin: auto;
+  max-width: 100%; max-height: 100%;
+  image-rendering: auto;
+}
+.detail figcaption {
+  position: absolute; left: 8px; top: 5px; z-index: 1;
+  font-family: var(--schrift-titel); font-size: .85rem; color: #fff;
+  text-shadow: 0 1px 4px #000;
+}
+
+/* ---------- Poster unten ---------- */
+.poster-unten {
+  display: grid;
+  grid-template-columns: 1.25fr 1.1fr 1fr 1fr;
+  gap: 3px;
+  background: #000;
+}
+.tafel {
+  background: var(--tafel);
+  border: 1px solid var(--tafel-rand);
+  padding: 12px 14px;
+  min-width: 0;
+}
+.poster-unten .tafel { border-width: 0 1px; }
+.fussnote { font-size: .8rem; color: var(--text-leise); margin: .6em 0 0; }
+.klein { font-size: .85rem; color: var(--text-leise); }
+
+.lageplan-inhalt { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+.lageplan-karte svg { width: 100%; height: auto; display: block; border: 1px solid var(--tafel-rand); }
+.legende { margin: 0; padding: 0; list-style: none; counter-reset: l; font-size: .85rem; }
+.legende li { counter-increment: l; display: flex; gap: .4em; align-items: baseline; margin-bottom: .2em; }
+.legende li::before {
+  content: counter(l); flex: none;
+  width: 1.35em; height: 1.35em; border-radius: 50%; border: 1px solid var(--text);
+  display: inline-grid; place-items: center; font-size: .72rem;
+}
+
+.grundriss-raster { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.grundriss-raster figure {
+  margin: 0; border: 1px solid #3c7bd0; background: #0c2142; padding: 4px; cursor: pointer;
+}
+.grundriss-raster figure:hover { border-color: var(--gold); }
+.grundriss-raster figcaption { font-size: .75rem; color: #cfe0ff; margin-bottom: 3px; }
+.grundriss-raster figcaption span { display: block; color: var(--text-leise); font-size: .7rem; }
+.grundriss-raster canvas { width: 100%; height: auto; display: block; }
+
+.auswahl { font-size: .85rem; color: var(--text-leise); display: block; margin-bottom: 6px; }
+select, input[type="range"] { accent-color: var(--gold); }
+select {
+  background: #142c55; color: var(--text); border: 1px solid var(--tafel-rand);
+  border-radius: 4px; padding: 3px 6px; font: inherit; font-size: .9rem;
+}
+.materialliste { list-style: none; margin: 0; padding: 0; font-size: .85rem; }
+.materialliste li {
+  display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: center;
+  padding: 2px 0; border-bottom: 1px dotted rgba(140, 180, 240, .15);
+}
+.materialliste .muster { width: 16px; height: 16px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4), inset 2px 2px 0 rgba(255, 255, 255, .15); }
+.materialliste .zahl { text-align: right; font-variant-numeric: tabular-nums; }
+.materialliste .zahl small { display: block; color: var(--text-leise); font-size: .72rem; }
+.materialliste.kompakt li { font-size: .8rem; }
+
+.abschnitte { margin: 0; padding: 0; list-style: none; counter-reset: a; }
+.abschnitte > li { counter-increment: a; margin-bottom: .55em; }
+.abschnitte label { display: flex; gap: .5em; cursor: pointer; align-items: baseline; }
+.abschnitte input { accent-color: var(--gold); transform: translateY(2px); }
+.abschnitte strong::before { content: counter(a) ". "; }
+.abschnitte ul { margin: .15em 0 0 1.6em; padding-left: .8em; font-size: .82rem; color: var(--text-leise); }
+.abschnitte li.erledigt strong { text-decoration: line-through; color: var(--text-leise); }
+.fortschritt { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--text-leise); }
+.balken { flex: 1; height: 6px; background: #1b3363; border-radius: 3px; overflow: hidden; }
+.balken span { display: block; height: 100%; width: 0; background: var(--gold); transition: width .3s; }
+.viel-erfolg { font-family: 'Dancing Script', cursive; font-size: 1.3rem; text-align: right; margin: .3em 0 0; }
+
+/* ---------- Bereiche ---------- */
+.bereich { padding: 32px 20px; max-width: 1400px; margin: 0 auto; }
+.bereich > h2 { font-size: 1.5rem; border: 0; color: var(--gold); }
+.einleitung { color: var(--text-leise); max-width: 70ch; }
+
+.viewer-leiste {
+  display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center;
+  background: var(--tafel); border: 1px solid var(--tafel-rand); padding: 10px 12px; border-radius: 6px;
+}
+.viewer-leiste label { display: flex; gap: 6px; align-items: center; font-size: .9rem; }
+.ebenen-steuerung { display: flex; gap: 6px; align-items: center; }
+.ebenen-steuerung input { width: min(260px, 40vw); }
+.ebenen-steuerung button {
+  background: #1d3561; color: var(--text); border: 1px solid var(--tafel-rand); border-radius: 4px;
+  width: 34px; height: 30px; cursor: pointer; font-size: .8rem;
+}
+.ebenen-steuerung button:hover { border-color: var(--gold); }
+#ebeneAnzeige { font-family: ui-monospace, monospace; min-width: 4.5em; color: var(--gold); }
+
+.viewer-flaeche { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; margin-top: 12px; }
+.scroller {
+  overflow: auto; max-height: 70vh; border: 1px solid var(--tafel-rand); border-radius: 6px; background: #10151f;
+  touch-action: pan-x pan-y;
+}
+.scroller canvas { display: block; }
+.info { font-family: ui-monospace, monospace; font-size: .85rem; color: var(--text-leise); margin: .5em 0; min-height: 1.4em; }
+.viewer-seite { background: var(--tafel); border: 1px solid var(--tafel-rand); border-radius: 6px; padding: 10px; min-width: 0; }
+.iso-box { background: linear-gradient(180deg, #24345e, #0e1a33); border-radius: 4px; padding: 4px; margin-bottom: 12px; }
+.iso-box canvas { width: 100%; height: auto; display: block; image-rendering: auto; }
+.viewer-seite .materialliste { max-height: 300px; overflow: auto; }
+
+.downloads { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 14px 0 20px; }
+.download {
+  display: block; text-decoration: none; color: var(--text);
+  background: var(--tafel); border: 1px solid var(--tafel-rand); border-radius: 6px; padding: 12px;
+}
+.download:hover { border-color: var(--gold); }
+.download.gesamt { border-color: var(--gold-dunkel); background: linear-gradient(135deg, #1b3466, var(--tafel)); }
+.download strong { font-family: var(--schrift-titel); color: var(--gold); display: block; }
+.download span { font-size: .82rem; color: var(--text-leise); display: block; }
+.download .datei { font-family: ui-monospace, monospace; font-size: .75rem; margin-top: 6px; color: var(--akzent); }
+
+.zwei-spalten { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.zwei-spalten .tafel { border-radius: 6px; }
+.schritte { padding-left: 1.2em; margin: 0; }
+.schritte li { margin-bottom: .45em; }
+.tabelle { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.tabelle th, .tabelle td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--linie); }
+.tabelle td:not(:first-child) { font-family: ui-monospace, monospace; font-size: .82rem; }
+
+.fuss { text-align: center; padding: 20px; font-size: .8rem; color: var(--text-leise); border-top: 1px solid var(--linie); }
+
+/* ---------- Responsiv ---------- */
+@media (max-width: 1100px) {
+  .poster-oben { grid-template-columns: 1fr; }
+  .details { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
+  .detail { min-height: 170px; }
+  .poster-unten { grid-template-columns: 1fr 1fr; }
+  .viewer-flaeche { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .hero { min-height: 360px; }
+  .hero-schloss { width: 116%; top: 16%; }
+  .hero-spruch { top: auto; bottom: 30px; right: 14px; }
+  .poster-unten, .zwei-spalten { grid-template-columns: 1fr; }
+  .lageplan-inhalt { grid-template-columns: 1fr; }
+  .bereich { padding: 24px 16px; }
+  .tabelle { font-size: .8rem; }
+}
