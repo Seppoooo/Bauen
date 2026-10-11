@@ -1,5 +1,7 @@
 # Hogwarts – Minecraft Bauplan
 
+![Vorschau der Website](assets/vorschau.png)
+
 Eine Website mit einer detaillierten Bauanleitung für ein riesiges Hogwarts-Schloss in Minecraft (Überlebensmodus), auf einem gewaltigen Berg – mit allem, was dazugehört.
 
 **Inhalt der Seite (`index.html`)**
