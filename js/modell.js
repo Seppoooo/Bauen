@@ -122,6 +122,8 @@
   def('sand', 'minecraft:sand', 'Sand', '#dbcf9c');
   def('gravel', 'minecraft:gravel', 'Kies', '#857f7c');
   def('clay', 'minecraft:clay', 'Ton', '#a1a6b3');
+  def('tuff', 'minecraft:tuff', 'Tuffstein', '#6c6d66');
+  def('azalea', 'minecraft:azalea', 'Azalee', '#5e7d2c', { form: 'klein', deckend: false });
   def('dirt_path', 'minecraft:dirt_path', 'Trampelpfad', '#94793f', { form: 'voll' });
   def('spruce_leaves', 'minecraft:spruce_leaves', 'Fichtenlaub', '#2f4c30',
     { props: { distance: '1', persistent: 'true', ...WL } });
@@ -345,8 +347,10 @@
       }
     } else {
       for (const fy of boeden) for (let y = fy + 2; y <= fy + 4; y++) {
-        for (let x = x0 + 2; x <= x1 - 2; x++) if ((x - x0) % 4 === 2) { m.set(x, y, z0, 'pane_ew'); m.set(x, y, z1, 'pane_ew'); }
-        for (let z = z0 + 2; z <= z1 - 2; z++) if ((z - z0) % 4 === 2) { m.set(x0, y, z, 'pane_ns'); m.set(x1, y, z, 'pane_ns'); }
+        // Doppelfenster (zwei Lanzetten mit Mittelpfosten), oben farbiges Glas
+        const glas = (o) => (y === fy + 4 ? 'sg_yellow_' + o : 'pane_' + o);
+        for (let x = x0 + 2; x <= x1 - 2; x++) { const q = (x - x0) % 4; if (q === 1 || q === 3) { m.set(x, y, z0, glas('ew')); m.set(x, y, z1, glas('ew')); } }
+        for (let z = z0 + 2; z <= z1 - 2; z++) { const q = (z - z0) % 4; if (q === 1 || q === 3) { m.set(x0, y, z, glas('ns')); m.set(x1, y, z, glas('ns')); } }
       }
     }
     // Trennwände quer zur Längsachse alle 12 Blöcke, mit Durchgang
@@ -512,7 +516,8 @@
         } else if (!ecke) {
           for (let k = 0; k < etagen; k++) {
             const fy = y0 + 6 * k;
-            if (p % 4 === 2) { setze(a, fy + 1, 1, 'stone_brick_slab_top'); setze(a, fy + 5, 1, 'stone_brick_slab_top'); }
+            if (p % 4 !== 0) setze(a, fy + 1, 1, 'stone_brick_slab_top');
+            if (p % 4 === 2) setze(a, fy + 5, 1, 'chiseled_stone_bricks');
             if (p % 4 === 1) setze(a, fy + 5, 1, 'sbt_' + entlangPlus);
             if (p % 4 === 3) setze(a, fy + 5, 1, 'sbt_' + entlangMinus);
           }
@@ -557,6 +562,11 @@
           for (let y = fy + 1; y <= fy + 3; y++) m.set(wx, y, wz, 'air');
         } else {
           for (let y = fy + 2; y <= fy + 4; y++) m.set(wx, y, wz, scheibe);
+          // Spitzbogen: Treppen links/rechts zeigen zum Fenster, darüber ein Schlussstein
+          const [l1, l2, f1, f2] = ux ? [[wx, wz - 1], [wx, wz + 1], 's', 'n'] : [[wx - 1, wz], [wx + 1, wz], 'e', 'w'];
+          if (m.get(l1[0], fy + 4, l1[1]) !== 'air') m.set(l1[0], fy + 4, l1[1], 'sbt_' + f1);
+          if (m.get(l2[0], fy + 4, l2[1]) !== 'air') m.set(l2[0], fy + 4, l2[1], 'sbt_' + f2);
+          m.set(wx, fy + 5, wz, 'chiseled_stone_bricks');
         }
       }
       const decke = boeden[boeden.indexOf(fy) + 1];
@@ -596,9 +606,30 @@
       for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1]]) for (let y = wy + 1; y <= wy + 3; y++) m.set(cx + ux * r, y, cz + uz * r, 'air');
       for (const [ux, uz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) m.set(cx + ux * (r - 1), wy + 3, cz + uz * (r - 1), 'lantern_h');
     }
+    // Geschrägter Turmfuß (Böschung)
+    for (let dz = -r - 1; dz <= r + 1; dz++) for (let dx = -r - 1; dx <= r + 1; dx++) {
+      if (!imKreis(dx, dz, r + 1) || imKreis(dx, dz, r)) continue;
+      const rr = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+      if (m.get(cx + dx, y0, cz + dz) === 'air') m.set(cx + dx, y0, cz + dz, mauer);
+      if (m.get(cx + dx, y0 + 1, cz + dz) === 'air') m.set(cx + dx, y0 + 1, cz + dz, 'sbs_' + rr);
+    }
     const R = r + 1, H = Math.round(R * 2.6) + 2;
     const spitze = kegel(m, cx, cz, R, top + 1, H, 'deepslate_tiles', 'dts');
     m.set(cx, spitze, cz, 'lightning_rod');
+    // Dachgauben im Turmhelm (beim Hauptturm zwei Reihen)
+    for (const anteil of r >= 7 ? [0.25, 0.55] : [0.32]) {
+      const k = Math.floor(H * anteil), y = top + 1 + k, rk = R * (1 - k / H);
+      for (const [ux, uz, sch, innen] of [[1, 0, 'pane_ns', 'w'], [-1, 0, 'pane_ns', 'e'], [0, 1, 'pane_ew', 'n'], [0, -1, 'pane_ew', 's']]) {
+        let d = Math.ceil(rk) + 1;
+        while (d > 0 && m.get(cx + ux * d, y, cz + uz * d) === 'air') d--;
+        if (d <= 1) continue;
+        const gx = cx + ux * d, gz = cz + uz * d;
+        m.set(gx, y, gz, sch);
+        m.set(gx + ux, y, gz + uz, 'stone_brick_slab');
+        m.set(gx, y + 1, gz, 'dts_' + innen);
+        if (m.get(gx + ux, y + 1, gz + uz) === 'air') m.set(gx + ux, y + 1, gz + uz, 'deepslate_tile_slab');
+      }
+    }
   }
 
 
@@ -674,6 +705,29 @@
           if (d > 4.6 && d < 5.8) m.set(x, 3, z, 'gravel');
         }
       }
+    }
+    // Sanfte Wiesenhügel statt glatter Rasenflächen (Wege, Gärten und Mauern bleiben frei)
+    const frei4 = (k) => k === 'air' || k === 'grass_block';
+    const welle = [];
+    for (let z = 0; z < m.sz; z++) for (let x = 0; x < m.sx; x++) {
+      if (rand(x, z) > -8.5 || m.get(x, 3, z) !== 'grass_block' || m.get(x, 4, z) !== 'air') continue;
+      let ok = true;
+      for (let dz = -2; dz <= 2 && ok; dz++) for (let dx = -2; dx <= 2 && ok; dx++) {
+        const nb3 = m.get(x + dx, 3, z + dz), nb4 = m.get(x + dx, 4, z + dz);
+        if (nb3 !== 'grass_block' && nb3 !== 'dirt' || !frei4(nb4)) ok = false;
+      }
+      if (!ok) continue;
+      const w = rauschen(x / 9 + 2, z / 9 - 3) * 0.7 + rauschen(x / 4, z / 4 + 9) * 0.3;
+      const hoch = Math.round(Math.max(0, w) * 3.2);
+      if (hoch > 0) welle.push([x, z, Math.min(2, hoch)]);
+    }
+    for (const [x, z, hoch] of welle) {
+      m.set(x, 3, z, 'dirt');
+      for (let y = 4; y < 3 + hoch; y++) m.set(x, y, z, 'dirt');
+      m.set(x, 3 + hoch, z, 'grass_block');
+      const r = hash(x, 41, z);
+      if (r < 0.1) m.set(x, 4 + hoch, z, blumen[Math.floor(hash(x, 42, z) * blumen.length)]);
+      else if (r < 0.13) m.set(x, 4 + hoch, z, 'fern');
     }
   }
 
@@ -1113,6 +1167,59 @@
     }
   }
 
+
+  /* Berg beim Schloss: Felsnadeln am Klippenfuß, Findlinge, Büsche auf Vorsprüngen, Felskante am Plateaurand */
+  function bergschmuck(m, H, N, oben, gesperrt) {
+    const stein = (x, y, z) => { const r = hash(x, y, z); return r < 0.35 ? 'stone' : r < 0.6 ? 'andesite' : r < 0.8 ? 'tuff' : 'mossy_cobblestone'; };
+    const setzeFrei = (x, y, z, k) => { if (m.drin(x, y, z) && m.get(x, y, z) === 'air') m.set(x, y, z, k); };
+    const imSchloss = (x, z) => x >= 160 && x <= 340 && z >= 110 && z <= 260;
+    const amWeg = (x, z) => Math.abs(x - 250) < 18 && z > 250 && z < 395;
+    // Felsnadeln rund um das Plateau
+    for (let i = 0; i < 26; i++) {
+      const w = i / 26 * Math.PI * 2 + hash(i, 1, 2) * 0.2;
+      const rx = 250 + Math.cos(w) * (118 + hash(i, 3, 4) * 22), rz = 187 + Math.sin(w) * (98 + hash(i, 5, 6) * 20);
+      const x = Math.round(rx), z = Math.round(rz);
+      if (x < 8 || z < 8 || x > N - 9 || z > N - 9 || amWeg(x, z) || gesperrt(x, z) && !(abstandRechteck(x, z, 155, 115, 345, 260, 20) < 40)) continue;
+      const h = H[z * N + x];
+      if (h < 25 || h > 100) continue;
+      const hoch = 10 + Math.floor(hash(i, 7, 8) * 16), r0 = 2 + hash(i, 9, 1) * 1.6;
+      for (let k = 0; k <= hoch; k++) {
+        const rad = r0 * (1 - k / (hoch + 2));
+        for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+          if (Math.hypot(dx, dz) > rad + hash(x + dx, h + k, z + dz) * 0.6) continue;
+          m.set(x + dx, h - 2 + k, z + dz, stein(x + dx, h + k, z + dz));
+        }
+      }
+      setzeFrei(x, h - 1 + hoch, z, 'moss_block');
+      setzeFrei(x, h + hoch, z, hash(i, 2, 9) < 0.5 ? 'azalea' : 'fern');
+    }
+    // Findlinge an den Hängen und Büsche auf grünen Vorsprüngen
+    for (let gz = 0; gz < N; gz += 9) for (let gx = 0; gx < N; gx += 9) {
+      const x = gx + Math.floor(hash(gx, 21, gz) * 8), z = gz + Math.floor(hash(gx, 22, gz) * 8);
+      if (x < 4 || z < 4 || x > N - 5 || z > N - 5 || imSchloss(x, z) || amWeg(x, z)) continue;
+      const h = H[z * N + x], d = abstandRechteck(x, z, 155, 115, 345, 260, 20);
+      if (d < 0 || d > 110 || h < 8) continue;
+      const r = hash(gx, 23, gz);
+      if (oben[z * N + x] === 'moss_block' && r < 0.6) {
+        setzeFrei(x, h + 1, z, r < 0.25 ? 'azalea' : r < 0.45 ? 'flowering_azalea' : 'fern');
+      } else if (r < 0.22 && !gesperrt(x, z)) {
+        const rad = 1 + hash(gx, 24, gz) * 1.5;
+        for (let dy = -1; dy <= 2; dy++) for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+          if (dx * dx + dz * dz + dy * dy * 1.8 > rad * rad + hash(x + dx, dy, z + dz)) continue;
+          if (m.get(x + dx, h + dy, z + dz) === 'air' || dy <= 0) m.set(x + dx, h + dy, z + dz, stein(x + dx, h + dy, z + dz));
+        }
+      }
+    }
+    // Felskante und Büsche am Plateaurand zwischen Schlossterrasse und Abbruch
+    for (let z = 100; z <= 275; z++) for (let x = 140; x <= 360; x++) {
+      const d = abstandRechteck(x, z, 155, 115, 345, 260, 20);
+      if (d > 0 || d < -6 || imSchloss(x, z) || amWeg(x, z)) continue;
+      const h = H[z * N + x], r = hash(x, 31, z);
+      if (d > -1.5 && r < 0.35) { m.set(x, h + 1, z, stein(x, h + 1, z)); if (r < 0.12) m.set(x, h + 2, z, stein(x, h + 2, z)); }
+      else if (r < 0.08 && m.get(x, h + 1, z) === 'air') m.set(x, h + 1, z, r < 0.03 ? 'oak_leaves' : r < 0.05 ? 'azalea' : 'fern');
+    }
+  }
+
   /* ================================================== Brückenkopf mit Steinkreis (auf dem Südhügel) */
   function erzeugeBrueckenkopf() {
     const m = new Modell(33, 24, 33);
@@ -1420,7 +1527,9 @@
 
   function gelaendeHoehe(x, z) {
     let h;
-    const d = abstandRechteck(x, z, 155, 115, 345, 260, 20);
+    // Klippenoberkante unregelmäßig: zwischen 3 Blöcken innen und 5 Blöcken außen (die Schlossterrasse bleibt immer auf dem Plateau)
+    const d0 = abstandRechteck(x, z, 155, 115, 345, 260, 10);
+    const d = d0 <= -3 ? d0 : d0 + fbm(x / 13 + 3, z / 13 - 7) * 4 - 1;
     if (d <= 0) h = PLATEAU_Y;
     else {
       const dn = d * (1 + 0.35 * fbm(x / 40, z / 40));
@@ -1461,9 +1570,15 @@
     const H = new Int16Array(N * N);
     for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) H[z * N + x] = gelaendeHoehe(x, z);
     const hAt = (x, z) => H[Math.max(0, Math.min(N - 1, z)) * N + Math.max(0, Math.min(N - 1, x))];
+    // Felswände mit Gesteinsschichten (leicht gewellt) und Moos in den unteren Lagen – wie echte Klippen
+    const SCHICHTEN = ['stone', 'andesite', 'stone', 'tuff', 'stone', 'andesite', 'cobblestone', 'stone'];
     const fels = (x, y, z) => {
       const r = hash(x, y, z);
-      return r < 0.5 ? 'stone' : r < 0.7 ? 'andesite' : r < 0.85 ? 'cobblestone' : 'mossy_cobblestone';
+      const lage = Math.floor((y + fbm(x / 28, z / 28) * 7) / 4);
+      const grund = SCHICHTEN[((lage % SCHICHTEN.length) + SCHICHTEN.length) % SCHICHTEN.length];
+      if (r < 0.1 + (y < 60 ? 0.08 : 0)) return grund === 'cobblestone' ? 'mossy_cobblestone' : r < 0.06 ? 'moss_block' : 'mossy_cobblestone';
+      if (r > 0.94) return 'gravel';
+      return grund;
     };
     // Flussbett: stufenweise fallender Wasserspiegel (Kaskaden), mündet auf Seehöhe
     const wasserY = new Int16Array(N * N).fill(-1);
@@ -1504,7 +1619,7 @@
       if (imFluss) top = hash(x, 1, z) < 0.5 ? 'gravel' : 'sand';
       else if (h < SEE_Y) top = hash(x, 1, z) < 0.6 ? 'sand' : hash(x, 5, z) < 0.6 ? 'gravel' : 'clay';
       else if ((see < 1.2 || Math.min(x, z, N - 1 - x, N - 1 - z) < KUESTE + 16) && h <= SEE_Y + 1) top = 'sand';
-      else if (steil >= 2) top = fels(x, h, z);
+      else if (steil >= 2) top = steil < 6 && hash(x, 9, z) < 0.18 ? 'moss_block' : fels(x, h, z); // grüne Vorsprünge
       else if (steil === 1 && hash(x, 4, z) < 0.25) { const r = hash(x, 2, z); top = r < 0.55 ? 'grass_block' : r < 0.8 ? 'coarse_dirt' : 'moss_block'; }
       else top = hash(x, 3, z) < 0.04 ? 'coarse_dirt' : 'grass_block';
       oben[z * N + x] = top;
@@ -1602,6 +1717,7 @@
       m.set(112, SEE_Y + 5, zu, 'lantern_h');
     }
     leuchtturm(m, H, N, 482, 478, 425);
+    bergschmuck(m, H, N, oben, gesperrt);
     // Seerosen, Zuckerrohr am Ufer, Baum auf der Insel
     for (let z = 1; z < N - 1; z++) for (let x = 1; x < N - 1; x++) {
       const c = z * N + x, h = H[c], see = seeWert(x, z);
@@ -1645,7 +1761,7 @@
   for (const b of BAUWERKE) b.lage = LAGE[b.id];
 
   // Berg in zwei deckungsgleiche Teile zerlegen: erst Gelände formen, dann Wald setzen
-  const VEGETATION = new Set(['poppy', 'dandelion', 'cornflower', 'fern', 'lily_pad', 'sugar_cane', 'allium', 'azure_bluet', 'oxeye_daisy']);
+  const VEGETATION = new Set(['poppy', 'dandelion', 'cornflower', 'fern', 'lily_pad', 'sugar_cane', 'allium', 'azure_bluet', 'oxeye_daisy', 'azalea', 'flowering_azalea']);
   const istVegetation = (k) => VEGETATION.has(k) || k.includes('_log') || k.endsWith('_leaves');
   function bergTeil(wald, berg) {
     const quelle = berg || erzeugeBerg();
