@@ -108,11 +108,12 @@
         px(x, y, c, (buschel > 0.6 ? 1.25 : buschel < -0.6 ? 0.7 : 0.95) * (0.88 + r() * 0.24), loch ? 0 : 255);
       }
     },
-    glas: () => (px) => {
+    glas: (farbe) => (px) => {
+      const f = farbe || [190, 225, 240];
       for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
         const rand = x === 0 || y === 0 || x === 15 || y === 15;
         const glanz = (x - y === 3 || x - y === 4) && x > 4 && x < 13;
-        px(x, y, rand ? [210, 230, 240] : glanz ? [255, 255, 255] : [190, 225, 240], 1, rand ? 230 : glanz ? 170 : 70);
+        px(x, y, rand ? f.map((v) => v * 0.8 + 40) : glanz ? [255, 255, 255] : f, 1, rand ? 235 : glanz ? 170 : farbe ? 150 : 70);
       }
     },
     regal: () => (px, r) => {
@@ -194,12 +195,26 @@
       return eine(art + '_planks', MUSTER.bretter(rgb(PLANKS[art])));
     }
     if (id.endsWith('leaves')) return eine(id, MUSTER.laub(c));
+    if (id.includes('stained_glass')) return eine(id, MUSTER.glas(c));
     if (id.includes('glass')) return eine('glas', MUSTER.glas());
+    if (id.endsWith('_carpet')) return eine(id, (px, r) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) px(x, y, c, (x % 4 === 0 || y % 4 === 0 ? 0.88 : 1) * (0.94 + r() * 0.1)); });
+    if (id === 'lily_pad') return eine(id, (px, r) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) { const d = Math.hypot(x - 7.5, y - 7.5); px(x, y, c, 0.85 + r() * 0.3, d < 7.5 && !(x > 7 && Math.abs(y - 7.5) < 1.2) ? 255 : 0); } });
+    if (id === 'sugar_cane') return eine(id, (px, r) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) { const halm = [3, 4, 8, 9, 12].includes(x); px(x, y, c, (y % 5 === 0 ? 0.75 : 1) * (0.9 + r() * 0.15), halm ? 255 : 0); } });
+    if (id === 'candle') return eine(id, (px) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) px(x, y, y < 4 ? [255, 190, 80] : [236, 226, 196], 1); });
+    if (id === 'lectern') return eine(id, MUSTER.bretter(rgb('#8a6a3e')));
+    if (id === 'chiseled_stone_bricks') return eine(id, (px, r) => {
+      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
+        const rahmen = x === 0 || y === 0 || x === 15 || y === 15 || x === 1 || y === 1;
+        const ring = Math.abs(Math.hypot(x - 7.5, y - 7.5) - 4.5) < 1;
+        px(x, y, c, rahmen ? 1.12 : ring ? 0.7 : 0.95 + r() * 0.1);
+      }
+    });
+    if (id.startsWith('deepslate_brick')) return eine('tiefenschieferziegel', MUSTER.ziegel(rgb('#4a4a50'), ''));
     if (id === 'water') return eine('wasser', MUSTER.wasser([58, 111, 216]));
     if (id === 'lantern') return eine('laterne', MUSTER.laterne());
     if (id === 'ladder') return eine('leiter', MUSTER.leiter(rgb('#a0773f')));
     if (id === 'campfire') return eine('feuer', MUSTER.feuer());
-    if (['poppy', 'dandelion', 'cornflower', 'flowering_azalea'].includes(id)) return eine(id, MUSTER.blume(c));
+    if (['poppy', 'dandelion', 'cornflower', 'flowering_azalea', 'allium', 'azure_bluet', 'oxeye_daisy'].includes(id)) return eine(id, MUSTER.blume(c));
     if (id === 'fern') return eine('farn', MUSTER.farn(c));
     if (id.includes('concrete')) return eine(id, MUSTER.fein(c));
     if (id === 'polished_andesite') return eine(id, (px, r) => {
@@ -217,6 +232,8 @@
   function boxen(b) {
     const p = b.props;
     switch (b.form) {
+      case 'teppich': return [[0, 0, 0, 1, 0.0625, 1]];
+      case 'pult': return [[0, 0, 0, 1, 0.12, 1], [0.3, 0.12, 0.3, 0.7, 0.75, 0.7], [0.05, 0.75, 0.05, 0.95, 0.95, 0.95]];
       case 'stufe': return p.type === 'top' ? [[0, 0.5, 0, 1, 1, 1]] : [[0, 0, 0, 1, 0.5, 1]];
       case 'treppe': {
         const oben = p.half === 'top', y0 = oben ? 0 : 0.5, y1 = oben ? 0.5 : 1;
@@ -259,8 +276,8 @@
         voll: b.form === 'voll' || b.form === 'glas' || b.form === 'wasser',
         deckend: b.deckend && !id.endsWith('leaves'),
         laub: id.endsWith('leaves'), glas: b.form === 'glas', wasser: b.form === 'wasser',
-        transparent: b.form === 'glas' || b.form === 'wasser' || b.form.startsWith('scheibe'),
-        kreuz: ['poppy', 'dandelion', 'cornflower', 'fern', 'flowering_azalea'].includes(id),
+        transparent: b.form === 'glas' || b.form === 'wasser' || (b.form.startsWith('scheibe') && !id.includes('stained')),
+        kreuz: ['poppy', 'dandelion', 'cornflower', 'fern', 'flowering_azalea', 'allium', 'azure_bluet', 'oxeye_daisy', 'sugar_cane'].includes(id),
         boxen: boxen(b)
       };
     });
@@ -493,7 +510,8 @@
     { name: 'Hagrids Hütte', pos: [341, 14, 460], ziel: [339, 8, 446] },
     { name: 'Quidditch-Feld', pos: [425, 30, 425], ziel: [425, 6, 379] },
     { name: 'Gewächshäuser', pos: [85, 13, 253], ziel: [85, 7, 237] },
-    { name: 'Am See', pos: [110, 14, 400], ziel: [250, 140, 200] }
+    { name: 'See & Bootshaus', pos: [140, 16, 395], ziel: [112, 6, 368] },
+    { name: 'Fluss', pos: [100, 40, 300], ziel: [118, 20, 260] }
   ];
   let gier = 0, nick = 0; // Blickrichtung
   function setzeKamera(o) {

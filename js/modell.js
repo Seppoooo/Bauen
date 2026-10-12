@@ -79,6 +79,33 @@
     { form: 'stufe', deckend: false, props: { facing: 'north', lit: 'true', signal_fire: 'false', ...WL } });
   def('yellow_concrete', 'minecraft:yellow_concrete', 'Gelber Beton', '#f0af15');
   def('white_concrete', 'minecraft:white_concrete', 'Weißer Beton', '#cfd5d6');
+  // Innenausstattung und Garten
+  def('dark_oak_slab_top', 'minecraft:dark_oak_slab', 'Schwarzeichenholzstufe', '#4a3220', { form: 'stufe', deckend: false, props: { type: 'top', ...WL } });
+  def('spruce_slab_top', 'minecraft:spruce_slab', 'Fichtenholzstufe', '#6e5131', { form: 'stufe', deckend: false, props: { type: 'top', ...WL } });
+  def('candle3', 'minecraft:candle', 'Kerze', '#efe3c2', { form: 'klein', deckend: false, props: { candles: '3', lit: 'true', ...WL } });
+  for (const r of ['n', 's', 'e', 'w']) {
+    def('lectern_' + r, 'minecraft:lectern', 'Lesepult', '#8a6a3e', { form: 'pult', deckend: false,
+      props: { facing: { n: 'north', s: 'south', e: 'east', w: 'west' }[r], has_book: 'false', powered: 'false' } });
+  }
+  for (const [f, name, farbe] of [['red', 'Rot', '#a12722'], ['blue', 'Blau', '#35399d'], ['green', 'Grün', '#546d1b'], ['yellow', 'Gelb', '#e8b42e']]) {
+    def(f + '_carpet', 'minecraft:' + f + '_carpet', 'Teppich ' + name, farbe, { form: 'teppich', deckend: false });
+  }
+  for (const [f, name, farbe] of [['red', 'Rote', '#b02e26'], ['yellow', 'Gelbe', '#f9d849'], ['blue', 'Blaue', '#3c44aa'],
+    ['green', 'Grüne', '#5e7c16'], ['white', 'Weiße', '#e8eef0'], ['orange', 'Orange', '#f08a1d']]) {
+    def('sg_' + f + '_ns', 'minecraft:' + f + '_stained_glass_pane', name + ' Buntglasscheibe', farbe,
+      { form: 'scheibe_ns', deckend: false, props: { east: 'false', north: 'true', south: 'true', west: 'false', ...WL } });
+    def('sg_' + f + '_ew', 'minecraft:' + f + '_stained_glass_pane', name + ' Buntglasscheibe', farbe,
+      { form: 'scheibe_ew', deckend: false, props: { east: 'true', north: 'false', south: 'false', west: 'true', ...WL } });
+  }
+  def('chiseled_stone_bricks', 'minecraft:chiseled_stone_bricks', 'Gemeißelte Steinziegel', '#7a7a7a');
+  def('deepslate_bricks', 'minecraft:deepslate_bricks', 'Tiefenschieferziegel', '#46464c');
+  def('stone_brick_wall', 'minecraft:stone_brick_wall', 'Steinziegelmauer', '#7e7e7e',
+    { form: 'pfosten', deckend: false, props: { east: 'none', north: 'none', south: 'none', up: 'true', west: 'none', ...WL } });
+  def('allium', 'minecraft:allium', 'Sternlauch', '#b46ad6', { form: 'klein', deckend: false });
+  def('azure_bluet', 'minecraft:azure_bluet', 'Porzellansternchen', '#d6e4f0', { form: 'klein', deckend: false });
+  def('oxeye_daisy', 'minecraft:oxeye_daisy', 'Margerite', '#f2f2e6', { form: 'klein', deckend: false });
+  def('lily_pad', 'minecraft:lily_pad', 'Seerosenblatt', '#2f7a2a', { form: 'teppich', deckend: false });
+  def('sugar_cane', 'minecraft:sugar_cane', 'Zuckerrohr', '#8cc068', { form: 'klein', deckend: false, props: { age: '0' } });
   // Gelände
   def('stone', 'minecraft:stone', 'Stein', '#7a7a7a');
   def('andesite', 'minecraft:andesite', 'Andesit', '#88898a');
@@ -108,6 +135,7 @@
   // Steinziegeltreppen für Fassadendetails: sbs = normal, sbt = kopfüber (half=top)
   treppen('sbs', 'minecraft:stone_brick_stairs', 'Steinziegeltreppe', '#7e7e7e');
   treppen('sbt', 'minecraft:stone_brick_stairs', 'Steinziegeltreppe', '#7e7e7e', 'top');
+  treppen('dbs', 'minecraft:deepslate_brick_stairs', 'Tiefenschieferziegeltreppe', '#46464c');
   def('stone_brick_slab_top', 'minecraft:stone_brick_slab', 'Steinziegelstufe', '#7e7e7e',
     { form: 'stufe', deckend: false, props: { type: 'top', ...WL } });
   def('cobblestone_wall', 'minecraft:cobblestone_wall', 'Bruchsteinmauer', '#6b6b6b',
@@ -255,8 +283,14 @@
     for (let k = 0; ; k++) {
       const y = yt + 1 + k, bn = b0 - 1 + k, bs = b1 + 1 - k;
       if (bn > bs) break;
-      if (bn === bs) { for (let a = a0 - 1; a <= a1 + 1; a++) S(a, y, bn, 'deepslate_tiles'); break; }
-      for (let a = a0 - 1; a <= a1 + 1; a++) { S(a, y, bn, hoch); S(a, y, bs, runter); }
+      if (bn === bs) {
+        for (let a = a0 - 1; a <= a1 + 1; a++) { S(a, y, bn, 'deepslate_tiles'); S(a, y + 1, bn, 'deepslate_tile_slab'); }
+        break;
+      }
+      for (let a = a0 - 1; a <= a1 + 1; a++) {
+        const v = (k2) => (hash(a, y, bn) < 0.14 ? 'dbs' + k2.slice(3) : k2);
+        S(a, y, bn, v(hoch)); S(a, y, bs, hash(a, y + 7, bs) < 0.14 ? 'dbs' + runter.slice(3) : runter);
+      }
       for (let b = bn + 1; b < bs; b++) { S(a0, y, b, mauer); S(a1, y, b, mauer); }
     }
   }
@@ -330,6 +364,36 @@
         for (let i = 0; i <= 5; i++) L(lStart + 2 + i, fy + 1 + i, q, tr);
       }
     }
+    // Klassenzimmer: Pulte mit Stühlen, Teppich im Mittelgang, Lesepult, Bücherregale
+    if (!halle && o.trennAb !== undefined) {
+      const G = (l, y, q) => (langX ? m.get(l, y, q) : m.get(q, y, l));
+      const frei = (l, y, q, k) => { if (G(l, y, q) === 'air') L(l, y, q, k); };
+      const grenzen = [lStart];
+      for (let l = lStart + 12; l < lEnde - 6; l += 12) grenzen.push(l);
+      grenzen.push(lEnde);
+      const stuhl = langX ? 'sps_e' : 'sps_s', pult = langX ? 'lectern_e' : 'lectern_s';
+      const teppiche = ['red_carpet', 'blue_carpet', 'green_carpet', 'yellow_carpet'];
+      boeden.forEach((fy, i) => {
+        if (i < o.trennAb) return;
+        for (let j = 1; j < grenzen.length - 1; j++) {
+          const p0 = grenzen[j], p1 = grenzen[j + 1];
+          if (p1 - p0 < 8) continue;
+          for (let l = p0 + 1; l < p1; l++) for (let q = qMitte - 1; q <= qMitte + 1; q++) frei(l, fy + 1, q, teppiche[(j + i) % 4]);
+          for (let l = p0 + 4; l <= p1 - 3; l += 3) {
+            for (let q = qStart + 2; q < qEnde - 1; q += 2) {
+              if (Math.abs(q - qMitte) < 3) continue;
+              frei(l, fy + 1, q, 'spruce_slab_top'); frei(l + 1, fy + 1, q, stuhl);
+              if (hash(l, fy, q) < 0.25 && G(l, fy + 2, q) === 'air') L(l, fy + 2, q, 'candle3');
+            }
+          }
+          frei(p0 + 2, fy + 1, qMitte + 2, pult);
+          for (let q = qStart + 1; q < qEnde; q++) {
+            if (Math.abs(q - qMitte) <= 1) continue;
+            for (let y = fy + 1; y <= fy + 3; y++) frei(p1 - 1, y, q, 'bookshelf');
+          }
+        }
+      });
+    }
     // Hängelaternen
     if (!halle) {
       boeden.forEach((fy, i) => {
@@ -344,6 +408,15 @@
     }
     satteldach(m, x0, z0, x1, z1, yt, achse);
     if (!halle && etagen >= 2 && Math.min(x1 - x0, z1 - z0) >= 14) gauben(m, x0, z0, x1, z1, yt, achse);
+    // Schornsteine mit Rauch
+    if (!halle && Math.min(x1 - x0, z1 - z0) >= 14) {
+      const spitze = yt + Math.ceil((qEnde - qStart) / 2) + 3;
+      for (let l = lStart + 13; l <= lEnde - 6; l += 24) {
+        for (let y = yt + 1; y <= spitze; y++) for (const dq of [0, 1]) L(l, y, qStart + 4 + dq, y === spitze ? 'chiseled_stone_bricks' : mauer);
+        L(l, spitze + 1, qStart + 4, 'campfire');
+        L(l, spitze + 1, qStart + 5, 'stone_brick_slab');
+      }
+    }
     return yt;
   }
 
@@ -518,6 +591,82 @@
     m.set(cx, spitze, cz, 'lightning_rod');
   }
 
+
+  /* Schlossterrasse: Stützmauer mit Zinnen, Rundweg, Ziergärten mit Hecken, Statuen, Brunnen und Bäumen */
+  function schlossgarten(m) {
+    const rand = (x, z) => abstandRechteck(x, z, 2, 8, 178, 148, 12);
+    const blumen = ['poppy', 'allium', 'azure_bluet', 'oxeye_daisy', 'cornflower', 'dandelion'];
+    for (let z = 0; z < m.sz; z++) for (let x = 0; x < m.sx; x++) {
+      const d = rand(x, z);
+      if (d > 0) continue;
+      if (d > -1.5) {
+        for (let y = 0; y <= 3; y++) if (m.get(x, y, z) === 'air') m.set(x, y, z, mauer);
+        if (m.get(x, 4, z) === 'air') {
+          m.set(x, 4, z, (x + z) % 2 ? 'stone_bricks' : 'stone_brick_slab');
+          if ((x + z) % 2 && hash(x, 9, z) < 0.07) m.set(x, 5, z, 'lantern');
+        }
+        continue;
+      }
+      if (m.get(x, 3, z) !== 'air') continue;
+      m.set(x, 2, z, 'dirt');
+      m.set(x, 3, z, d > -6.5 && d <= -3.5 ? 'gravel' : 'grass_block');
+      if (d > -7.5 && d <= -6.5 && (x + z) % 14 === 0) {
+        m.set(x, 4, z, 'stone_brick_wall'); m.set(x, 5, z, 'stone_brick_wall'); m.set(x, 6, z, 'lantern');
+      } else if (d > -3.5 && d <= -2.5 && hash(x, 4, z) < 0.35) {
+        m.set(x, 4, z, blumen[Math.floor(hash(x, 5, z) * blumen.length)]);
+      }
+    }
+    // Ziergärten auf freien Flächen (13×13-Raster)
+    const frei = (x0, z0, x1, z1) => {
+      for (let z = z0 - 2; z <= z1 + 2; z++) for (let x = x0 - 2; x <= x1 + 2; x++) {
+        if (rand(x, z) > -8) return false;
+        if (m.get(x, 3, z) !== 'grass_block') return false;
+        for (let y = 4; y <= 9; y++) if (m.get(x, y, z) !== 'air') return false;
+      }
+      return true;
+    };
+    for (let tz = 10; tz + 10 < m.sz; tz += 13) for (let tx = 4; tx + 10 < m.sx; tx += 13) {
+      if (!frei(tx, tz, tx + 10, tz + 10)) continue;
+      const cx = tx + 5, cz = tz + 5, typ = hash(tx, 1, tz);
+      if (typ < 0.5) {
+        // Parterre: Hecke mit Durchgängen, Kiesweg-Kreuz, vier Blumenbeete, Statue
+        for (let z = tz; z <= tz + 10; z++) for (let x = tx; x <= tx + 10; x++) {
+          const randZ = x === tx || x === tx + 10 || z === tz || z === tz + 10;
+          const kreuz = Math.abs(x - cx) <= 1 || Math.abs(z - cz) <= 1;
+          if (kreuz) { m.set(x, 3, z, 'gravel'); continue; }
+          if (randZ) m.set(x, 4, z, 'oak_leaves');
+          else if (hash(x, 6, z) < 0.75) m.set(x, 4, z, blumen[Math.floor(hash(x, 7, z) * blumen.length)]);
+        }
+        m.set(cx, 4, cz, 'chiseled_stone_bricks'); m.set(cx, 5, cz, 'stone_bricks'); m.set(cx, 6, cz, 'stone_brick_wall');
+        m.set(cx, 7, cz, hash(tx, 2, tz) < 0.5 ? 'lantern' : 'chiseled_stone_bricks');
+      } else if (typ < 0.8) {
+        // Baum mit Blumenkranz und vier Bänken
+        const b = baumBauer(m, 5000 + tx * 7 + tz);
+        hash(tx, 3, tz) < 0.6 ? b.eiche(cx, 3, cz) : b.birke(cx, 3, cz);
+        for (let z = tz; z <= tz + 10; z++) for (let x = tx; x <= tx + 10; x++) {
+          const d = Math.hypot(x - cx, z - cz);
+          if (d > 2.5 && d < 3.6 && m.get(x, 4, z) === 'air') m.set(x, 4, z, blumen[Math.floor(hash(x, 8, z) * blumen.length)]);
+          if (d >= 3.6 && d < 4.6) m.set(x, 3, z, 'gravel');
+        }
+        for (const [x, z, f] of [[cx + 5, cz, 'sps_e'], [cx - 5, cz, 'sps_w'], [cx, cz + 5, 'sps_s'], [cx, cz - 5, 'sps_n']]) if (m.get(x, 4, z) === 'air') m.set(x, 4, z, f);
+      } else {
+        // Brunnen
+        for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+          if (!imKreis(dx, dz, 4)) continue;
+          const innen = imKreis(dx, dz, 3);
+          m.set(cx + dx, 3, cz + dz, 'stone_bricks');
+          m.set(cx + dx, 4, cz + dz, innen ? 'water' : 'stone_bricks');
+        }
+        for (let y = 4; y <= 5; y++) m.set(cx, y, cz, 'polished_andesite');
+        m.set(cx, 6, cz, 'chiseled_stone_bricks'); m.set(cx, 7, cz, 'lantern');
+        for (let z = tz; z <= tz + 10; z++) for (let x = tx; x <= tx + 10; x++) {
+          const d = Math.hypot(x - cx, z - cz);
+          if (d > 4.6 && d < 5.8) m.set(x, 3, z, 'gravel');
+        }
+      }
+    }
+  }
+
   /* ================================================== Hauptschloss 181×151 */
   function erzeugeHauptschloss() {
     const m = new Modell(181, 100, 151);
@@ -541,15 +690,20 @@
     ];
     for (const t of TRAKTE) fluegel(m, t);
 
-    // Große Halle: Tische, Bänke, Banner, schwebende Laternen
+    // Große Halle: Haustische mit Bänken und Kerzen, Teppich, Lehrertribüne, Pfeiler, Balkendecke, Kamin, Buntglas
+    for (let x = 60; x <= 111; x++) for (let z = 53; z <= 55; z++) m.set(x, 5, z, 'red_carpet');
     for (const z of [45, 51, 57, 63]) {
       for (let x = 66; x <= 108; x++) {
-        m.set(x, 5, z, 'dark_oak_planks');
-        m.set(x, 5, z - 1, 'spruce_slab'); m.set(x, 5, z + 1, 'spruce_slab');
+        m.set(x, 5, z, 'dark_oak_slab_top');
+        m.set(x, 5, z - 1, 'sps_n'); m.set(x, 5, z + 1, 'sps_s');
+        if (x % 4 === 0) m.set(x, 6, z, 'candle3');
       }
     }
-    for (let z = 44; z <= 64; z++) { m.set(115, 5, z, 'dark_oak_planks'); m.set(116, 5, z, 'spruce_slab'); }
-    box(m, 113, 4, 42, 120, 4, 66, 'dark_oak_planks'); // Lehrerpodest
+    box(m, 112, 5, 41, 120, 5, 67, 'dark_oak_planks');                 // Tribüne
+    for (let z = 41; z <= 67; z++) m.set(111, 5, z, 'sps_e');           // Stufe
+    for (let z = 44; z <= 64; z++) { m.set(115, 6, z, 'dark_oak_slab_top'); m.set(116, 6, z, 'sps_e'); if (z % 3 === 0) m.set(115, 7, z, 'candle3'); }
+    m.set(117, 6, 54, 'sps_e'); m.set(117, 7, 54, 'spruce_planks'); m.set(118, 6, 54, 'dark_oak_planks');
+    m.set(110, 5, 54, 'lectern_w');
     const hausFarben = ['red_wool', 'yellow_wool', 'blue_wool', 'green_wool'];
     let fi = 0;
     for (let x = 64; x <= 116; x += 8) {
@@ -557,9 +711,35 @@
       box(m, x, 12, 39, x + 1, 19, 39, f);
       box(m, x, 12, 69, x + 1, 19, 69, hausFarben[(fi + 1) % 4]);
     }
+    // Wandpfeiler mit Kapitell und Gesims, Holzbalken unter der Decke
+    for (let x = 66; x <= 114; x += 8) {
+      for (const [z, wand] of [[40, 'n'], [68, 's']]) {
+        for (let y = 5; y <= 24; y++) m.set(x, y, z, y === 5 ? 'polished_andesite' : mauer);
+        m.set(x, 25, z, 'chiseled_stone_bricks');
+      }
+      for (let z = 39; z <= 69; z++) m.set(x, 28, z, 'dark_oak_log_z');
+    }
+    for (let x = 59; x <= 121; x++) { m.set(x, 26, 40, 'sbt_n'); m.set(x, 26, 68, 'sbt_s'); m.set(x, 28, 39, 'dark_oak_log_x'); m.set(x, 28, 69, 'dark_oak_log_x'); }
+    // schwebende Lichter in unterschiedlicher Höhe
     for (let x = 64; x <= 116; x += 6) for (let z = 42; z <= 66; z += 6) {
-      for (let y = 22; y <= 28; y++) m.set(x, y, z, 'chain');
-      m.set(x, 21, z, 'lantern_h');
+      const unten = 18 + Math.floor(hash(x, 3, z) * 6);
+      for (let y = 27; y > unten; y--) if (m.get(x, y, z) === 'air') m.set(x, y, z, 'chain');
+      m.set(x, unten, z, 'lantern_h');
+    }
+    // Kamin an der Westwand
+    for (let y = 5; y <= 7; y++) { m.set(59, y, 52, mauer); m.set(59, y, 56, mauer); }
+    m.set(59, 5, 54, 'campfire'); m.set(59, 4, 53, 'cobblestone'); m.set(59, 4, 55, 'cobblestone');
+    for (let z = 52; z <= 56; z++) { m.set(59, 8, z, 'chiseled_stone_bricks'); m.set(60, 8, z, 'sbt_w'); }
+    for (let y = 9; y <= 14; y++) for (let z = 53; z <= 55; z++) m.set(59, y, z, mauer);
+    // Buntglas: Rosetten an beiden Giebeln, farbige Oberlichter in den Seitenfenstern
+    for (const gx of [58, 122]) for (let dz = -5; dz <= 5; dz++) for (let dy = -5; dy <= 5; dy++) {
+      if (!imKreis(dz, dy, 4)) continue;
+      const d = Math.hypot(dz, dy), speiche = dz === 0 || dy === 0 || Math.abs(dz) === Math.abs(dy);
+      const f = d < 1.2 ? 'yellow' : speiche ? 'white' : d < 2.6 ? 'red' : d < 3.6 ? 'blue' : 'orange';
+      m.set(gx, 20 + dy, 54 + dz, 'sg_' + f + '_ns');
+    }
+    for (let x = 60; x <= 120; x++) for (const z of [38, 70]) for (let y = 17; y <= 21; y++) {
+      if (m.get(x, y, z).startsWith('pane')) m.set(x, y, z, 'sg_' + (y >= 20 ? 'blue' : (x + y) % 2 ? 'yellow' : 'red') + '_ew');
     }
 
     // Bibliothek im Erdgeschoss des Westflügels
@@ -568,36 +748,62 @@
       for (let x = 57; x <= 65; x++) m.set(x, y, z, 'bookshelf');
     }
 
-    // Innenhof mit Kreuzgang, Brunnen und Bäumen
+    // Innenhof: Kreuzgang mit Bögen, Heckenbeete, Blumen, Stufenbrunnen, Bänke, Bäume
     const hx0 = 69, hx1 = 111, hz0 = 71, hz1 = 119;
+    const istWeg = (x, z) => {
+      const d = Math.min(x - hx0, hx1 - x, z - hz0, hz1 - z);
+      return Math.abs(x - 90) <= 2 || Math.abs(z - 95) <= 2 || d <= 3 || Math.hypot(x - 90, z - 95) <= 6.5;
+    };
+    const blumen = ['poppy', 'allium', 'azure_bluet', 'oxeye_daisy', 'cornflower', 'dandelion'];
     for (let z = hz0; z <= hz1; z++) for (let x = hx0; x <= hx1; x++) {
       const d = Math.min(x - hx0, hx1 - x, z - hz0, hz1 - z);
-      const weg = Math.abs(x - 90) <= 2 || Math.abs(z - 95) <= 2 || d <= 3;
+      const weg = istWeg(x, z);
       m.set(x, 3, z, weg ? ((x + z) % 2 ? 'polished_andesite' : 'stone_bricks') : 'grass_block');
+      if (!weg) {
+        const amRand = istWeg(x + 1, z) || istWeg(x - 1, z) || istWeg(x, z + 1) || istWeg(x, z - 1);
+        const zweite = istWeg(x + 2, z) || istWeg(x - 2, z) || istWeg(x, z + 2) || istWeg(x, z - 2);
+        const luecke = Math.abs(x - 90) === 4 || Math.abs(z - 95) === 4 ? false : (x % 9 === 0 || z % 9 === 0);
+        if (amRand && !luecke) m.set(x, 4, z, 'oak_leaves');
+        else if (zweite && hash(x, 4, z) < 0.7) m.set(x, 4, z, blumen[Math.floor(hash(x, 5, z) * blumen.length)]);
+      }
       if (d <= 3) m.set(x, 8, z, 'stone_brick_slab');
       if (d === 3) {
-        const entlang = (x - hx0 === 3 || hx1 - x === 3) ? z - hz0 : x - hx0;
-        if ((entlang - 3) % 4 === 0) for (let y = 4; y <= 7; y++) m.set(x, y, z, 'polished_andesite');
+        const xSeite = x - hx0 === 3 || hx1 - x === 3;
+        const entlang = xSeite ? z - hz0 : x - hx0, p = (entlang - 3) % 4;
+        const plus = xSeite ? 's' : 'e', minus = xSeite ? 'n' : 'w';
+        if (p === 0) for (let y = 4; y <= 7; y++) m.set(x, y, z, y === 4 ? 'chiseled_stone_bricks' : 'polished_andesite');
+        else if (p === 1) m.set(x, 7, z, 'sbt_' + minus);
+        else if (p === 3) m.set(x, 7, z, 'sbt_' + plus);
+        else m.set(x, 7, z, 'stone_brick_slab_top');
       }
       if (d === 1) {
         const entlang = (x - hx0 === 1 || hx1 - x === 1) ? z - hz0 : x - hx0;
         if (entlang % 8 === 5) m.set(x, 7, z, 'lantern_h');
       }
     }
+    // Stufenbrunnen
     for (let dz = -5; dz <= 5; dz++) for (let dx = -5; dx <= 5; dx++) {
       if (!imKreis(dx, dz, 5)) continue;
       const innen = imKreis(dx, dz, 4);
       m.set(90 + dx, 3, 95 + dz, 'stone_bricks');
-      m.set(90 + dx, 4, 95 + dz, innen ? 'water' : 'stone_bricks');
+      m.set(90 + dx, 4, 95 + dz, innen ? 'water' : (dx + dz) % 2 ? 'stone_bricks' : 'chiseled_stone_bricks');
+      if (!innen) m.set(90 + dx, 5, 95 + dz, 'stone_brick_slab');
     }
-    for (let y = 4; y <= 6; y++) m.set(90, y, 95, 'polished_andesite');
-    m.set(90, 7, 95, 'lantern');
-    for (const [tx, tz] of [[78, 83], [102, 83], [78, 107], [102, 107]]) {
-      for (let dy = -2; dy <= 3; dy++) for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
-        if (dx * dx + dy * dy * 1.4 + dz * dz <= 7.5 && m.get(tx + dx, 9 + dy, tz + dz) === 'air') m.set(tx + dx, 9 + dy, tz + dz, 'oak_leaves');
-      }
-      for (let y = 4; y <= 9; y++) m.set(tx, y, tz, 'oak_log');
+    for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+      if (!imKreis(dx, dz, 2)) continue;
+      const innen = imKreis(dx, dz, 1);
+      m.set(90 + dx, 5, 95 + dz, 'polished_andesite');
+      m.set(90 + dx, 6, 95 + dz, innen ? 'water' : 'stone_bricks');
     }
+    for (let y = 7; y <= 8; y++) m.set(90, y, 95, 'chiseled_stone_bricks');
+    m.set(90, 9, 95, 'lantern');
+    // Bänke zum Brunnen und Laternenpfosten
+    for (const [x, z, f] of [[97, 95, 'sps_e'], [83, 95, 'sps_w'], [90, 102, 'sps_s'], [90, 88, 'sps_n']]) m.set(x, 4, z, f);
+    for (const [x, z] of [[85, 90], [95, 90], [85, 100], [95, 100]]) {
+      m.set(x, 4, z, 'stone_brick_wall'); m.set(x, 5, z, 'stone_brick_wall'); m.set(x, 6, z, 'lantern');
+    }
+    // Bäume in den vier Beeten
+    [[79, 84], [101, 84], [79, 106], [101, 106]].forEach(([tx, tz], i) => baumBauer(m, 9100 + i).eiche(tx, 3, tz));
 
     // Durchgänge zwischen den Trakten
     const tuer = (x0, z0, x1, z1, ys) => { for (const fy of ys) box(m, x0, fy + 1, z0, x1, fy + 3, z1, 'air'); };
@@ -654,6 +860,7 @@
     }
     m.set(90, 10, 142, 'lantern_h');
 
+    schlossgarten(m);
     m.verbindeZaeune();
     return m;
   }
@@ -1009,7 +1216,11 @@
   ];
   const QUELLEN = [[226, 'z'], [274, 'z'], [190, 'x']]; // Wasserfall-Quellen am Plateaurand
 
-  function seeWert(x, z) { return ((x - 125) / 115) ** 2 + ((z - 438) / 66) ** 2; }
+  // See komplett innerhalb des Areals, Ufer durch Rauschen natürlich geformt
+  function seeWert(x, z) { return ((x - 135) / 100) ** 2 + ((z - 425) / 58) ** 2 + fbm(x / 26 + 3, z / 26) * 0.2; }
+  const INSEL = [108, 430, 8];
+  // Fluss vom Wasserfall am Westhang durchs Tal in den See
+  const FLUSS = [[140, 197], [130, 208], [121, 228], [115, 252], [113, 280], [117, 306], [124, 330], [130, 350], [133, 372]];
 
   function gelaendeHoehe(x, z) {
     let h;
@@ -1027,7 +1238,9 @@
     const huegel = r < 16 ? HUEGEL_Y : HUEGEL_Y - (HUEGEL_Y - 6) * Math.pow(Math.min(1, (r - 16) / 80), 0.7) + fbm(x / 14, z / 14) * 5 * (r < 96 ? 1 : 0);
     h = Math.max(h, huegel);
     const see = seeWert(x, z);
-    if (see < 1) h = Math.min(h, SEE_Y - Math.round((1 - see) * 5));
+    if (see < 1) h = Math.min(h, SEE_Y - Math.round(Math.min(1, (1 - see) * 1.6) * 5));
+    const di = Math.hypot(x - INSEL[0], z - INSEL[1]);
+    if (di < INSEL[2]) h = Math.max(h, SEE_Y + 2 - Math.floor(di / 3.5));
     if (z >= 261 && z <= 383) {
       const dx = Math.abs(x - 250);
       h = Math.min(h, SATTEL_Y + Math.max(0, dx - 6) * 2.5);
@@ -1050,6 +1263,34 @@
       const r = hash(x, y, z);
       return r < 0.5 ? 'stone' : r < 0.7 ? 'andesite' : r < 0.85 ? 'cobblestone' : 'mossy_cobblestone';
     };
+    // Flussbett: stufenweise fallender Wasserspiegel (Kaskaden), mündet auf Seehöhe
+    const wasserY = new Int16Array(N * N).fill(-1);
+    const nass = new Uint8Array(N * N);
+    {
+      let xs = 165; while (xs > 100 && hAt(xs, 190) >= PLATEAU_Y) xs--;
+      const punkte = [[xs, 190]].concat(FLUSS);
+      let pegel = PLATEAU_Y - 1;
+      for (let i = 0; i < punkte.length - 1; i++) {
+        const [ax, az] = punkte[i], [bx, bz] = punkte[i + 1];
+        const n = Math.ceil(Math.hypot(bx - ax, bz - az) * 2);
+        for (let k = 0; k <= n; k++) {
+          const px = ax + (bx - ax) * k / n, pz = az + (bz - az) * k / n;
+          const breite = 1.2 + 1.6 * (i + k / n) / (punkte.length - 1) + rauschen(px / 9, pz / 9) * 0.4;
+          pegel = Math.max(SEE_Y, Math.min(pegel, hAt(Math.round(px), Math.round(pz)) - 1));
+          const g = Math.ceil(breite) + 4;
+          for (let dz = -g; dz <= g; dz++) for (let dx = -g; dx <= g; dx++) {
+            const x = Math.round(px) + dx, z = Math.round(pz) + dz;
+            if (x < 0 || z < 0 || x >= N || z >= N) continue;
+            const d = Math.hypot(x - px, z - pz), c = z * N + x;
+            if (d <= breite + 4) nass[c] = 1;
+            if (d > breite) continue;
+            const tiefe = d < breite - 1 ? 2 : 1;
+            if (wasserY[c] < 0 || pegel < wasserY[c]) wasserY[c] = pegel;
+            H[c] = Math.min(H[c], pegel - tiefe);
+          }
+        }
+      }
+    }
     const oben = new Array(N * N);
     for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
       const h = H[z * N + x];
@@ -1057,7 +1298,9 @@
       const steil = h - tief;
       const see = seeWert(x, z);
       let top;
-      if (see < 1 && h < SEE_Y) top = hash(x, 1, z) < 0.6 ? 'sand' : 'gravel';
+      const imFluss = wasserY[z * N + x] > h;
+      if (imFluss) top = hash(x, 1, z) < 0.5 ? 'gravel' : 'sand';
+      else if (see < 1 && h < SEE_Y) top = hash(x, 1, z) < 0.6 ? 'sand' : 'gravel';
       else if (see < 1.2 && h <= SEE_Y + 1) top = 'sand';
       else if (steil >= 2) top = fels(x, h, z);
       else if (steil === 1 && hash(x, 4, z) < 0.25) { const r = hash(x, 2, z); top = r < 0.55 ? 'grass_block' : r < 0.8 ? 'coarse_dirt' : 'moss_block'; }
@@ -1069,7 +1312,8 @@
         m.set(x, y, z, erdig && y >= h - 2 ? 'dirt' : top === 'sand' && y >= h - 2 ? 'sand' : fels(x, y, z));
       }
       m.set(x, h, z, top);
-      if (see < 1) for (let y = h + 1; y <= SEE_Y; y++) m.set(x, y, z, 'water');
+      const pegel = see < 1 ? Math.max(SEE_Y, wasserY[z * N + x]) : wasserY[z * N + x];
+      for (let y = h + 1; y <= pegel; y++) m.set(x, y, z, 'water');
     }
     // Wege
     const wegZelle = new Uint8Array(N * N);
@@ -1083,6 +1327,7 @@
           if (x < 0 || z < 0 || x >= N || z >= N) continue;
           wegZelle[z * N + x] = 1;
           const t = oben[z * N + x];
+          if (wasserY[z * N + x] > H[z * N + x]) { m.set(x, wasserY[z * N + x] + 1, z, 'spruce_planks'); continue; } // Holzbrücke
           if (t === 'grass_block' || t === 'coarse_dirt' || t === 'moss_block') { m.set(x, H[z * N + x], z, 'dirt_path'); oben[z * N + x] = 'dirt_path'; }
         }
       }
@@ -1100,7 +1345,7 @@
       if (abstandRechteck(x, z, 155, 115, 345, 260, 20) < 5) return true;
       if (Math.abs(x - 250) < 16 && z > 255 && z < 392) return true;
       if (Math.hypot(x - 250, z - 400) < 22) return true;
-      if (seeWert(x, z) < 1.25) return true;
+      if (seeWert(x, z) < 1.25 || nass[z * N + x]) return true;
       for (const [x0, z0, x1, z1] of EBENEN) if (x > x0 - 6 && x < x1 + 6 && z > z0 - 6 && z < z1 + 6) return true;
       return false;
     };
@@ -1120,6 +1365,50 @@
       else if (w < 0.82 + hoehe * 0.15) baum.birke(x, h, z);
       else baum.schwarzeiche(x, h, z);
     }
+    // Bootssteg und Bootshaus am Nordufer des Sees
+    {
+      let zu = 330; while (zu < 420 && seeWert(120, zu) >= 1) zu++;
+      for (let z = zu - 2; z <= zu + 14; z++) for (let x = 119; x <= 121; x++) {
+        m.set(x, SEE_Y + 1, z, 'spruce_planks');
+        if ((x === 119 || x === 121) && (z - zu) % 4 === 0) {
+          for (let y = SEE_Y; y >= Math.max(0, H[z * N + x] + 1); y--) m.set(x, y, z, 'spruce_log');
+          m.set(x, SEE_Y + 2, z, 'spruce_fence');
+        }
+      }
+      m.set(119, SEE_Y + 3, zu + 12, 'lantern'); m.set(121, SEE_Y + 3, zu + 12, 'lantern');
+      const bx0 = 108, bx1 = 116, bz0 = zu - 5, bz1 = zu + 4;
+      for (let z = bz0; z <= bz1; z++) for (let x = bx0; x <= bx1; x++) {
+        const hz = H[z * N + x];
+        for (let y = Math.min(hz + 1, SEE_Y); y <= SEE_Y; y++) if (m.get(x, y, z) !== 'air') { /* Wasser bleibt */ }
+        m.set(x, SEE_Y + 1, z, 'spruce_planks');
+        const randB = x === bx0 || x === bx1 || z === bz0 || z === bz1;
+        const ecke = (x === bx0 || x === bx1) && (z === bz0 || z === bz1);
+        for (let y = SEE_Y + 2; y <= SEE_Y + 5; y++) {
+          if (ecke) m.set(x, y, z, 'spruce_log');
+          else if (randB) m.set(x, y, z, (z === bz1 && x > bx0 + 1 && x < bx1 - 1 && y <= SEE_Y + 4) ? 'air' : (y === SEE_Y + 4 && z !== bz1 && (x + z) % 3 === 0) ? 'pane_ns' : 'dark_oak_planks');
+          else m.set(x, y, z, 'air');
+        }
+        if (ecke) for (let y = SEE_Y + 1; y >= Math.max(0, hz); y--) m.set(x, y, z, 'spruce_log');
+      }
+      for (let k = 0; k <= 5; k++) for (let z = bz0 - 1; z <= bz1 + 1; z++) {
+        const y = SEE_Y + 6 + k;
+        if (bx0 - 1 + k > bx1 + 1 - k) break;
+        if (bx0 - 1 + k === bx1 + 1 - k) { m.set(bx0 - 1 + k, y, z, 'spruce_planks'); continue; }
+        m.set(bx0 - 1 + k, y, z, 'sps_e'); m.set(bx1 + 1 - k, y, z, 'sps_w');
+        if (z === bz0 || z === bz1) for (let x = bx0 + k; x < bx1 + 1 - k; x++) m.set(x, y, z, 'dark_oak_planks');
+      }
+      m.set(112, SEE_Y + 5, zu, 'lantern_h');
+    }
+    // Seerosen, Zuckerrohr am Ufer, Baum auf der Insel
+    for (let z = 1; z < N - 1; z++) for (let x = 1; x < N - 1; x++) {
+      const c = z * N + x, h = H[c], see = seeWert(x, z);
+      if (see < 1 && see > 0.55 && h < SEE_Y && hash(x, 31, z) < 0.03 && m.get(x, SEE_Y + 1, z) === 'air') m.set(x, SEE_Y + 1, z, 'lily_pad');
+      if (oben[c] === 'sand' && h === SEE_Y && hash(x, 32, z) < 0.22) {
+        const amWasser = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => m.get(x + dx, h, z + dz) === 'water');
+        if (amWasser && m.get(x, h + 1, z) === 'air') { const n = 1 + Math.floor(hash(x, 33, z) * 3); for (let y = 1; y <= n; y++) m.set(x, h + y, z, 'sugar_cane'); }
+      }
+    }
+    baumBauer(m, 4242).eiche(INSEL[0], H[INSEL[1] * N + INSEL[0]], INSEL[1]);
     // Blumen und Farne
     for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
       if (oben[z * N + x] !== 'grass_block' || gesperrt(x, z)) continue;
@@ -1144,12 +1433,12 @@
     { id: 'brueckenkopf', titel: 'Brückenkopf & Steinkreis', datei: 'hogwarts-brueckenkopf.litematic', erstelle: erzeugeBrueckenkopf,
       text: 'Torhaus mit zwei Türmen, wo das Viadukt auf dem Südhügel ankommt, gepflasterter Platz mit Steinkreis, Sonnenuhr und Laternen.' },
     { id: 'berg', titel: 'Berg & Gelände', datei: 'hogwarts-berg.litematic', erstelle: erzeugeBerg,
-      text: '500 × 500 Blöcke: Gipfelplateau, Klippen, Schlucht, Südhügel, See mit Strand, Wälder, Wege und Wasserfall-Quellen.' }
+      text: '500 × 500 Blöcke: Gipfelplateau, Klippen, Schlucht, Südhügel, See mit Insel, Steg und Bootshaus, Fluss mit Kaskaden, Wälder und Wege.' }
   ];
   for (const b of BAUWERKE) b.lage = LAGE[b.id];
 
   // Berg in zwei deckungsgleiche Teile zerlegen: erst Gelände formen, dann Wald setzen
-  const VEGETATION = new Set(['poppy', 'dandelion', 'cornflower', 'fern']);
+  const VEGETATION = new Set(['poppy', 'dandelion', 'cornflower', 'fern', 'lily_pad', 'sugar_cane', 'allium', 'azure_bluet', 'oxeye_daisy']);
   const istVegetation = (k) => VEGETATION.has(k) || k.includes('_log') || k.endsWith('_leaves');
   function bergTeil(wald, berg) {
     const quelle = berg || erzeugeBerg();
