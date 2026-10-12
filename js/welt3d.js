@@ -192,8 +192,8 @@
     if (id === 'stone' || id === 'andesite') return eine(id, flaeche(c, id === 'andesite' ? 0.18 : 0.08));
     if (id.includes('cobblestone')) return eine(id, MUSTER.bruch(rgb('#7a7a7a'), id.includes('mossy')));
     if (id.includes('deepslate_tile')) return eine('tiefenschiefer', MUSTER.fliesen(rgb('#3e3e45')));
-    if (id.includes('planks') || id.includes('_slab') && id.includes('spruce') || id.includes('spruce_stairs') || id.includes('fence')) {
-      const art = id.startsWith('dark_oak') ? 'dark_oak' : id.startsWith('birch') ? 'birch' : 'spruce';
+    if (id.includes('planks') || /^(spruce|dark_oak|oak)_(slab|stairs)$/.test(id) || id.includes('fence')) {
+      const art = id.startsWith('dark_oak') ? 'dark_oak' : id.startsWith('birch') ? 'birch' : id.startsWith('oak') ? 'oak' : 'spruce';
       return eine(art + '_planks', MUSTER.bretter(rgb(PLANKS[art])));
     }
     if (id.endsWith('leaves')) return eine(id, MUSTER.laub(c));

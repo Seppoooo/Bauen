@@ -56,7 +56,9 @@ describe('Litematica-Import', () => {
   it('liest die Hogwarts-Brücke Block für Block', async () => {
     const nbt = readNbt(await gunzip(ab(readFileSync(join(wurzel, 'schematics', 'hogwarts-bruecke.litematic')))));
     const roh = readLitematic(nbt);
-    expect(roh.length).toBe(51451);
+    expect(roh.length).toBe(58213);
+    // Blockwechsel: Tuff, Tiefenschiefer und gemeißelte Nischen geben der Brücke Tiefe
+    for (const t of ['tuff', 'deepslate_bricks', 'deepslate_tiles', 'chiseled_stone_bricks', 'polished_andesite']) expect(roh.some((b) => b.type === t)).toBe(true);
     expect(roh.some((b) => b.type === 'stone_brick_stairs' && b.props?.half === 'top')).toBe(true);
     const p = schematicToProject('Brücke', roh);
     pruefeProjekt(p);
