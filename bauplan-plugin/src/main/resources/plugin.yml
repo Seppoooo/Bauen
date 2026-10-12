@@ -1,0 +1,15 @@
+name: BauplanLive
+version: 1.0.0
+main: de.bauen.bauplanlive.BauplanLive
+api-version: '1.21'
+description: Bauplan-Website mit Live-Positionen aller Spieler (3D-Ansicht, 2D-Plan, Etappen)
+author: Bauen
+commands:
+  bauplan:
+    description: Bauplan-Website, Ursprung setzen, Position sperren
+    usage: /bauplan [link|ursprung|folgen <Spieler>|entsperren]
+    permission: bauplanlive.use
+permissions:
+  bauplanlive.use:
+    description: /bauplan benutzen
+    default: op

@@ -112,6 +112,7 @@
   def('dirt', 'minecraft:dirt', 'Erde', '#866043');
   def('sand', 'minecraft:sand', 'Sand', '#dbcf9c');
   def('gravel', 'minecraft:gravel', 'Kies', '#857f7c');
+  def('clay', 'minecraft:clay', 'Ton', '#a1a6b3');
   def('dirt_path', 'minecraft:dirt_path', 'Trampelpfad', '#94793f', { form: 'voll' });
   def('spruce_leaves', 'minecraft:spruce_leaves', 'Fichtenlaub', '#2f4c30',
     { props: { distance: '1', persistent: 'true', ...WL } });
@@ -1196,6 +1197,7 @@
   }
 
   // Lage der Bauwerke im Areal (Ursprung = Nordwest-Ecke unten), Y relativ zum Seespiegel-Grund
+  const KUESTE = 48; // Breite des Übergangs vom Land ins Meer am Rand
   const PLATEAU_Y = 110, SEE_Y = 3, TAL_Y = 5, HUEGEL_Y = PLATEAU_Y + 4, SATTEL_Y = PLATEAU_Y + 4 - 72 - 1;
   const LAGE = {
     berg: [0, 0, 0],
@@ -1245,6 +1247,12 @@
       const dx = Math.abs(x - 250);
       h = Math.min(h, SATTEL_Y + Math.max(0, dx - 6) * 2.5);
       if (dx <= 6) h = SATTEL_Y;
+    }
+    // Küste: zu allen Rändern hin sanft ins Meer abfallen (Wasserspiegel = SEE_Y), keine Kante zum Ozean
+    const randAbstand = Math.min(x, z, 499 - x, 499 - z) + fbm(x / 35 + 11, z / 35 - 4) * 14;
+    if (randAbstand < KUESTE) {
+      const t = Math.max(0, randAbstand) / KUESTE, w = t * t * (3 - 2 * t);
+      h = 0.4 + (h - 0.4) * w;
     }
     for (const [x0, z0, x1, z1] of EBENEN) {
       const e = Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
@@ -1300,8 +1308,8 @@
       let top;
       const imFluss = wasserY[z * N + x] > h;
       if (imFluss) top = hash(x, 1, z) < 0.5 ? 'gravel' : 'sand';
-      else if (see < 1 && h < SEE_Y) top = hash(x, 1, z) < 0.6 ? 'sand' : 'gravel';
-      else if (see < 1.2 && h <= SEE_Y + 1) top = 'sand';
+      else if (h < SEE_Y) top = hash(x, 1, z) < 0.6 ? 'sand' : hash(x, 5, z) < 0.6 ? 'gravel' : 'clay';
+      else if ((see < 1.2 || Math.min(x, z, N - 1 - x, N - 1 - z) < KUESTE + 16) && h <= SEE_Y + 1) top = 'sand';
       else if (steil >= 2) top = fels(x, h, z);
       else if (steil === 1 && hash(x, 4, z) < 0.25) { const r = hash(x, 2, z); top = r < 0.55 ? 'grass_block' : r < 0.8 ? 'coarse_dirt' : 'moss_block'; }
       else top = hash(x, 3, z) < 0.04 ? 'coarse_dirt' : 'grass_block';
@@ -1312,7 +1320,7 @@
         m.set(x, y, z, erdig && y >= h - 2 ? 'dirt' : top === 'sand' && y >= h - 2 ? 'sand' : fels(x, y, z));
       }
       m.set(x, h, z, top);
-      const pegel = see < 1 ? Math.max(SEE_Y, wasserY[z * N + x]) : wasserY[z * N + x];
+      const pegel = h < SEE_Y ? Math.max(SEE_Y, wasserY[z * N + x]) : wasserY[z * N + x];
       for (let y = h + 1; y <= pegel; y++) m.set(x, y, z, 'water');
     }
     // Wege
@@ -1433,7 +1441,7 @@
     { id: 'brueckenkopf', titel: 'Brückenkopf & Steinkreis', datei: 'hogwarts-brueckenkopf.litematic', erstelle: erzeugeBrueckenkopf,
       text: 'Torhaus mit zwei Türmen, wo das Viadukt auf dem Südhügel ankommt, gepflasterter Platz mit Steinkreis, Sonnenuhr und Laternen.' },
     { id: 'berg', titel: 'Berg & Gelände', datei: 'hogwarts-berg.litematic', erstelle: erzeugeBerg,
-      text: '500 × 500 Blöcke: Gipfelplateau, Klippen, Schlucht, Südhügel, See mit Insel, Steg und Bootshaus, Fluss mit Kaskaden, Wälder und Wege.' }
+      text: '500 × 500 Blöcke: Gipfelplateau, Klippen, Schlucht, Südhügel, See mit Insel, Steg und Bootshaus, Fluss mit Kaskaden, Wälder, Wege und eine sanfte Küste ins Meer an allen Rändern.' }
   ];
   for (const b of BAUWERKE) b.lage = LAGE[b.id];
 

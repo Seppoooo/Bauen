@@ -8,13 +8,13 @@ import { getTexture } from './Textures';
 
 /**
  * Zeichnet die Blöcke eines Projekts.
- * - Die Welt ist in Chunks (16 × 16 × 16) aufgeteilt; geändert werden nur betroffene Chunks.
+ * - Die Welt ist in Chunks (16³, bei großen Projekten 32³) aufgeteilt; geändert werden nur betroffene Chunks.
  * - Je Chunk gibt es pro Kombination aus Form, Textur und Darstellungsart genau ein InstancedMesh.
  * - Vollständig verdeckte Würfel werden gar nicht erst gezeichnet.
  * - Materialien und Texturen werden über den ganzen Renderer wiederverwendet.
  */
 
-const CHUNK = 16;
+let CHUNK = 16;
 const chunkKey = (x: number, y: number, z: number) => `${Math.floor(x / CHUNK)},${Math.floor(y / CHUNK)},${Math.floor(z / CHUNK)}`;
 
 interface Chunk {
@@ -31,7 +31,7 @@ export interface PickResult {
 export class BlockRenderer {
   readonly group = new THREE.Group();
   private blocks: BlockData[] = [];
-  private index = new Map<string, number>();
+  private index = new Map<number, number>();
   private chunks = new Map<string, Chunk>();
   private visibility = new Uint8Array(0);
   private view: ViewState | null = null;
@@ -41,6 +41,10 @@ export class BlockRenderer {
 
   setProject(project: BuildProject): void {
     this.blocks = project.blocks;
+    // große Welten in größere Chunks teilen → weniger Zeichenaufrufe
+    for (const c of this.chunks.values()) this.disposeChunk(c);
+    this.chunks.clear();
+    CHUNK = project.blocks.length > 150000 ? 32 : 16;
     this.index.clear();
     this.blocks.forEach((b, i) => this.index.set(blockKey(b.x, b.y, b.z), i));
     this.floorOrder = new Map(project.floors.map((f, i) => [f.id, i]));

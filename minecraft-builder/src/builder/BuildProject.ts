@@ -97,7 +97,8 @@ export function emptyProject(name = 'Neues Projekt'): BuildProject {
   };
 }
 
-export const blockKey = (x: number, y: number, z: number) => `${x},${y},${z}`;
+/** Zahlenschlüssel für eine Blockposition (schneller und sparsamer als Text bei Millionen Blöcken). Bereich x/z ±2048, y ±1024 */
+export const blockKey = (x: number, y: number, z: number) => ((y + 1024) * 4096 + (z + 2048)) * 4096 + (x + 2048);
 
 export interface Bounds {
   min: [number, number, number];
