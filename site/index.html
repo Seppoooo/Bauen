@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="rating" content="adult">
+  <meta name="robots" content="noindex">
+  <title>Velvet – Startseite</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/agegate.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="index.html">Velvet</a>
+    <form class="search" id="search-form" role="search">
+      <input id="search" type="search" placeholder="Suchen …" aria-label="Videos durchsuchen">
+    </form>
+    <select id="sort" aria-label="Sortierung">
+      <option value="new">Neueste</option>
+      <option value="views">Meistgesehen</option>
+      <option value="rating">Beste Bewertung</option>
+      <option value="duration">Längste</option>
+    </select>
+  </header>
+
+  <nav class="categories" id="categories" aria-label="Kategorien"></nav>
+
+  <main>
+    <p class="result-info" id="result-info"></p>
+    <section class="grid" id="grid"></section>
+    <div class="pager" id="pager"></div>
+  </main>
+
+  <footer class="footer">
+    <a href="legal.html#terms">AGB</a>
+    <a href="legal.html#privacy">Datenschutz</a>
+    <a href="legal.html#2257">18 U.S.C. 2257</a>
+    <a href="legal.html#report">Inhalt melden</a>
+    <a href="legal.html#imprint">Impressum</a>
+    <p>Alle Darsteller waren zum Zeitpunkt der Aufnahme mindestens 18 Jahre alt.</p>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

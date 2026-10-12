@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="rating" content="adult">
+  <meta name="robots" content="noindex">
+  <title>Velvet – Video</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/agegate.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="index.html">Velvet</a>
+  </header>
+
+  <main class="watch">
+    <div class="player-wrap">
+      <video id="player" controls playsinline preload="metadata"></video>
+      <div class="player-empty" id="player-empty" hidden>Keine Videoquelle hinterlegt.</div>
+    </div>
+    <h1 id="title"></h1>
+    <div class="meta" id="meta"></div>
+    <div class="actions">
+      <button id="like" type="button">👍 <span id="like-count">0</span></button>
+      <button id="dislike" type="button">👎</button>
+      <a class="report" id="report" href="legal.html#report">Melden</a>
+    </div>
+    <div class="tags" id="tags"></div>
+
+    <h2>Ähnliche Videos</h2>
+    <section class="grid" id="related"></section>
+  </main>
+
+  <footer class="footer">
+    <a href="legal.html#terms">AGB</a>
+    <a href="legal.html#privacy">Datenschutz</a>
+    <a href="legal.html#2257">18 U.S.C. 2257</a>
+    <a href="legal.html#report">Inhalt melden</a>
+    <a href="legal.html#imprint">Impressum</a>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/video.js"></script>
+</body>
+</html>

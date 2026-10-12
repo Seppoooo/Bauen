@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="rating" content="adult">
+  <title>Velvet – Rechtliches</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/agegate.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="index.html">Velvet</a>
+  </header>
+  <main class="legal">
+    <p class="notice">Platzhaltertexte – vor dem Livegang durch rechtlich geprüfte Texte ersetzen.</p>
+
+    <section id="terms">
+      <h2>Allgemeine Geschäftsbedingungen</h2>
+      <p>Die Nutzung ist ausschließlich volljährigen Personen gestattet. Hochgeladene Inhalte dürfen nur
+      Personen zeigen, die volljährig sind und der Aufnahme sowie Veröffentlichung nachweislich zugestimmt haben.</p>
+    </section>
+
+    <section id="privacy">
+      <h2>Datenschutz</h2>
+      <p>[Datenschutzerklärung nach DSGVO einfügen.]</p>
+    </section>
+
+    <section id="2257">
+      <h2>18 U.S.C. 2257 Record-Keeping Requirements Compliance Statement</h2>
+      <p>[Angaben zum Custodian of Records einfügen.]</p>
+    </section>
+
+    <section id="report">
+      <h2>Inhalt melden</h2>
+      <p>Melde Inhalte, die Minderjährige zeigen, ohne Einwilligung veröffentlicht wurden oder anderweitig rechtswidrig sind.
+      Gemeldete Inhalte werden bis zur Prüfung gesperrt.</p>
+      <form id="report-form" class="report-form">
+        <label>Video-ID / URL <input name="video" required></label>
+        <label>Grund
+          <select name="reason" required>
+            <option value="minor">Mögliche minderjährige Person</option>
+            <option value="nonconsensual">Ohne Einwilligung veröffentlicht</option>
+            <option value="copyright">Urheberrechtsverletzung</option>
+            <option value="other">Sonstiges</option>
+          </select>
+        </label>
+        <label>Details <textarea name="details" rows="4"></textarea></label>
+        <label>Kontakt-E-Mail (optional) <input name="email" type="email"></label>
+        <button type="submit">Meldung absenden</button>
+        <p class="form-status" id="report-status" role="status"></p>
+      </form>
+    </section>
+
+    <section id="imprint">
+      <h2>Impressum</h2>
+      <p>[Angaben gemäß § 5 DDG einfügen. Jugendschutzbeauftragte/r: Name, Kontakt.]</p>
+    </section>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const form = document.getElementById('report-form');
+    if (params.get('video')) form.video.value = params.get('video');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      // TODO: an Backend-Endpunkt senden (z. B. POST /api/reports)
+      document.getElementById('report-status').textContent = 'Danke – deine Meldung wurde erfasst.';
+      form.reset();
+    });
+  </script>
+</body>
+</html>
