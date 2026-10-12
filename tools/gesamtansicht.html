@@ -8,7 +8,7 @@
   // Wird von tools/rendere-gesamtansicht.js geöffnet; Bereich um Berg, Schloss und Brücke
   const p = new URLSearchParams(location.search);
   const s = +(p.get('s') || 2);
-  const bereich = (p.get('bereich') || '40,40,470,480').split(',').map(Number);
+  const bereich = (p.get('bereich') || '0,0,499,499').split(',').map(Number);
   const g = HogwartsModell.erzeugeGesamt(bereich);
   HogwartsRender.iso(document.getElementById('c'), g, { s, nacht: true });
   window.fertig = document.getElementById('c').toDataURL(p.get('typ') || 'image/webp', 0.86);

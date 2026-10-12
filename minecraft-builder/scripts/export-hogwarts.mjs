@@ -27,7 +27,7 @@ const STEPS = [
   { id: 5, name: 'Dächer & Turmhelme', description: 'Satteldächer, Gauben, Turmhelme, Schornsteine und Blitzableiter' },
   { id: 6, name: 'Innenausbau', description: 'Böden, Treppen, Große Halle, Bibliothek, Klassenzimmer und Licht' },
   { id: 7, name: 'Brücke & Brückenkopf', description: 'Zweistöckiges Viadukt, Torhaus und Steinkreis auf dem Südhügel' },
-  { id: 8, name: 'Gärten & Außenanlagen', description: 'Schlossterrasse, Innenhof, Gewächshäuser, Hagrids Hütte, Quidditch-Feld, Steg und Bootshaus' },
+  { id: 8, name: 'Gärten & Außenanlagen', description: 'Schlossterrasse, Innenhof, Hogsmeade, Eulerei, Gewächshäuser, Hagrids Hütte, Quidditch-Feld, Leuchtturm, Steg und Bootshaus' },
   { id: 9, name: 'Wald & Natur', description: 'Selbstgebaute Bäume, Blumen, Seerosen und Zuckerrohr' }
 ];
 const FLOORS = [
@@ -37,7 +37,7 @@ const FLOORS = [
   { id: 3, name: 'Schloss 2. Obergeschoss', minY: 127, maxY: 132 },
   { id: 4, name: 'Dächer & Türme', minY: 133, maxY: 211 },
   { id: 5, name: 'Brücke & Brückenkopf' },
-  { id: 6, name: 'Außenanlagen' }
+  { id: 6, name: 'Außenanlagen & Hogsmeade' }
 ];
 const PARTS = ['foundation', 'floor', 'wall', 'interior_wall', 'window', 'door', 'stairs', 'roof', 'decoration', 'terrain', 'other'];
 
@@ -85,8 +85,8 @@ function exportiere(name, beschreibung, mitBerg, datei) {
     let bau = teil ? teil.id : 'berg';
     const key = g.keys[v], b = M.block(key), type = b.id.replace('minecraft:', '');
     // Gelände-Blöcke innerhalb einer Bauwerks-Box gehören trotzdem zum Berg
-    if (teil && teil.id !== 'hauptschloss' && GELAENDE.test(type) && bau !== 'quidditch' && bau !== 'hagrid' && bau !== 'gewaechshaeuser') bau = 'berg';
-    if (!mitBerg && (bau === 'berg' || bau === 'hagrid' || bau === 'gewaechshaeuser' || bau === 'quidditch')) continue;
+    if (teil && GELAENDE.test(type) && ['bruecke', 'brueckenkopf'].includes(bau)) bau = 'berg';
+    if (!mitBerg && !['hauptschloss', 'bruecke', 'brueckenkopf'].includes(bau)) continue;
     if (bau === 'berg') {
       const innen = deck[v] && x > 0 && x < SX - 1 && z > 0 && z < SZ - 1 && y > 0 && y < g.sy - 1 &&
         deck[D[i - 1]] && deck[D[i + 1]] && deck[D[i - SX]] && deck[D[i + SX]] && deck[D[i - E]] && deck[D[i + E]];
