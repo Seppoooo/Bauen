@@ -79,6 +79,9 @@ public final class BauplanLive extends JavaPlugin {
                 w.write("port=8100\n");
                 w.write("# Wie oft Positionen aktualisiert werden (20 Ticks = 1 Sekunde)\n");
                 w.write("intervall-ticks=4\n");
+                w.write("# Bauplan, den die Website beim Öffnen lädt (Datei in plugins/BauplanLive/web/).\n");
+                w.write("# Mitgeliefert: projekte/hogwarts.mcbp.gz (mit Berg) oder projekte/hogwarts-schloss.mcbp.gz (nur Schloss)\n");
+                w.write("bauplan=projekte/hogwarts.mcbp.gz\n");
                 w.write("# Website bei jedem Start neu aus dem Plugin entpacken (false = eigene Änderungen in web/ behalten)\n");
                 w.write("web-aktualisieren=true\n");
             }
@@ -151,7 +154,8 @@ public final class BauplanLive extends JavaPlugin {
         String follow = state.getProperty("follow", "");
         return "{\"origin\":[" + state.getProperty("x", "0") + "," + state.getProperty("y", "0") + "," + state.getProperty("z", "0") + "]"
             + ",\"world\":" + quote(state.getProperty("world", ""))
-            + ",\"follow\":" + (follow.isEmpty() ? "null" : quote(follow)) + "}";
+            + ",\"follow\":" + (follow.isEmpty() ? "null" : quote(follow))
+            + ",\"plan\":" + quote(settings.getProperty("bauplan", "projekte/hogwarts.mcbp.gz").trim()) + "}";
     }
 
     // ------------------------------------------------------------------ Befehle

@@ -20,6 +20,13 @@ interface Props {
   follow: string | null;
   onFollow: (name: string | null) => void;
   onMessage: (t: string) => void;
+  /** Ursprung setzen (im Server-Modus für alle) */
+  onOrigin: (o: [number, number, number]) => void;
+  /** Mit einer Server-Adresse (http…) oder einem Mod (ws…) verbinden */
+  onConnect: (url: string) => void;
+  serverMode: boolean;
+  packName: string | null;
+  textures: { laden: (f: File) => void; entfernen: () => void };
 }
 
 /** Rechtes Panel mit den Reitern Position, Einstellungen und Material */
@@ -41,14 +48,13 @@ export function RightPanel(props: Props) {
   );
 }
 
-function PositionTab({ engine, players, liveStatus, onLiveStatus, follow, onFollow, onMessage }: Props) {
-  const [ursprung, setUrsprung] = useState('0 64 0');
-  const [url, setUrl] = useState('ws://localhost:25599');
+function PositionTab({ engine, players, liveStatus, follow, onFollow, onMessage, onOrigin, onConnect, serverMode }: Props) {
+  const [ursprung, setUrsprung] = useState(() => (engine.current?.worldOrigin ?? [0, 60, 0]).join(' '));
+  const [url, setUrl] = useState('http://localhost:8100');
   const setzeUrsprung = () => {
     const z = ursprung.trim().split(/[\s,;]+/).map(Number);
-    if (z.length !== 3 || z.some((n) => Number.isNaN(n))) { onMessage('Bitte drei Zahlen eingeben, z. B. 120 64 -40'); return; }
-    if (engine.current) engine.current.worldOrigin = [z[0], z[1], z[2]];
-    onMessage(`Bauplan-Ursprung in deiner Welt: ${z.join(' / ')}`);
+    if (z.length !== 3 || z.some((n) => Number.isNaN(n))) { onMessage('Bitte drei Zahlen eingeben, z. B. 120 60 -40'); return; }
+    onOrigin([z[0], z[1], z[2]]);
   };
   return (
     <>
@@ -56,7 +62,7 @@ function PositionTab({ engine, players, liveStatus, onLiveStatus, follow, onFoll
         <h2>Live-Spieler</h2>
         {follow ? (
           <div className="gesperrt-box">
-            <span>🔒 Position gesperrt – folgt <strong>{follow}</strong></span>
+            <span>🔒 Position gesperrt{serverMode ? ' – gilt für alle' : ''} · folgt <strong>{follow}</strong></span>
             <button type="button" onClick={() => onFollow(null)}>Entsperren</button>
           </div>
         ) : null}
@@ -74,18 +80,23 @@ function PositionTab({ engine, players, liveStatus, onLiveStatus, follow, onFoll
           ))}
           {!players.length && <li className="leer">Niemand verbunden. Status: {liveStatus}</li>}
         </ul>
-        <div className="reihe">
-          <input id="liveUrl" className="eingabe" value={url} onChange={(e) => setUrl(e.target.value)} aria-label="WebSocket-Adresse des Mods" />
-          <button type="button" onClick={() => { onLiveStatus('verbinde …'); engine.current?.connectLive(url, onLiveStatus); }}>Verbinden</button>
-        </div>
+        {serverMode ? <p className="hinweis">Verbunden mit dem BauplanLive-Server. {liveStatus}</p> : (
+          <>
+            <p className="hinweis">Adresse deines Servers mit BauplanLive-Plugin (z. B. http://123.45.67.89:8100):</p>
+            <div className="reihe">
+              <input id="liveUrl" className="eingabe" value={url} onChange={(e) => setUrl(e.target.value)} aria-label="Adresse des Minecraft-Servers" />
+              <button type="button" onClick={() => onConnect(url)}>Verbinden</button>
+            </div>
+          </>
+        )}
         <button type="button" className="breit leise" onClick={() => {
           // Testspieler, um die Anzeige ohne Mod auszuprobieren
           engine.current?.updatePlayers([{ name: 'Testspieler', x: (engine.current?.worldOrigin[0] ?? 0) + 23, y: (engine.current?.worldOrigin[1] ?? 0) + 1, z: (engine.current?.worldOrigin[2] ?? 0) + 34, yaw: 180, pitch: 10 }]);
         }}>Testspieler anzeigen</button>
       </section>
       <section>
-        <h2>Ohne Mod: F3 + C</h2>
-        <p className="hinweis">1. Trage ein, wo die Nordwest-Ecke unten des Bauplans in deiner Welt liegt. 2. Im Spiel <kbd>F3</kbd>+<kbd>C</kbd> drücken. 3. Hier <kbd>Strg</kbd>+<kbd>V</kbd> – die Kamera springt genau an deine Position und Blickrichtung.</p>
+        <h2>Bauplan-Ursprung in der Welt</h2>
+        <p className="hinweis">Wo liegt die Nordwest-Ecke unten des Bauplans (dort, wo die Schematic beginnt)? {serverMode ? 'Gilt für alle. Im Spiel geht es auch mit /bauplan ursprung.' : 'Ohne Plugin: im Spiel F3+C drücken und hier Strg+V – die Kamera springt an deine Position.'}</p>
         <div className="reihe">
           <input id="ursprung" className="eingabe" value={ursprung} onChange={(e) => setUrsprung(e.target.value)} aria-label="Ursprung des Bauplans in der Welt (X Y Z)" />
           <button type="button" onClick={setzeUrsprung}>Setzen</button>
@@ -95,7 +106,7 @@ function PositionTab({ engine, players, liveStatus, onLiveStatus, follow, onFoll
   );
 }
 
-function SettingsTab({ project, view, onView, engine }: Props) {
+function SettingsTab({ project, view, onView, engine, packName, textures }: Props) {
   const hoehen = useMemo(() => floorHeights(project), [project]);
   const teile = useMemo(() => PART_ORDER.filter((p) => project.blocks.some((b) => b.part === p)), [project]);
   const sichtbar = (id: number) => !view.floors || view.floors.includes(id);
@@ -138,6 +149,18 @@ function SettingsTab({ project, view, onView, engine }: Props) {
             </li>
           ))}
         </ul>
+      </section>
+      <section>
+        <h2>Original-Minecraft-Texturen</h2>
+        {packName ? (
+          <div className="gesperrt-box"><span>✓ Aktiv: <strong>{packName}</strong></span><button type="button" onClick={textures.entfernen}>Entfernen</button></div>
+        ) : (
+          <p className="hinweis">Wähle deine Minecraft-Datei – dann sieht jeder Block genau aus wie im Spiel. Windows: <code>%appdata%\.minecraft\versions\26.3\26.3.jar</code> (oder ein Ressourcenpaket als .zip). Die Datei bleibt auf deinem PC.</p>
+        )}
+        <label className="datei-knopf">
+          <input type="file" id="texturPaket" accept=".jar,.zip" onChange={(e) => { const f = e.target.files?.[0]; if (f) textures.laden(f); e.target.value = ''; }} />
+          {packName ? 'Andere Datei wählen' : 'Minecraft-.jar oder Ressourcenpaket wählen'}
+        </label>
       </section>
       <section>
         <h2>Darstellung</h2>

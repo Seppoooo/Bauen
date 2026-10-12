@@ -24,6 +24,8 @@ Weitere Befehle:
 | `npm run preview` | den Build lokal ansehen |
 | `npm run typecheck` | nur TypeScript prüfen |
 | `npm run demo` | Beispielburg neu erzeugen (`src/data/demoCastle.json`) |
+| `npm run hogwarts` | Hogwarts-Baupläne neu erzeugen (`public/projekte/`) |
+| `npm run single` | nach dem Build eine einzelne HTML-Datei erzeugen |
 
 ## Bedienung
 
@@ -57,14 +59,31 @@ bis jetzt gebaut, noch benötigt – jeweils pro Stockwerk filterbar, mit Stacks
 **Bauen:** Haken bei *Bauen* setzen, Block und Bauteil wählen, Rechtsklick setzt, Linksklick baut ab.
 Neue Blöcke bekommen die aktuelle Etappe und das Stockwerk passend zur Höhe.
 
+## Mitgelieferte Baupläne
+
+Im Reiter *Baupläne*: **Hogwarts mit Berg** (1,1 Mio. sichtbare Blöcke, 500 × 500, 9 Etappen von „Berg formen“ bis
+„Wald & Natur“), **Hogwarts – nur Schloss** (245.000 Blöcke) und die **Beispielburg**. Neu erzeugen:
+`npm run hogwarts` (liest `../js/modell.js`).
+
+## Originale Minecraft-Texturen
+
+Menü *Einstellungen* → *Minecraft-.jar oder Ressourcenpaket wählen*. Unter Windows liegt die Datei z. B. unter
+`%appdata%\.minecraft\versions\26.3\26.3.jar`. Die Texturen werden direkt im Browser ausgelesen (nichts wird
+hochgeladen), Gras/Laub/Wasser wie im Spiel eingefärbt und für den nächsten Besuch gespeichert. Die Seiten der
+Blöcke werden wie in Minecraft schattiert (oben 100 %, Nord/Süd 80 %, Ost/West 60 %, unten 50 %).
+
 ## Mit Minecraft koppeln
 
 **Ohne Mod (F3 + C):** Im Menü *Position* eintragen, wo die Nordwest-Ecke unten des Bauplans in deiner
 Welt liegt. Im Spiel **F3+C** drücken (kopiert Position und Blickrichtung), in der Website **Strg+V** –
 die 3D-Kamera springt genau dorthin.
 
-**Live (Mod):** Die Website verbindet sich per WebSocket (Standard `ws://localhost:25599`) und erwartet
-Nachrichten in Minecraft-Koordinaten:
+**Live mit dem Server-Plugin:** Das Paper-Plugin [`../bauplan-plugin`](../bauplan-plugin/README.md) liefert diese
+Website selbst aus (`http://SERVER-IP:8100`) und schickt die Positionen aller Spieler live. Ursprung und
+„Position gesperrt“ gelten dann für alle Zuschauer. Ohne Plugin kann man im Menü *Position* auch eine
+Server-Adresse eintragen.
+
+**Eigener Mod (WebSocket):** Alternativ verbindet sich die Website mit `ws://…` und erwartet Nachrichten in Minecraft-Koordinaten:
 
 ```json
 { "players": [ { "name": "Josef", "x": 123.5, "y": 64, "z": -20.2, "yaw": 90, "pitch": 10 } ] }
@@ -72,7 +91,7 @@ Nachrichten in Minecraft-Koordinaten:
 
 Ein einzelnes Objekt `{ "x":…, "y":…, "z":…, "yaw":…, "pitch":… }` geht auch. Spieler erscheinen als Figur
 mit Namen in 3D, im 2D-Plan und auf der Minikarte; mit *Folgen* fliegt die Kamera live mit.
-Den Mod selbst (z. B. Fabric) gibt es noch nicht – das Protokoll ist bewusst einfach gehalten.
+
 
 ## Projektformat (JSON)
 

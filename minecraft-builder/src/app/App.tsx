@@ -8,8 +8,11 @@ import { loadTodos, saveTodos, type Todo } from '../builder/Todos';
 import { Engine, type LivePlayer } from '../engine/Scene';
 import type { PickResult } from '../engine/BlockRenderer';
 import { buildPlan } from '../engine/PlanRenderer';
-import { loadTextureOverrides } from '../engine/Textures';
+import { loadTextureOverrides, refreshAllTextures, resetTextures } from '../engine/Textures';
+import { clearPack, loadPackFile, loadStoredPack } from '../engine/TexturePack';
 import { exportJson, importFile, projectFromJson } from '../import/ProjectImport';
+import { fetchBinaryProject } from '../import/BinaryProject';
+import { detectServer, ServerLink, type ServerUpdate } from '../live/ServerLink';
 import demoCastle from '../data/demoCastle.json';
 import { TopNav, type Tab } from './TopNav';
 import { Toolbar, type ToolbarState } from './Toolbar';
@@ -51,6 +54,10 @@ export function App() {
   const [liveStatus, setLiveStatus] = useState('aus');
   const [follow, setFollow] = useState<string | null>(null);
   const [todos, setTodos] = useState<Todo[]>(() => loadTodos(demo().name));
+  const [serverMode, setServerMode] = useState(false);
+  const [packName, setPackName] = useState<string | null>(null);
+  const link = useRef<ServerLink | null>(null);
+  const welt = useRef<string>('');
 
   const zeige = useCallback((text: string) => {
     setMeldung(text);
@@ -70,8 +77,52 @@ export function App() {
     });
     engine.current = e;
     void loadTextureOverrides();
+    // gespeicherte Original-Texturen vom letzten Besuch wieder anwenden
+    void loadStoredPack().then(async (name) => {
+      if (!name) return;
+      await refreshAllTextures();
+      setPackName(name);
+      setVersion((v) => v + 1);
+    });
     return () => { e.dispose(); engine.current = null; };
   }, [zeige]);
+
+  /** Server-Update: Spieler (nur aus der Bauplan-Welt), Ursprung und „Position gesperrt“ für alle */
+  const serverUpdate = useCallback((u: ServerUpdate) => {
+    const e = engine.current;
+    if (!e) return;
+    e.worldOrigin = u.state.origin;
+    welt.current = u.state.world;
+    setFollow((f) => (f === u.state.follow ? f : u.state.follow));
+    e.followPlayer = u.state.follow;
+    e.updatePlayers(u.players.filter((p) => !u.state.world || !p.world || p.world === u.state.world));
+  }, []);
+
+  const verbindeServer = useCallback((base: string) => {
+    link.current?.stop();
+    const l = new ServerLink(base, serverUpdate, setLiveStatus);
+    link.current = l;
+    l.start();
+    setServerMode(true);
+  }, [serverUpdate]);
+
+  // Kommt die Seite vom BauplanLive-Plugin? Dann automatisch verbinden und dessen Bauplan laden
+  useEffect(() => {
+    let aktiv = true;
+    void detectServer().then(async (s) => {
+      if (!s || !aktiv) return;
+      if (engine.current) engine.current.worldOrigin = s.state.origin;
+      verbindeServer(s.base);
+      if (s.state.plan) {
+        try {
+          zeige('Lade den Bauplan vom Server …');
+          const p = s.state.plan.endsWith('.json') ? projectFromJson(await (await fetch(s.state.plan)).json()) : await fetchBinaryProject(s.state.plan);
+          if (aktiv) ladeProjektRef.current?.(p, 'Server');
+        } catch (err) { zeige(`Bauplan vom Server nicht geladen: ${(err as Error).message}`); }
+      }
+    });
+    return () => { aktiv = false; link.current?.stop(); };
+  }, [verbindeServer, zeige]);
 
   useEffect(() => { engine.current?.setProject(project); }, [project]);
   useEffect(() => { engine.current?.setView(view); }, [view, project]);
@@ -79,6 +130,38 @@ export function App() {
   useEffect(() => { engine.current?.setSpeed(tools.speed); }, [tools.speed]);
   useEffect(() => { engine.current?.setGrid(tools.grid, tools.gridSpacing); }, [tools.grid, tools.gridSpacing, project]);
   useEffect(() => { if (engine.current) engine.current.followPlayer = follow; }, [follow]);
+  const setzeFollow = useCallback((name: string | null) => {
+    setFollow(name);
+    if (link.current) void link.current.setState({ follow: name });
+  }, []);
+  const setzeUrsprung = useCallback((o: [number, number, number]) => {
+    if (engine.current) engine.current.worldOrigin = o;
+    if (link.current) void link.current.setState({ origin: o });
+    zeige(`Bauplan-Ursprung in der Welt: ${o.join(' / ')}${link.current ? ' (für alle)' : ''}`);
+  }, [zeige]);
+  const texturen = useMemo(() => ({
+    laden: async (file: File) => {
+      try {
+        zeige(`Lese Texturen aus ${file.name} …`);
+        const n = await loadPackFile(file);
+        const ersetzt = await refreshAllTextures();
+        setPackName(file.name);
+        setVersion((v) => v + 1);
+        zeige(`${n} Original-Texturen gefunden, ${ersetzt} sofort angewendet`);
+      } catch (err) { zeige(`Texturen nicht geladen: ${(err as Error).message}`); }
+    },
+    entfernen: async () => {
+      await clearPack();
+      resetTextures();
+      setPackName(null);
+      setVersion((v) => v + 1);
+      zeige('Zurück zu den gemalten Texturen');
+    }
+  }), [zeige]);
+  const verbinde = useCallback((url: string) => {
+    if (/^wss?:/.test(url)) { setLiveStatus('verbinde …'); engine.current?.connectLive(url, setLiveStatus); }
+    else verbindeServer(url);
+  }, [verbindeServer]);
   useEffect(() => { saveTodos(project.name, todos); }, [todos, project.name]);
 
   // Etappen abspielen
@@ -116,8 +199,17 @@ export function App() {
     setVersion((v) => v + 1);
     zeige(`${quelle}: „${p.name}“ mit ${p.blocks.length.toLocaleString('de-DE')} Blöcken geladen`);
   }, [zeige]);
+  const ladeProjektRef = useRef(ladeProjekt);
+  ladeProjektRef.current = ladeProjekt;
 
   const aktionen = useMemo(() => ({
+    ladeUrl: async (url: string, titel: string) => {
+      try {
+        zeige(`Lade ${titel} …`);
+        ladeProjekt(await fetchBinaryProject(url), 'Bauplan');
+        setTab('view3d');
+      } catch (err) { zeige(`Laden fehlgeschlagen: ${(err as Error).message}`); }
+    },
     neu: () => {
       const p = emptyProject();
       p.blocks.push({ x: 0, y: 0, z: 0, type: 'stone_bricks', floor: 0, step: 1, part: 'foundation' });
@@ -194,7 +286,8 @@ export function App() {
       </main>
       {panelOpen && (
         <RightPanel project={project} view={view} onView={setView} engine={engine} version={version} players={players}
-          liveStatus={liveStatus} onLiveStatus={setLiveStatus} follow={follow} onFollow={setFollow} onMessage={zeige} />
+          liveStatus={liveStatus} onLiveStatus={setLiveStatus} follow={follow} onFollow={setzeFollow} onMessage={zeige}
+          onOrigin={setzeUrsprung} onConnect={verbinde} serverMode={serverMode} packName={packName} textures={texturen} />
       )}
     </div>
   );

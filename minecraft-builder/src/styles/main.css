@@ -209,3 +209,7 @@ h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: v
   .todo-form { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .fortschritt .leiste span { transition: none; } }
+.datei-knopf { display: block; text-align: center; background: var(--blau); color: #fff; border-radius: 6px; padding: 7px 10px; cursor: pointer; font-weight: 700; font-size: 13px; }
+.datei-knopf:hover { background: var(--blau-hell); }
+.datei-knopf input { display: none; }
+.panel-inhalt code { font: 11px var(--mono); word-break: break-all; color: #9fd0ff; }

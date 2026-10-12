@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { blockInfo } from './BlockTypes';
+import { blockInfo, allBlockInfos } from './BlockTypes';
+import { hasPack, mittelfarbe, packImage } from './TexturePack';
 
 /**
  * Texturen im Minecraft-Stil (16 × 16 Pixel), prozedural gemalt.
@@ -225,11 +226,47 @@ export function getTexture(name: string): THREE.Texture {
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.generateMipmaps = false;
   cache.set(name, tex);
-  if (ueberschreibungen?.has(name)) {
+  if (hasPack()) void wendePackAn(name, tex);
+  else if (ueberschreibungen?.has(name)) {
     loader.load(`./textures/blocks/${name}.png`, (png) => {
       tex.image = png.image;
       tex.needsUpdate = true;
     });
   }
   return tex;
+}
+
+/** Originaltextur aus dem Minecraft-Paket auf eine Textur anwenden und Blockfarben angleichen */
+async function wendePackAn(name: string, tex: THREE.Texture): Promise<boolean> {
+  const bild = await packImage(name);
+  if (!bild) return false;
+  tex.image = bild;
+  tex.needsUpdate = true;
+  const farbe = mittelfarbe(bild);
+  if (farbe) for (const info of allBlockInfos()) if (info.tex.top === name) info.color = farbe;
+  return true;
+}
+
+/** Nach dem Laden eines Texturpakets: alle schon benutzten Texturen austauschen */
+export async function refreshAllTextures(): Promise<number> {
+  let n = 0;
+  await Promise.all([...cache.entries()].map(async ([name, tex]) => { if (await wendePackAn(name, tex)) n++; }));
+  return n;
+}
+
+/** Zurück zu den gemalten Texturen */
+export function resetTextures(): void {
+  for (const [name, tex] of cache) {
+    const neu = getTextureUncached(name);
+    tex.image = neu.image;
+    tex.needsUpdate = true;
+  }
+}
+
+function getTextureUncached(name: string): THREE.Texture {
+  const alt = cache.get(name);
+  cache.delete(name);
+  const t = getTexture(name);
+  if (alt) cache.set(name, alt);
+  return t;
 }

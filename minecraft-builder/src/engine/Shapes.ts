@@ -26,6 +26,17 @@ function box([x0, y0, z0, x1, y1, z1]: Box): THREE.BufferGeometry {
     }
   }
   g.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  // Seitenhelligkeit wie in Minecraft: oben 100 %, Nord/Süd 80 %, Ost/West 60 %, unten 50 %
+  const hell = [0.6, 0.6, 1, 0.5, 0.8, 0.8];
+  const farben = new Float32Array(24 * 3);
+  for (let f = 0; f < 6; f++) for (let i = 0; i < 4; i++) farben.set([hell[f], hell[f], hell[f]], (f * 4 + i) * 3);
+  g.setAttribute('color', new THREE.BufferAttribute(farben, 3));
+  return g;
+}
+
+function ganzHell(g: THREE.BufferGeometry): THREE.BufferGeometry {
+  const n = g.getAttribute('position').count;
+  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3).fill(1), 3));
   return g;
 }
 
@@ -34,7 +45,7 @@ function kreuz(): THREE.BufferGeometry {
   a.rotateY(Math.PI / 4); a.translate(0.5, 0.475, 0.5);
   const b = new THREE.PlaneGeometry(1.2, 0.95);
   b.rotateY(-Math.PI / 4); b.translate(0.5, 0.475, 0.5);
-  return mergeGeometries([a, b])!;
+  return mergeGeometries([ganzHell(a), ganzHell(b)])!;
 }
 
 const cache = new Map<string, THREE.BufferGeometry>();

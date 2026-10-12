@@ -53,7 +53,15 @@ export async function readBinaryProject(data: ArrayBuffer): Promise<BuildProject
 }
 
 export async function fetchBinaryProject(url: string): Promise<BuildProject> {
-  const antwort = await fetch(url);
+  // Manche Hoster liefern nur Textdateien aus – dann liegt der Bauplan als Base64 daneben (*.b64.txt)
+  const alsText = (window as unknown as { MCB_BASE64_PLAENE?: boolean }).MCB_BASE64_PLAENE === true;
+  const antwort = await fetch(alsText ? url + '.b64.txt' : url);
   if (!antwort.ok) throw new Error(`${url} nicht gefunden (${antwort.status})`);
+  if (alsText) {
+    const roh = atob((await antwort.text()).trim());
+    const bytes = new Uint8Array(roh.length);
+    for (let i = 0; i < roh.length; i++) bytes[i] = roh.charCodeAt(i);
+    return readBinaryProject(bytes.buffer);
+  }
   return readBinaryProject(await antwort.arrayBuffer());
 }

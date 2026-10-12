@@ -2,6 +2,7 @@ import type { BlockData, BuildProject, PartCategory } from '../builder/BuildProj
 import { normalizeProject, PART_ORDER } from '../builder/BuildProject';
 import { autoClassify, type RawBlock } from './AutoClassify';
 import { gunzip, readNbt, type NbtCompound, type NbtValue } from './Nbt';
+import { readBinaryProject } from './BinaryProject';
 
 /**
  * Laden und Speichern von Projekten.
@@ -68,12 +69,13 @@ export function exportJson(p: BuildProject, kompakt = p.blocks.length > 20000): 
 export async function importFile(file: File): Promise<BuildProject> {
   const name = file.name.toLowerCase();
   if (name.endsWith('.json')) return projectFromJson(JSON.parse(await file.text()));
+  if (name.endsWith('.mcbp') || name.endsWith('.mcbp.gz')) return readBinaryProject(await file.arrayBuffer());
   const nbt = readNbt(await gunzip(await file.arrayBuffer()));
   const titel = file.name.replace(/\.[^.]+$/, '');
   let raw: RawBlock[];
   if (name.endsWith('.litematic')) raw = readLitematic(nbt);
   else if (name.endsWith('.schem')) raw = readSponge(nbt);
-  else throw new Error('Unbekanntes Dateiformat. Erlaubt sind .json, .litematic und .schem.');
+  else throw new Error('Unbekanntes Dateiformat. Erlaubt sind .json, .mcbp, .litematic und .schem.');
   return schematicToProject(titel, raw);
 }
 

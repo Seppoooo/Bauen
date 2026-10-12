@@ -220,15 +220,17 @@ export class BlockRenderer {
     const info = blockInfo(type);
     const mach = (texName: string) => {
       const durchsichtig = art === 2 || info.translucent;
-      const m = new THREE.MeshLambertMaterial({
+      // Ungeschattetes Material + feste Seitenhelligkeit (Vertex-Farben) = Aussehen wie in Minecraft
+      const m = new THREE.MeshBasicMaterial({
         map: getTexture(texName),
+        vertexColors: true,
         transparent: durchsichtig,
         opacity: art === 2 ? 0.22 : 1,
         alphaTest: durchsichtig ? 0.02 : 0.5,
         depthWrite: !durchsichtig,
         side: shapeOf(type) === 'cross' ? THREE.DoubleSide : THREE.FrontSide
       });
-      if (art === 3) { m.emissive = new THREE.Color('#ffb200'); m.emissiveIntensity = 0.28; }
+      if (art === 3) m.color = new THREE.Color(1.3, 1.12, 0.72); // aktuelle Etappe leicht golden
       return m;
     };
     const t = info.tex;

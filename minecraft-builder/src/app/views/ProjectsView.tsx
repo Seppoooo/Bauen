@@ -6,6 +6,7 @@ import { deleteProject, listProjects, loadStored } from '../../builder/ProjectSt
 interface Props {
   project: BuildProject;
   actions: {
+    ladeUrl: (url: string, titel: string) => void;
     neu: () => void;
     demo: () => void;
     importieren: (f: File) => void;
@@ -15,6 +16,11 @@ interface Props {
     umbenennen: (name: string) => void;
   };
 }
+
+const MITGELIEFERT = [
+  { name: 'Hogwarts mit Berg', url: './projekte/hogwarts.mcbp.gz', info: '1,1 Mio. sichtbare Blöcke · 500 × 500 · 9 Etappen · braucht einen guten PC' },
+  { name: 'Hogwarts – nur Schloss', url: './projekte/hogwarts-schloss.mcbp.gz', info: '245.000 Blöcke · Schloss, Viadukt, Brückenkopf' }
+];
 
 /** Baupläne: aktuelles Projekt, gespeicherte Projekte, Import und Export */
 export function ProjectsView({ project, actions }: Props) {
@@ -38,12 +44,27 @@ export function ProjectsView({ project, actions }: Props) {
         <div className="reihe">
           <button type="button" onClick={actions.speichern}>Im Browser speichern</button>
           <button type="button" onClick={actions.exportieren}>Als JSON exportieren</button>
-          <button type="button" onClick={() => datei.current?.click()}>Importieren (.json, .litematic, .schem)</button>
+          <button type="button" onClick={() => datei.current?.click()}>Importieren (.json, .mcbp, .litematic, .schem)</button>
           <button type="button" onClick={actions.neu}>Neuer leerer Bauplan</button>
           <button type="button" onClick={actions.demo}>Beispielburg laden</button>
         </div>
-        <input ref={datei} id="dateiImport" type="file" accept=".json,.litematic,.schem" hidden
+        <input ref={datei} id="dateiImport" type="file" accept=".json,.mcbp,.gz,.litematic,.schem" hidden
           onChange={(e) => { const f = e.target.files?.[0]; if (f) actions.importieren(f); e.target.value = ''; }} />
+      </section>
+      <section className="karte">
+        <h2>Mitgelieferte Baupläne</h2>
+        <ul className="projektliste">
+          {MITGELIEFERT.map((p) => (
+            <li key={p.url}>
+              <div><strong>{p.name}</strong><small>{p.info}</small></div>
+              <button type="button" onClick={() => actions.ladeUrl(p.url, p.name)}>Öffnen</button>
+            </li>
+          ))}
+          <li>
+            <div><strong>Beispielburg</strong><small>9.667 Blöcke · eingerichtet · 8 Etappen</small></div>
+            <button type="button" onClick={actions.demo}>Öffnen</button>
+          </li>
+        </ul>
       </section>
       <section className="karte">
         <h2>Gespeicherte Baupläne</h2>

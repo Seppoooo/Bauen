@@ -87,6 +87,9 @@ export function baseMaterial(id: string): string {
 
 const cache = new Map<string, BlockTypeInfo>();
 
+/** Alle bisher benutzten Blocktypen (z. B. um Farben aus Originaltexturen zu übernehmen) */
+export const allBlockInfos = () => cache.values();
+
 export function blockInfo(id: string): BlockTypeInfo {
   const vorhanden = cache.get(id);
   if (vorhanden) return vorhanden;
