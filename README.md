@@ -34,6 +34,12 @@ Eine Website mit einer detaillierten Bauanleitung für ein riesiges Hogwarts-Sch
 Gebaut wird in **Minecraft 26.3** (Java). Die Schematics nutzen das Datenformat von 1.20.1; Litematica konvertiert sie beim Laden automatisch auf die eigene Version.
 Lege das Areal so, dass Y 0 ungefähr auf Höhe 60 liegt – dann endet die höchste Turmspitze bei ca. Y 270 (Bauhöhengrenze 320).
 
+## Minecraft 3D Builder
+
+Im Ordner [`minecraft-builder/`](minecraft-builder/README.md) liegt eine eigenständige React-/TypeScript-/Vite-App mit Three.js:
+2D-Plan, 3D-Ansicht mit Flugsteuerung, Etappen, Stockwerk- und Bauteilfilter, Materialliste, Team-To-dos,
+Live-Spieler-Kopplung und Import von `.json`, `.litematic` und `.schem`. Start: `cd minecraft-builder && npm install && npm run dev`.
+
 ## Ansehen
 
 Einfach `index.html` im Browser öffnen, oder einen lokalen Server starten:
