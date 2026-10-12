@@ -11,7 +11,8 @@
     "typecheck": "tsc -b --noEmit",
     "demo": "node scripts/generate-demo-castle.mjs",
     "hogwarts": "node scripts/export-hogwarts.mjs",
-    "single": "node scripts/build-single-html.mjs"
+    "single": "node scripts/build-single-html.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -24,6 +25,7 @@
     "@types/three": "0.160.0",
     "@vitejs/plugin-react": "4.3.1",
     "typescript": "5.5.4",
-    "vite": "5.4.20"
+    "vite": "5.4.20",
+    "vitest": "^2.1.9"
   }
 }
