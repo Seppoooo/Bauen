@@ -72,12 +72,12 @@
   const LEGENDE = [
     ['Hauptschloss', 250, 128], ['Innenhof', 250, 205], ['Große Halle', 250, 164], ['Bibliothek', 214, 214],
     ['Westflügel', 186, 188], ['Ostflügel', 315, 181], ['Eingang & Brücke', 250, 322],
-    ['Gewächshäuser', 86, 220], ['Quidditch-Feld', 425, 350], ['Hagrids Hütte', 341, 428], ['Brückenkopf & Steinkreis', 272, 400], ['Hogsmeade', 420, 70], ['Eulerei', 100, 96], ['Leuchtturm', 482, 478]
+    ['Gewächshäuser', 86, 220], ['Quidditch-Feld', 425, 350], ['Hagrids Hütte', 341, 428], ['Brückenkopf & Steinkreis', 272, 400], ['Hogsmeade', 420, 70], ['Eulerei', 100, 96], ['Großer Burgturm', 64, 336], ['Leuchtturm', 482, 478]
   ];
 
   function zeichneLageplan() {
     const ns = 'http://www.w3.org/2000/svg';
-    const bilder = ['berg', 'hauptschloss', 'bruecke', 'brueckenkopf', 'hagrid', 'gewaechshaeuser', 'quidditch', 'hogsmeade', 'eulerei'].map((id) => {
+    const bilder = ['berg', 'hauptschloss', 'bruecke', 'brueckenkopf', 'hagrid', 'gewaechshaeuser', 'quidditch', 'hogsmeade', 'eulerei', 'burgturm'].map((id) => {
       const [x, , z] = PLATZ[id];
       const m = modell(id), c = document.createElement('canvas');
       R.draufsicht(c, m, 1, false, id === 'berg');

@@ -172,7 +172,7 @@
   function texturen(key) {
     const b = block(key), id = b.id.replace('minecraft:', ''), c = rgb(b.farbe);
     const eine = (name, m) => { const i = kachel(name, m); return { o: i, s: i, u: i }; };
-    const PLANKS = { spruce: '#6e5131', dark_oak: '#4a3220', oak: '#a0814f' };
+    const PLANKS = { spruce: '#6e5131', dark_oak: '#4a3220', oak: '#a0814f', birch: '#c5b37b' };
     if (id === 'grass_block') return { o: kachel('gras', MUSTER.gras([93, 154, 59])), s: kachel('grasseite', MUSTER.grasseite([93, 154, 59], [134, 96, 67])), u: kachel('erde', MUSTER.rauschen([134, 96, 67])) };
     if (id === 'dirt_path') return { o: kachel('pfad', MUSTER.rauschen([148, 121, 63])), s: kachel('erde', MUSTER.rauschen([134, 96, 67])), u: kachel('erde', MUSTER.rauschen([134, 96, 67])) };
     if (id.endsWith('_log')) {
@@ -187,11 +187,13 @@
       const art = id.includes('mossy') ? 'moos' : id.includes('cracked') ? 'riss' : '';
       return eine('steinziegel_' + art, MUSTER.ziegel(rgb('#7e7e7e'), art));
     }
+    if (id === 'bricks' || id.startsWith('brick_')) return eine('ziegel', MUSTER.ziegel(rgb('#96503f'), ''));
+    if (id === 'cobbled_deepslate') return eine(id, MUSTER.bruch(rgb('#4d4d52'), false));
     if (id === 'stone' || id === 'andesite') return eine(id, flaeche(c, id === 'andesite' ? 0.18 : 0.08));
     if (id.includes('cobblestone')) return eine(id, MUSTER.bruch(rgb('#7a7a7a'), id.includes('mossy')));
     if (id.includes('deepslate_tile')) return eine('tiefenschiefer', MUSTER.fliesen(rgb('#3e3e45')));
     if (id.includes('planks') || id.includes('_slab') && id.includes('spruce') || id.includes('spruce_stairs') || id.includes('fence')) {
-      const art = id.startsWith('dark_oak') ? 'dark_oak' : 'spruce';
+      const art = id.startsWith('dark_oak') ? 'dark_oak' : id.startsWith('birch') ? 'birch' : 'spruce';
       return eine(art + '_planks', MUSTER.bretter(rgb(PLANKS[art])));
     }
     if (id.endsWith('leaves')) return eine(id, MUSTER.laub(c));
@@ -210,6 +212,9 @@
       }
     });
     if (id.startsWith('deepslate_brick')) return eine('tiefenschieferziegel', MUSTER.ziegel(rgb('#4a4a50'), ''));
+    if (id === 'iron_bars') return eine(id, (px, r) => {
+      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) { const stab = x % 4 === 1 || x % 4 === 2 || y === 0 || y === 15; px(x, y, [130, 134, 138], (x % 4 === 1 ? 1.1 : 0.85) * (0.95 + r() * 0.08), stab ? 255 : 0); }
+    });
     if (id === 'water') return eine('wasser', MUSTER.wasser([58, 111, 216]));
     if (id === 'lantern') return eine('laterne', MUSTER.laterne());
     if (id === 'ladder') return eine('leiter', MUSTER.leiter(rgb('#a0773f')));
@@ -508,6 +513,7 @@
     { name: 'Hauptturm', pos: [285, 205, 160], ziel: [250, 190, 132] },
     { name: 'Hogsmeade', pos: [420, 30, 140], ziel: [420, 10, 70] },
     { name: 'Eulerei', pos: [130, 50, 130], ziel: [100, 45, 96] },
+    { name: 'Großer Burgturm', pos: [64, 30, 372], ziel: [64, 40, 336] },
     { name: 'Leuchtturm', pos: [445, 20, 470], ziel: [482, 20, 478] },
     { name: 'Steinkreis', pos: [262, 124, 432], ziel: [250, 116, 400] },
     { name: 'Hagrids Hütte', pos: [341, 14, 460], ziel: [339, 8, 446] },

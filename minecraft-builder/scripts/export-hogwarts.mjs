@@ -23,12 +23,13 @@ const STEPS = [
   { id: 1, name: 'Berg formen', description: 'Fels, Erde und Gras des Berges, Schlucht, Südhügel, See und Fluss' },
   { id: 2, name: 'Fundament & Sockel', description: 'Bruchstein-Sockel des Schlosses und Pfeilerfüße der Brücke' },
   { id: 3, name: 'Mauern Erdgeschoss', description: 'Außenmauern, Fenster und Fassadenrelief im Erdgeschoss' },
-  { id: 4, name: 'Obergeschosse & Türme', description: 'Mauern der Obergeschosse, Große Halle und alle 15 Türme' },
+  { id: 4, name: 'Obergeschosse & Türme', description: 'Mauern der Obergeschosse, Große Halle und alle 15 Türme mit Zinnenkränzen, Pechnasen und Fachwerk-Obergeschossen' },
   { id: 5, name: 'Dächer & Turmhelme', description: 'Satteldächer, Gauben, Turmhelme, Schornsteine und Blitzableiter' },
   { id: 6, name: 'Innenausbau', description: 'Böden, Treppen, Große Halle, Bibliothek, Klassenzimmer und Licht' },
-  { id: 7, name: 'Brücke & Brückenkopf', description: 'Zweistöckiges Viadukt, Torhaus und Steinkreis auf dem Südhügel' },
+  { id: 7, name: 'Brücke & Brückenkopf', description: 'Zweistöckiges Viadukt, Torhaus mit Fallgitter und Steinkreis auf dem Südhügel' },
   { id: 8, name: 'Gärten & Außenanlagen', description: 'Schlossterrasse, Innenhof, Hogsmeade, Eulerei, Gewächshäuser, Hagrids Hütte, Quidditch-Feld, Leuchtturm, Steg und Bootshaus' },
-  { id: 9, name: 'Wald & Natur', description: 'Selbstgebaute Bäume, Blumen, Seerosen und Zuckerrohr' }
+  { id: 9, name: 'Wald & Natur', description: 'Selbstgebaute Bäume, Blumen, Seerosen und Zuckerrohr' },
+  { id: 10, name: 'Großer Burgturm', description: 'Wehrturm am Seeufer: Sockel, Mauerwerk, Pechnasen, Obergeschoss, Ecktürmchen und Ziegeldächer' }
 ];
 const FLOORS = [
   { id: 0, name: 'Berg & Gelände' },
@@ -43,13 +44,15 @@ const PARTS = ['foundation', 'floor', 'wall', 'interior_wall', 'window', 'door',
 
 const GELAENDE = /^(stone|andesite|dirt|grass_block|sand|gravel|coarse_dirt|moss_block|water|dirt_path)$/;
 const NATUR = /(_log|_leaves)$|^(poppy|dandelion|cornflower|fern|allium|azure_bluet|oxeye_daisy|lily_pad|sugar_cane|flowering_azalea)$/;
-const DACH = /deepslate_tile|deepslate_brick_stairs|lightning_rod/;
-const DEKO = /lantern|chain|candle|carpet|bookshelf|lectern|_wool|campfire|_slab$|spruce_stairs|pumpkin|azalea|moss|fence|concrete/;
+const DACH = /deepslate_tile|deepslate_brick_stairs|lightning_rod|^brick|^bricks$/;
+const DEKO = /lantern|chain|iron_bars|candle|carpet|bookshelf|lectern|_wool|campfire|_slab$|spruce_stairs|pumpkin|azalea|moss|fence|concrete/;
 
 function teilVon(type, y0Lokal, bau) {
   if (/glass|pane/.test(type)) return 'window';
   if (type === 'ladder') return 'stairs';
   if (DACH.test(type)) return 'roof';
+  // Fachwerk-Obergeschosse der Türme gehören zum Turmbau, nicht zum Wald oder Innenausbau
+  if (bau === 'hauptschloss' && y0Lokal >= 25 && /(_log|spruce_stairs|birch_planks)$/.test(type)) return type === 'spruce_stairs' ? 'roof' : 'wall';
   if (bau === 'hauptschloss' && y0Lokal <= 3 && /cobblestone$/.test(type)) return 'foundation';
   if (bau === 'bruecke' && y0Lokal <= 8 && /cobblestone$/.test(type)) return 'foundation';
   if (/(dark_oak|spruce)_planks/.test(type)) return 'floor';
@@ -61,10 +64,11 @@ function teilVon(type, y0Lokal, bau) {
 function etappe(bau, teil, type, floor, y0Lokal) {
   if (bau === 'berg') return GELAENDE.test(type) ? 1 : NATUR.test(type) ? 9 : 8;
   if (bau === 'bruecke' || bau === 'brueckenkopf') return teil === 'foundation' ? 2 : 7;
+  if (bau === 'burgturm') return 10;
   if (bau !== 'hauptschloss') return 8;
   if (teil === 'foundation') return 2;
   if (teil === 'roof') return 5;
-  if (GELAENDE.test(type) || NATUR.test(type) || (type === 'water' && y0Lokal <= 5)) return 8; // Gärten, Innenhof, Brunnen
+  if (GELAENDE.test(type) || NATUR.test(type) && teil !== 'wall' || (type === 'water' && y0Lokal <= 5)) return 8; // Gärten, Innenhof, Brunnen
   if (teil === 'floor' || teil === 'stairs' || teil === 'decoration') return 6;
   if (type === 'campfire' || type === 'chiseled_stone_bricks' && y0Lokal > 22) return 5;
   return floor <= 1 ? 3 : 4;

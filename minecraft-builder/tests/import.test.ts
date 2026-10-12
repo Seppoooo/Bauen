@@ -123,13 +123,28 @@ describe('Hogwarts-Baupläne (.mcbp)', () => {
     expect(p.steps.length).toBe(7);
     pruefeProjekt(p);
   });
-  it('mit Berg: über eine Million Blöcke, 9 Etappen, alle gültig', async () => {
+  it('mit Berg: über eine Million Blöcke, 10 Etappen, alle gültig', async () => {
     const p = await readBinaryProject(ab(readFileSync(join(__dirname, '..', 'public', 'projekte', 'hogwarts.mcbp.gz'))));
     expect(p.blocks.length).toBeGreaterThan(1_000_000);
-    expect(p.steps.map((s) => s.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(p.steps.map((s) => s.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     pruefeProjekt(p);
     // Schloss steht auf dem Plateau (Y 111), das Wasser am Rand auf Y 3
     expect(p.blocks.some((b) => b.type === 'water' && b.x === 0 && b.y === 3)).toBe(true);
+    // Großer Burgturm als eigene Etappe am Seeufer, mit Ziegeldächern
+    const turm = p.blocks.filter((b) => b.step === 10);
+    expect(turm.length).toBeGreaterThan(5000);
+    expect(turm.every((b) => b.x >= 53 && b.x < 76 && b.z >= 325 && b.z < 348)).toBe(true);
+    expect(turm.some((b) => b.type === 'brick_stairs')).toBe(true);
+  });
+  it('Schloss-Details: Fallgitter, Zugbrücke mit Ketten, Fachwerk und Drachenbrunnen', async () => {
+    const p = await readBinaryProject(ab(readFileSync(join(__dirname, '..', 'public', 'projekte', 'hogwarts-schloss.mcbp.gz'))));
+    const anzahl = (t: string) => p.blocks.filter((b) => b.type === t).length;
+    expect(anzahl('iron_bars')).toBeGreaterThanOrEqual(8);
+    expect(anzahl('chain')).toBeGreaterThan(10);
+    expect(anzahl('birch_planks')).toBeGreaterThan(100);
+    expect(anzahl('spruce_fence')).toBeGreaterThanOrEqual(10);
+    // Fachwerk gehört zur Turm-Etappe, nicht zum Wald
+    expect(p.blocks.filter((b) => b.type === 'birch_planks').every((b) => b.step === 4)).toBe(true);
   });
   it('lehnt falsche Dateien ab', async () => {
     await expect(readBinaryProject(ab(gzipSync(Buffer.from('kein bauplan'))))).rejects.toThrow(/mcbp/);

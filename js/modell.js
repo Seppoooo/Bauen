@@ -148,6 +148,16 @@
   treppen('sbs', 'minecraft:stone_brick_stairs', 'Steinziegeltreppe', '#7e7e7e');
   treppen('sbt', 'minecraft:stone_brick_stairs', 'Steinziegeltreppe', '#7e7e7e', 'top');
   treppen('dbs', 'minecraft:deepslate_brick_stairs', 'Tiefenschieferziegeltreppe', '#46464c');
+  treppen('spt', 'minecraft:spruce_stairs', 'Fichtenholztreppe', '#6e5131', 'top');
+  treppen('bks', 'minecraft:brick_stairs', 'Ziegeltreppe', '#96503f');
+  def('bricks', 'minecraft:bricks', 'Ziegelsteine', '#96503f');
+  def('brick_slab', 'minecraft:brick_slab', 'Ziegelstufe', '#96503f', { form: 'stufe', deckend: false, props: { type: 'bottom', ...WL } });
+  def('cobbled_deepslate', 'minecraft:cobbled_deepslate', 'Bruchtiefenschiefer', '#4d4d52');
+  // Eisengitter fürs Fallgitter
+  def('iron_bars_ew', 'minecraft:iron_bars', 'Eisengitter', '#8a8d90',
+    { form: 'scheibe_ew', deckend: false, props: { east: 'true', north: 'false', south: 'false', west: 'true', ...WL } });
+  def('iron_bars_ns', 'minecraft:iron_bars', 'Eisengitter', '#8a8d90',
+    { form: 'scheibe_ns', deckend: false, props: { east: 'false', north: 'true', south: 'true', west: 'false', ...WL } });
   def('stone_brick_slab_top', 'minecraft:stone_brick_slab', 'Steinziegelstufe', '#7e7e7e',
     { form: 'stufe', deckend: false, props: { type: 'top', ...WL } });
   def('cobblestone_wall', 'minecraft:cobblestone_wall', 'Bruchsteinmauer', '#6b6b6b',
@@ -254,6 +264,9 @@
     const r = hash(x, y, z);
     if (r < (y < 10 ? 0.14 : 0.05)) return 'mossy_stone_bricks';
     if (r < 0.2 && r > 0.13) return 'cracked_stone_bricks';
+    // vereinzelt Tuff und Bruchstein – gemischte Textur wie bei alten Burgmauern
+    if (r > 0.972) return 'tuff';
+    if (r > 0.958) return 'cobblestone';
     return 'stone_bricks';
   }
   function sockel(x, y, z) {
@@ -351,6 +364,9 @@
         const glas = (o) => (y === fy + 4 ? 'sg_yellow_' + o : 'pane_' + o);
         for (let x = x0 + 2; x <= x1 - 2; x++) { const q = (x - x0) % 4; if (q === 1 || q === 3) { m.set(x, y, z0, glas('ew')); m.set(x, y, z1, glas('ew')); } }
         for (let z = z0 + 2; z <= z1 - 2; z++) { const q = (z - z0) % 4; if (q === 1 || q === 3) { m.set(x0, y, z, glas('ns')); m.set(x1, y, z, glas('ns')); } }
+        // Mittelpfosten aus hellem Stein rahmt die Lanzetten
+        for (let x = x0 + 2; x <= x1 - 2; x++) if ((x - x0) % 4 === 2) { m.set(x, y, z0, 'polished_andesite'); m.set(x, y, z1, 'polished_andesite'); }
+        for (let z = z0 + 2; z <= z1 - 2; z++) if ((z - z0) % 4 === 2) { m.set(x0, y, z, 'polished_andesite'); m.set(x1, y, z, 'polished_andesite'); }
       }
     }
     // Trennwände quer zur Längsachse alle 12 Blöcke, mit Durchgang
@@ -501,6 +517,11 @@
             for (let y = yt - 8; y <= yt - 1; y++) setze(a, y, 1, mauer);
             for (let y = yt - 7; y <= yt + 2; y++) setze(a, y, 2, y <= yt ? mauer : 'cobblestone_wall');
             setze(a, yt + 3, 2, 'lightning_rod');
+          } else if (!halle && !ecke && p % 8 === 0) {
+            // gestufter Strebepfeiler: unten zwei Blöcke tief mit Abschrägung, darüber einer
+            for (let y = y0; y <= y0 + 4; y++) setze(a, y, 2, y === y0 ? 'cobblestone' : mauer);
+            setze(a, y0 + 5, 2, 'sbs_' + sd.zurWand);
+            setze(a, y0, 3, 'sbs_' + sd.zurWand);
           }
         } else {
           setze(a, y0 + 1, 1, 'sbs_' + sd.zurWand);
@@ -567,6 +588,8 @@
           if (m.get(l1[0], fy + 4, l1[1]) !== 'air') m.set(l1[0], fy + 4, l1[1], 'sbt_' + f1);
           if (m.get(l2[0], fy + 4, l2[1]) !== 'air') m.set(l2[0], fy + 4, l2[1], 'sbt_' + f2);
           m.set(wx, fy + 5, wz, 'chiseled_stone_bricks');
+          // Laibung aus hellem Stein neben der Scheibe
+          for (let y = fy + 2; y <= fy + 3; y++) for (const [lx, lz] of [l1, l2]) if (m.get(lx, y, lz) !== 'air') m.set(lx, y, lz, 'polished_andesite');
         }
       }
       const decke = boeden[boeden.indexOf(fy) + 1];
@@ -613,12 +636,55 @@
       if (m.get(cx + dx, y0, cz + dz) === 'air') m.set(cx + dx, y0, cz + dz, mauer);
       if (m.get(cx + dx, y0 + 1, cz + dz) === 'air') m.set(cx + dx, y0 + 1, cz + dz, 'sbs_' + rr);
     }
-    const R = r + 1, H = Math.round(R * 2.6) + 2;
-    const spitze = kegel(m, cx, cz, R, top + 1, H, 'deepslate_tiles', 'dts');
+    const richtung = (dx, dz) => Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+    const ring = (rr, f) => {
+      for (let dz = -rr - 1; dz <= rr + 1; dz++) for (let dx = -rr - 1; dx <= rr + 1; dx++) {
+        if (imKreis(dx, dz, rr) && !imKreis(dx, dz, rr - 1)) f(dx, dz);
+      }
+    };
+    let R = r + 1, dachY = top + 1;
+    if (o.fachwerk) {
+      // Auskragendes Fachwerk-Obergeschoss: Fichtenbalken, helle Gefache, Andreaskreuze, Fenster zu allen Seiten
+      const rf = r + 1, h = 5;
+      ring(rf, (dx, dz) => {
+        m.set(cx + dx, top - 1, cz + dz, 'spt_' + richtung(dx, dz));
+        m.set(cx + dx, top, cz + dz, 'spruce_planks');
+        const a = Math.abs(dz) >= Math.abs(dx) ? dx : dz, langsX = Math.abs(dz) >= Math.abs(dx);
+        for (let y = top + 1; y <= top + h; y++) {
+          const k = y - top;
+          let key = 'birch_planks';
+          if (k === 1 || k === h) key = langsX ? 'spruce_log_x' : 'spruce_log_z';
+          else if (Math.abs(a) === 1 || Math.abs(a) === 4 || Math.abs(dx) === Math.abs(dz)) key = 'spruce_log';
+          else if (a === 0) key = k <= 3 ? (langsX ? 'pane_ew' : 'pane_ns') : 'spruce_log';
+          else if ((Math.abs(a) === 2 && k === 2) || (Math.abs(a) === 3 && k === 3)) key = 'spruce_log';
+          m.set(cx + dx, y, cz + dz, key);
+        }
+      });
+      for (let dz = -rf; dz <= rf; dz++) for (let dx = -rf; dx <= rf; dx++) {
+        if (imKreis(dx, dz, rf - 1)) { m.set(cx + dx, top, cz + dz, 'spruce_planks'); for (let y = top + 1; y <= top + h; y++) m.set(cx + dx, y, cz + dz, 'air'); }
+      }
+      m.set(cx, top + 1, cz - r + 1, 'ladder_s');
+      m.set(cx, top + h - 1, cz, 'lantern_h');
+      R = rf + 1; dachY = top + h + 1;
+      ring(R, (dx, dz) => m.set(cx + dx, dachY - 1, cz + dz, 'spt_' + richtung(dx, dz)));
+    }
+    const H = Math.round(R * 2.6) + 2;
+    const spitze = kegel(m, cx, cz, R, dachY, H, 'deepslate_tiles', 'dts');
     m.set(cx, spitze, cz, 'lightning_rod');
+    if (o.kranz) {
+      // Zinnenkranz auf Kragsteinen mit Pechnasen (Lücken zwischen den Konsolen) rund um den Helmfuß
+      const rk = r + 2;
+      ring(rk, (dx, dz) => {
+        const x = cx + dx, z = cz + dz, frei = (y) => m.get(x, y, z) === 'air';
+        if ((dx + dz) % 2 === 0 && frei(top - 1)) m.set(x, top - 1, z, 'sbt_' + richtung(dx, dz));
+        if (frei(top)) m.set(x, top, z, 'polished_andesite');
+        if (frei(top + 1)) m.set(x, top + 1, z, mauer);
+        if ((dx + dz) % 2 === 0 && frei(top + 2)) m.set(x, top + 2, z, mauer);
+      });
+    }
     // Dachgauben im Turmhelm (beim Hauptturm zwei Reihen)
     for (const anteil of r >= 7 ? [0.25, 0.55] : [0.32]) {
-      const k = Math.floor(H * anteil), y = top + 1 + k, rk = R * (1 - k / H);
+      const k = Math.floor(H * anteil), y = dachY + k, rk = R * (1 - k / H);
       for (const [ux, uz, sch, innen] of [[1, 0, 'pane_ns', 'w'], [-1, 0, 'pane_ns', 'e'], [0, 1, 'pane_ew', 'n'], [0, -1, 'pane_ew', 's']]) {
         let d = Math.ceil(rk) + 1;
         while (d > 0 && m.get(cx + ux * d, y, cz + uz * d) === 'air') d--;
@@ -691,20 +757,25 @@
         }
         for (const [x, z, f] of [[cx + 5, cz, 'sps_e'], [cx - 5, cz, 'sps_w'], [cx, cz + 5, 'sps_s'], [cx, cz - 5, 'sps_n']]) if (m.get(x, 4, z) === 'air') m.set(x, 4, z, f);
       } else {
-        // Brunnen
-        for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
-          if (!imKreis(dx, dz, 4)) continue;
-          const innen = imKreis(dx, dz, 3);
-          m.set(cx + dx, 3, cz + dz, 'stone_bricks');
-          m.set(cx + dx, 4, cz + dz, innen ? 'water' : 'stone_bricks');
-        }
-        for (let y = 4; y <= 5; y++) m.set(cx, y, cz, 'polished_andesite');
-        m.set(cx, 6, cz, 'chiseled_stone_bricks'); m.set(cx, 7, cz, 'lantern');
         for (let z = tz; z <= tz + 10; z++) for (let x = tx; x <= tx + 10; x++) {
           const d = Math.hypot(x - cx, z - cz);
           if (d > 4.6 && d < 5.8) m.set(x, 3, z, 'gravel');
         }
+        drachenbrunnen(m, cx, cz);
       }
+    }
+    // Gestufte Strebepfeiler außen vor der Terrassenmauer, alle 8 Blöcke
+    for (let z = 0; z < m.sz; z++) for (let x = 0; x < m.sx; x++) {
+      const d = rand(x, z);
+      if (d <= 0 || d > 1.3) continue;
+      const nb = [['n', 0, -1], ['s', 0, 1], ['w', -1, 0], ['e', 1, 0]].map(([f, dx, dz]) => [f, rand(x + dx, z + dz)]).sort((a, b) => a[1] - b[1]);
+      const f = nb[0][0], entlang = f === 'n' || f === 's' ? x : z;
+      if (entlang % 8 !== 0 || nb[0][1] > d - 0.6) continue;
+      let frei = true;
+      for (let y = 0; y <= 4; y++) if (m.get(x, y, z) !== 'air') frei = false;
+      if (!frei) continue;
+      for (let y = 0; y <= 2; y++) m.set(x, y, z, y === 0 ? sockel(x, y, z) : mauer(x, y, z));
+      m.set(x, 3, z, 'sbs_' + f);
     }
     // Sanfte Wiesenhügel statt glatter Rasenflächen (Wege, Gärten und Mauern bleiben frei)
     const frei4 = (k) => k === 'air' || k === 'grass_block';
@@ -729,6 +800,220 @@
       if (r < 0.1) m.set(x, 4 + hoch, z, blumen[Math.floor(hash(x, 42, z) * blumen.length)]);
       else if (r < 0.13) m.set(x, 4 + hoch, z, 'fern');
     }
+  }
+
+  /* ================================================== Großer Burgturm (nach Vorlage „Big castle tower“), 23 × 70 × 23 */
+  function erzeugeBurgturm() {
+    const m = new Modell(23, 70, 23);
+    const A = 4, B = 18, C = 11; // Kernmauer x/z 4..18, Mitte 11
+    // Mauerwerk: Bruchtiefenschiefer, Tuff, Andesit, Stein und Bruchstein gemischt, unten bemoost
+    const stein = (x, y, z) => {
+      const r = hash(x, y, z), q = hash(x >> 1, y, z >> 1);
+      if (y < 12 && r < 0.1) return 'mossy_cobblestone';
+      if (q < 0.34) return 'cobbled_deepslate';
+      if (q < 0.54) return 'tuff';
+      if (q < 0.66) return 'andesite';
+      if (q < 0.78) return 'stone';
+      if (q < 0.9) return 'cobblestone';
+      return r < 0.5 ? 'deepslate_tiles' : 'polished_andesite';
+    };
+    const ecke = (x, y, z) => { const r = hash(x, y, z); return r < 0.25 ? 'mossy_stone_bricks' : r < 0.35 ? 'cracked_stone_bricks' : 'stone_bricks'; };
+    const flaeche = (o, f) => { // alle vier Seiten einer Ebene im Abstand o von der Kernmauer: f(x, z, a, seite)
+      for (let a = A - o; a <= B + o; a++) {
+        f(a, A - o, a, 'n'); f(a, B + o, a, 's'); f(A - o, a, a, 'w'); f(B + o, a, a, 'e');
+      }
+    };
+    const innenR = { n: 's', s: 'n', w: 'e', e: 'w' }; // Treppe zeigt mit der hohen Seite zur Mauer
+    const zurMauer = { n: 's', s: 'n', w: 'e', e: 'w' };
+    const frei = (x, y, z, k) => { if (m.drin(x, y, z) && m.get(x, y, z) === 'air') m.set(x, y, z, k); };
+    // Kern: Mauern bis y 41, Böden alle 7 Blöcke
+    for (let y = 0; y <= 41; y++) for (let z = A; z <= B; z++) for (let x = A; x <= B; x++) {
+      const rand = x === A || x === B || z === A || z === B;
+      if (rand) m.set(x, y, z, stein(x, y, z));
+      else if (y % 7 === 0) m.set(x, y, z, 'spruce_planks');
+    }
+    // Sockel: zwei Stufen nach außen
+    flaeche(1, (x, z, a, s) => { m.set(x, 0, z, sockel(x, 0, z)); m.set(x, 1, z, 'sbs_' + zurMauer[s]); });
+    flaeche(2, (x, z, a, s) => m.set(x, 0, z, 'sbs_' + zurMauer[s]));
+    // Eckquader: L-förmige Steinziegel-Lisenen bis unter die Pechnasen
+    for (const [cx, cz, sx, sz] of [[A, A, -1, -1], [B, A, 1, -1], [A, B, -1, 1], [B, B, 1, 1]]) {
+      for (let y = 2; y <= 38; y++) {
+        for (let k = 0; k <= 2; k++) { m.set(cx + sx, y, cz - sz * k, ecke(cx + sx, y, cz - sz * k)); m.set(cx - sx * k, y, cz + sz, ecke(cx - sx * k, y, cz + sz)); }
+        m.set(cx + sx, y, cz + sz, ecke(cx + sx, y, cz + sz));
+      }
+    }
+    // Schießscharten und kleine Fenster, unregelmäßig wie im Vorbild
+    const schlitze = [[8, 7], [14, 13], [9, 20], [22, 7], [15, 15], [27, 10], [33, 6], [33, 13], [20, 12]];
+    for (const [y, a] of schlitze) flaeche(0, (x, z, aa, s) => {
+      if (aa !== a + (s === 'e' || s === 'n' ? 1 : 0) % 2) return;
+      m.set(x, y, z, s === 'n' || s === 's' ? 'pane_ew' : 'pane_ns'); m.set(x, y + 1, z, s === 'n' || s === 's' ? 'pane_ew' : 'pane_ns');
+      const [ox, oz] = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] }[s];
+      frei(x + ox, y - 1, z + oz, 'stone_brick_slab_top');
+    });
+    // Eingang im Süden: Tür mit Steinbogen und Treppenstufen
+    m.set(C, 1, B, 'door_s_l'); m.set(C, 2, B, 'door_s_u');
+    for (let y = 1; y <= 3; y++) { m.set(C - 1, y, B, 'deepslate_bricks'); m.set(C + 1, y, B, 'deepslate_bricks'); }
+    m.set(C, 3, B, 'chiseled_stone_bricks'); m.set(C - 1, 4, B, 'sbs_e'); m.set(C + 1, 4, B, 'sbs_w'); m.set(C, 4, B, 'deepslate_bricks');
+    m.set(C, 1, B + 1, 'stone_bricks'); m.set(C, 0, B + 1, 'stone_bricks'); m.set(C, 1, B + 2, 'sbs_n'); m.set(C, 0, B + 2, 'sbs_n');
+    for (const dx of [-1, 1]) { m.set(C + dx, 1, B + 1, 'stone_brick_wall'); m.set(C + dx, 2, B + 1, 'lantern'); }
+    // Steinerner Balkon mit Tür auf halber Höhe (Süden)
+    for (let x = C - 3; x <= C + 3; x++) {
+      m.set(x, 16, B + 1, 'stone_bricks'); m.set(x, 16, B + 2, 'stone_brick_slab_top');
+      if ((x - C) % 3 === 0) { m.set(x, 15, B + 1, 'sbt_n'); m.set(x, 15, B + 2, 'sbt_n'); }
+      m.set(x, 17, B + 2, Math.abs(x - C) === 3 ? 'stone_bricks' : 'stone_brick_wall');
+    }
+    for (const z of [B + 1]) { m.set(C - 3, 17, z, 'stone_brick_wall'); m.set(C + 3, 17, z, 'stone_brick_wall'); }
+    m.set(C, 17, B, 'door_s_l'); m.set(C, 18, B, 'door_s_u'); m.set(C, 19, B, 'spruce_planks');
+    // Hölzerner Wehrerker an der Westseite mit Ziegeldach
+    for (let z = 7; z <= 15; z++) {
+      for (let x = 1; x <= 3; x++) m.set(x, 12, z, 'spruce_planks');
+      for (let y = 13; y <= 16; y++) {
+        const pfosten = z === 7 || z === 11 || z === 15;
+        m.set(0, y, z, pfosten ? 'spruce_log' : y === 13 ? 'spruce_log_z' : y === 15 && z % 2 ? 'air' : 'spruce_planks');
+        if (z === 7 || z === 15) for (let x = 1; x <= 3; x++) m.set(x, y, z, x === 3 ? 'spruce_log' : 'spruce_planks');
+      }
+      m.set(0, 12, z, 'spruce_log_z');
+      if (z % 4 === 3) { m.set(1, 11, z, 'spt_e'); m.set(2, 11, z, 'spt_e'); m.set(3, 11, z, 'spt_e'); m.set(2, 10, z, 'spt_e'); }
+      m.set(0, 17, z, 'bks_e'); m.set(1, 18, z, 'bks_e'); m.set(2, 19, z, 'bks_e'); m.set(1, 17, z, 'bricks'); m.set(2, 17, z, 'bricks'); m.set(2, 18, z, 'bricks');
+      for (let x = 1; x <= 3; x++) if (m.get(x, 16, z) === 'air') m.set(x, 16, z, 'air');
+    }
+    for (let z = 7; z <= 15; z++) { for (let y = 17; y <= 19; y++) m.set(3, y, z, 'bricks'); m.set(3, 20, z, 'bks_e'); }
+    for (const z of [6, 16]) for (const [x, y] of [[0, 17], [1, 18], [2, 19], [3, 20]]) m.set(x, y, z, 'brick_slab');
+    for (let z = 9; z <= 13; z++) for (let y = 13; y <= 15; y++) m.set(A, y, z, 'air'); // Durchgang vom Turm
+    m.set(2, 15, 11, 'lantern_h');
+    // Pechnasen: Konsolen (Mauerstütze + Kopftreppe) unter der vorkragenden Obergeschoss-Mauer
+    flaeche(1, (x, z, a, s) => {
+      if (a % 2 === 1) { m.set(x, 39, z, 'stone_brick_wall'); m.set(x, 40, z, 'sbt_' + zurMauer[s]); }
+      m.set(x, 41, z, (a % 4 === 1) ? 'chiseled_stone_bricks' : 'stone_bricks');
+    });
+    // Obergeschoss (eine Ebene vorgekragt): Mauern y 42..49 mit drei Spitzbogenfenstern je Seite
+    for (let y = 42; y <= 49; y++) flaeche(1, (x, z, a, s) => {
+      const p = a - (A - 1); // 0..16
+      const fenster = [3, 4, 5, 7, 8, 9, 11, 12, 13].includes(p) && p !== 0;
+      const mitte = p === 4 || p === 8 || p === 12, rand = p === 3 || p === 5 || p === 7 || p === 9 || p === 11 || p === 13;
+      const pane = s === 'n' || s === 's' ? 'pane_ew' : 'pane_ns';
+      let k = ecke(x, y, z);
+      if (y === 42) k = 'polished_andesite';
+      else if (fenster && y >= 43 && y <= 46) k = pane;
+      else if (fenster && y === 47) k = mitte ? pane : 'sbt_' + (rand && [3, 7, 11].includes(p) ? (s === 'n' || s === 's' ? 'w' : 'n') : (s === 'n' || s === 's' ? 'e' : 's'));
+      else if (fenster && y === 48 && mitte) k = 'chiseled_stone_bricks';
+      if (p === 0 || p === 16) k = 'deepslate_bricks';
+      m.set(x, y, z, k);
+    });
+    for (let z = A; z <= B; z++) for (let x = A; x <= B; x++) { m.set(x, 42, z, 'spruce_planks'); m.set(x, 50, z, 'stone_bricks'); for (let y = 43; y <= 49; y++) m.set(x, y, z, 'air'); }
+    flaeche(2, (x, z, a, s) => { if (a >= A && a <= B && a % 4 === 0) frei(x, 42, z, 'stone_brick_slab_top'); });
+    for (const [x, z] of [[7, 7], [15, 7], [7, 15], [15, 15]]) m.set(x, 49, z, 'lantern_h');
+    // Oberer Kranz: Konsolen, Brüstung und Zinnen
+    flaeche(2, (x, z, a, s) => {
+      if (a % 2 === 0) frei(x, 50, z, 'sbt_' + zurMauer[s]);
+      m.set(x, 51, z, ecke(x, 51, z));
+      if (Math.floor(a / 2) % 2 === 0) { m.set(x, 52, z, ecke(x, 52, z)); m.set(x, 53, z, 'stone_brick_slab'); }
+    });
+    flaeche(1, (x, z) => m.set(x, 50, z, 'stone_bricks'));
+    // Ecktürmchen (Scharwachttürme) mit Kragkonsolen und spitzem Ziegeldach
+    for (const [tx, tz] of [[A, A], [B, A], [A, B], [B, B]]) {
+      const sx = tx === A ? -1 : 1, sz = tz === A ? -1 : 1;
+      const mx = tx + sx, mz = tz + sz; // Mitte des Türmchens
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) frei(mx + dx, 35, mz + dz, 'sbt_' + (dx || dz ? (Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's')) : 'n'));
+      for (let y = 36; y <= 55; y++) for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+        const x = mx + dx, z = mz + dz;
+        if (!m.drin(x, y, z)) continue;
+        const rnd = Math.abs(dx) === 2 || Math.abs(dz) === 2;
+        if (y === 36 && rnd) { m.set(x, y, z, 'sbt_' + (Math.abs(dx) === 2 ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's'))); continue; }
+        if (y === 36) { m.set(x, y, z, 'stone_bricks'); continue; }
+        if (rnd) {
+          const fenster = (y === 45 || y === 46) && (dx === 0 || dz === 0) && (dx === 2 * sx || dz === 2 * sz);
+          const kante = Math.abs(dx) === 2 && Math.abs(dz) === 2;
+          m.set(x, y, z, fenster ? (dx === 0 ? 'pane_ew' : 'pane_ns') : kante ? (y % 3 ? 'stone_bricks' : 'polished_andesite') : y === 52 ? 'polished_andesite' : ecke(x, y, z));
+        } else if (y > 42 && y < 50) m.set(x, y, z, 'air');
+      }
+      // Kragring und Pyramidendach aus Ziegeln
+      for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+        if (Math.abs(dx) !== 3 && Math.abs(dz) !== 3) continue;
+        const r = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+        frei(mx + dx, 55, mz + dz, 'sbt_' + r);
+        m.drin(mx + dx, 56, mz + dz) && m.set(mx + dx, 56, mz + dz, (dx + dz) % 2 ? 'stone_bricks' : 'chiseled_stone_bricks');
+      }
+      for (let k = 0; k < 11; k++) {
+        const h = Math.max(0, 3 - Math.floor(k / 3)), y = 57 + k;
+        for (let dz = -h; dz <= h; dz++) for (let dx = -h; dx <= h; dx++) {
+          if (!m.drin(mx + dx, y, mz + dz)) continue;
+          const rnd = Math.abs(dx) === h || Math.abs(dz) === h;
+          if (h === 0) { m.set(mx, y, mz, 'bricks'); continue; }
+          if (!rnd) continue;
+          const r = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+          m.set(mx + dx, y, mz + dz, k % 3 === 0 ? 'bks_' + r : 'bricks');
+        }
+      }
+      m.set(mx, 68, mz, 'lightning_rod');
+    }
+    // Mitteldach: steiler Ziegel-Satteldach mit gemauerten Giebeln nach Süden und Norden
+    for (let k = 0; k <= 5; k++) for (let z = 6; z <= 16; z++) {
+      const y = 51 + 2 * k;
+      const giebel = z === 6 || z === 16;
+      if (k < 5) {
+        m.set(6 + k, y, z, 'bricks'); m.set(16 - k, y, z, 'bricks');
+        m.set(6 + k, y + 1, z, 'bks_e'); m.set(16 - k, y + 1, z, 'bks_w');
+      } else { m.set(11, y, z, 'bricks'); m.set(11, y + 1, z, 'brick_slab'); }
+      if (giebel) for (let x = 7 + k; x <= 15 - k; x++) for (const yy of [y, y + 1]) if (yy <= 61) m.set(x, yy, z, ecke(x, yy, z));
+    }
+    for (const z of [6, 16]) { m.set(11, 55, z, z === 6 ? 'pane_ew' : 'pane_ew'); m.set(11, 56, z, 'pane_ew'); m.set(10, 56, z, 'sbt_e'); m.set(12, 56, z, 'sbt_w'); m.set(11, 57, z, 'chiseled_stone_bricks'); m.set(11, 62, z, 'stone_brick_wall'); }
+    // Leiter innen an der Nordwand vom Erdgeschoss bis aufs Dach
+    for (let y = 1; y <= 50; y++) m.set(C, y, A + 1, 'ladder_s');
+    for (let fy = 7; fy <= 35; fy += 7) m.set(C, fy - 1, B - 3, 'lantern_h');
+    // Efeu- und Laubranken an den Mauern
+    for (let i = 0; i < 22; i++) {
+      const seite = ['n', 's', 'w', 'e'][i % 4], a = A + 1 + Math.floor(hash(i, 3, 7) * 13), y0 = Math.floor(hash(i, 5, 2) * 20), hoch = 5 + Math.floor(hash(i, 1, 9) * 14);
+      for (let y = y0; y < y0 + hoch && y < 39; y++) {
+        const wob = Math.round(Math.sin(y * 0.7 + i) * 0.8);
+        const [x, z] = { n: [a + wob, A - 1], s: [a + wob, B + 1], w: [A - 1, a + wob], e: [B + 1, a + wob] }[seite];
+        frei(x, y, z, hash(x, y, z) < 0.3 ? 'azalea_leaves' : 'oak_leaves');
+        if (hash(x, y, i) < 0.25) { const [x2, z2] = seite === 'n' || seite === 's' ? [x + 1, z] : [x, z + 1]; frei(x2, y, z2, 'oak_leaves'); }
+      }
+    }
+    return m;
+  }
+
+  /* Drachenkopf-Brunnen: Becken, Rückwand mit Kerzen und Ranken, ein Drachenkopf speit Wasser ins Becken (Blick nach Süden) */
+  function drachenbrunnen(m, cx, cz) {
+    for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+      if (!imKreis(dx, dz, 4)) continue;
+      const innen = imKreis(dx, dz, 3);
+      m.set(cx + dx, 3, cz + dz, innen ? 'mossy_stone_bricks' : 'stone_bricks');
+      m.set(cx + dx, 4, cz + dz, innen ? 'water' : (dx + dz) % 3 ? 'stone_bricks' : 'mossy_stone_bricks');
+      if (!innen && dz > -3) m.set(cx + dx, 5, cz + dz, 'stone_brick_slab');
+    }
+    // Rückwand mit Pfeilern, Gesims und Kerzen
+    for (let x = cx - 3; x <= cx + 3; x++) for (let z = cz - 5; z <= cz - 4; z++) for (let y = 4; y <= 10; y++) {
+      const pfeiler = Math.abs(x - cx) === 3;
+      if (y === 10) m.set(x, y, z, pfeiler ? 'chiseled_stone_bricks' : 'stone_brick_slab');
+      else m.set(x, y, z, pfeiler ? 'stone_bricks' : y < 6 && hash(x, y, z) < 0.35 ? 'mossy_stone_bricks' : mauer(x, y, z));
+    }
+    for (const x of [cx - 3, cx + 3]) {
+      m.set(x, 11, cz - 4, 'stone_brick_wall'); m.set(x, 12, cz - 4, 'candle3');
+      m.set(x, 9, cz - 3, 'sbt_n'); m.set(x, 4, cz - 3, 'sbs_n');
+      m.set(x, 11, cz - 5, 'azalea_leaves');
+      for (let y = 6; y <= 9; y++) if (hash(x, y, 77) < 0.6) m.set(x + Math.sign(x - cx), y, cz - 5, 'oak_leaves');
+    }
+    for (let x = cx - 2; x <= cx + 2; x++) m.set(x, 10, cz - 3, 'sbt_n');
+    m.set(cx - 1, 11, cz - 5, 'candle3'); m.set(cx + 1, 11, cz - 5, 'candle3');
+    m.set(cx, 11, cz - 5, 'flowering_azalea');
+    // Drachenkopf: Hals, Stirn mit Hörnern, dunkle Augen, Schnauze mit Zähnen, Wasser im Maul
+    for (let y = 6; y <= 9; y++) for (let x = cx - 1; x <= cx + 1; x++) m.set(x, y, cz - 3, 'stone_bricks');
+    for (let x = cx - 1; x <= cx + 1; x++) m.set(x, 5, cz - 3, 'sbt_n');
+    m.set(cx - 1, 10, cz - 3, 'stone_brick_wall'); m.set(cx + 1, 10, cz - 3, 'stone_brick_wall');
+    m.set(cx - 1, 11, cz - 4, 'stone_brick_wall'); m.set(cx + 1, 11, cz - 4, 'stone_brick_wall');
+    m.set(cx - 1, 9, cz - 2, 'deepslate_bricks'); m.set(cx + 1, 9, cz - 2, 'deepslate_bricks');
+    m.set(cx, 9, cz - 2, 'chiseled_stone_bricks');
+    for (let x = cx - 1; x <= cx + 1; x++) m.set(x, 10, cz - 2, 'sbs_n');
+    m.set(cx - 1, 8, cz - 2, 'stone_bricks'); m.set(cx + 1, 8, cz - 2, 'stone_bricks'); m.set(cx, 8, cz - 2, 'air');
+    for (let x = cx - 1; x <= cx + 1; x++) m.set(x, 7, cz - 2, 'mossy_stone_bricks');
+    m.set(cx, 9, cz - 1, 'sbs_n'); m.set(cx - 1, 9, cz - 1, 'stone_brick_slab'); m.set(cx + 1, 9, cz - 1, 'stone_brick_slab');
+    m.set(cx - 1, 8, cz - 1, 'stone_brick_wall'); m.set(cx + 1, 8, cz - 1, 'stone_brick_wall');
+    for (let x = cx - 1; x <= cx + 1; x++) m.set(x, 7, cz - 1, 'stone_brick_slab_top');
+    // Wasserquelle im Maul: läuft vorne heraus und fällt als Strahl ins Becken
+    m.set(cx, 8, cz - 1, 'water');
+    m.set(cx + 2, 5, cz + 1, 'lily_pad'); m.set(cx - 2, 5, cz + 2, 'lily_pad');
   }
 
   /* ================================================== Hauptschloss 181×151 */
@@ -894,19 +1179,19 @@
     for (const t of TRAKTE) fassade(m, t, TRAKTE.filter((u) => u !== t));
 
     // Türme
-    turm(m, { cx: 90, cz: 22, r: 7, top: 74 });   // Hauptturm (Astronomieturm)
-    turm(m, { cx: 58, cz: 38, r: 5, top: 46 });
-    turm(m, { cx: 122, cz: 38, r: 5, top: 46 });
-    turm(m, { cx: 40, cz: 70, r: 5, top: 42 });
-    turm(m, { cx: 140, cz: 70, r: 5, top: 42 });
-    turm(m, { cx: 40, cz: 128, r: 5, top: 36 });
-    turm(m, { cx: 140, cz: 128, r: 5, top: 36 });
-    turm(m, { cx: 58, cz: 136, r: 4, top: 28 });
-    turm(m, { cx: 122, cz: 136, r: 4, top: 28 });
-    turm(m, { cx: 10, cz: 56, r: 4, top: 34 });
-    turm(m, { cx: 10, cz: 100, r: 5, top: 56 });  // Westturm
-    turm(m, { cx: 170, cz: 46, r: 4, top: 34 });
-    turm(m, { cx: 170, cz: 96, r: 5, top: 52 });  // Ostturm
+    turm(m, { cx: 90, cz: 22, r: 7, top: 74, kranz: true });   // Hauptturm (Astronomieturm)
+    turm(m, { cx: 58, cz: 38, r: 5, top: 46, kranz: true });
+    turm(m, { cx: 122, cz: 38, r: 5, top: 46, kranz: true });
+    turm(m, { cx: 40, cz: 70, r: 5, top: 42, kranz: true });
+    turm(m, { cx: 140, cz: 70, r: 5, top: 42, kranz: true });
+    turm(m, { cx: 40, cz: 128, r: 5, top: 36, kranz: true });
+    turm(m, { cx: 140, cz: 128, r: 5, top: 36, kranz: true });
+    turm(m, { cx: 58, cz: 136, r: 4, top: 28, fachwerk: true });
+    turm(m, { cx: 122, cz: 136, r: 4, top: 28, fachwerk: true });
+    turm(m, { cx: 10, cz: 56, r: 4, top: 34, fachwerk: true });
+    turm(m, { cx: 10, cz: 100, r: 5, top: 56, kranz: true });  // Westturm
+    turm(m, { cx: 170, cz: 46, r: 4, top: 34, fachwerk: true });
+    turm(m, { cx: 170, cz: 96, r: 5, top: 52, kranz: true });  // Ostturm
     // Hauptturm: Zugang von der Verbindung
     for (const fy of [4, 10]) box(m, 89, fy + 1, 28, 91, fy + 3, 30, 'air');
 
@@ -916,13 +1201,47 @@
       m.set(86, 4, z, mauer); m.set(94, 4, z, mauer);
       if (z % 5 === 0) { m.set(86, 5, z, 'lantern'); m.set(94, 5, z, 'lantern'); }
     }
-    turm(m, { cx: 82, cz: 142, r: 3, top: 22 });
-    turm(m, { cx: 98, cz: 142, r: 3, top: 22 });
-    for (let y = 4; y <= 14; y++) {
-      m.set(85, y, 142, mauer); m.set(86, y, 142, mauer); m.set(94, y, 142, mauer); m.set(95, y, 142, mauer);
-      if (y >= 11) for (let x = 87; x <= 93; x++) m.set(x, y, 142, y === 14 && x % 2 ? 'air' : mauer);
+    turm(m, { cx: 82, cz: 142, r: 3, top: 22, kranz: true });
+    turm(m, { cx: 98, cz: 142, r: 3, top: 22, kranz: true });
+    // Torhaus: drei Blöcke tief, Spitzbogen, hochgezogenes Fallgitter, Pechnasen und Zinnen
+    for (let y = 4; y <= 13; y++) for (let z = 141; z <= 143; z++) for (let x = 85; x <= 95; x++) {
+      const tor = x >= 87 && x <= 93 && y <= 10;
+      m.set(x, y, z, tor ? 'air' : z === 142 || x === 85 || x === 95 ? mauer : (x + y) % 3 ? mauer : 'stone_bricks');
     }
-    m.set(90, 10, 142, 'lantern_h');
+    for (const z of [141, 142, 143]) {
+      m.set(87, 10, z, mauer); m.set(93, 10, z, mauer);
+      m.set(87, 9, z, 'sbt_w'); m.set(93, 9, z, 'sbt_e');
+      m.set(88, 10, z, 'sbt_w'); m.set(92, 10, z, 'sbt_e');
+    }
+    for (const z of [141, 143]) { m.set(90, 10, z, 'chiseled_stone_bricks'); m.set(90, 11, z, 'chiseled_stone_bricks'); }
+    for (let x = 88; x <= 92; x++) { m.set(x, 9, 142, 'iron_bars_ew'); if (x >= 89 && x <= 91) m.set(x, 10, 142, 'iron_bars_ew'); }
+    m.set(90, 10, 141, 'lantern_h');
+    for (let x = 85; x <= 95; x++) {
+      // Wehrgang auf dem Torhaus
+      for (const z of [142, 143]) m.set(x, 14, z, 'air');
+      m.set(x, 13, 142, 'stone_bricks'); m.set(x, 13, 143, 'stone_bricks');
+      m.set(x, 14, 141, x % 2 ? mauer : 'stone_brick_slab');
+      // Pechnasen: Konsolen mit Lücken, darauf die vorgekragte Brüstung mit Zinnen
+      if (x >= 86 && x <= 94) {
+        m.set(x, 11, 144, x % 2 ? 'sbt_n' : 'air');
+        m.set(x, 12, 144, 'stone_bricks'); m.set(x, 13, 144, mauer); m.set(x, 14, 144, mauer);
+        if (x % 2 === 0) m.set(x, 15, 144, mauer);
+      }
+    }
+    for (const x of [88, 92]) m.set(x, 12, 143, 'air'); // Schießscharten
+    for (const x of [86, 94]) m.set(x, 15, 144, 'lantern');
+    // Zugbrücke über den Torgraben: Bohlen, Randbalken, Geländer und Ketten zum Torhaus
+    box(m, 87, 0, 145, 93, 2, 149, 'air');
+    for (let z = 145; z <= 149; z++) {
+      for (let x = 88; x <= 92; x++) m.set(x, 3, z, x === 90 ? 'dark_oak_planks' : 'spruce_planks');
+      m.set(87, 3, z, 'spruce_log_z'); m.set(93, 3, z, 'spruce_log_z');
+      m.set(87, 4, z, 'spruce_fence'); m.set(93, 4, z, 'spruce_fence');
+    }
+    for (let x = 87; x <= 93; x++) { m.set(x, 0, 145, sockel); m.set(x, 0, 149, sockel); m.set(x, 0, 147, 'water'); m.set(x, 0, 146, 'mossy_cobblestone'); m.set(x, 0, 148, 'mossy_cobblestone'); }
+    for (let k = 0; k <= 4; k++) {
+      const z = 145 + k, oben = Math.round(12 - 1.6 * k), unten = Math.max(5, Math.round(12 - 1.6 * (k + 1)) + 1);
+      for (let y = unten; y <= oben; y++) for (const x of [87, 93]) if (m.get(x, y, z) === 'air') m.set(x, y, z, 'chain');
+    }
 
     schlossgarten(m);
     m.verbindeZaeune();
@@ -1263,7 +1582,9 @@
     }
     for (let x = 13; x <= 19; x++) { m.set(x, 7, 0, 'sbt_' + (x < 16 ? 'w' : x > 16 ? 'e' : 's')); }
     for (let z = 0; z <= 1; z++) for (let x = 12; x <= 20; x++) m.set(x, 0, z, 'stone_brick_slab');
-    m.set(16, 6, 2, 'lantern_h');
+    m.set(16, 6, 3, 'lantern_h');
+    for (let x = 13; x <= 19; x++) { m.set(x, 6, 1, 'iron_bars_ew'); m.set(x, 7, 1, 'iron_bars_ew'); } // hochgezogenes Fallgitter
+    for (let x = 14; x <= 18; x++) m.set(x, 5, 1, x % 2 ? 'iron_bars_ew' : 'air');
     // Steinkreis
     const steine = 11;
     for (let i = 0; i < steine; i++) {
@@ -1503,12 +1824,14 @@
     eulerei: [92, EULE_Y + 1, 88],
     gewaechshaeuser: [70, TAL_Y + 1, 230],
     quidditch: [390, TAL_Y + 1, 360],
-    brueckenkopf: [234, HUEGEL_Y + 1, 384]
+    brueckenkopf: [234, HUEGEL_Y + 1, 384],
+    burgturm: [53, TAL_Y + 1, 325]
   };
   const EBENEN = [ // geebnete Bauplätze [x0, z0, x1, z1, Höhe]
     [330, 438, 352, 454, TAL_Y], [70, 230, 100, 244, TAL_Y], [390, 360, 460, 398, TAL_Y],
     [380, 30, 460, 110, DORF_Y],   // Hogsmeade
-    [92, 88, 108, 104, EULE_Y]     // Eulerei
+    [92, 88, 108, 104, EULE_Y],    // Eulerei
+    [50, 322, 78, 350, TAL_Y]      // Großer Burgturm
   ];
   const WEGE = [
     [[250, 412], [290, 432], [322, 446], [337, 457]],
@@ -1740,7 +2063,7 @@
 
   const BAUWERKE = [
     { id: 'hauptschloss', titel: 'Hauptschloss', datei: 'hogwarts-hauptschloss.litematic', erstelle: erzeugeHauptschloss,
-      text: 'Große Halle, Innenhof mit Kreuzgang, West- und Ostflügel, Bibliothek, 15 Türme und Torbau.' },
+      text: 'Große Halle, Innenhof mit Kreuzgang, West- und Ostflügel, Bibliothek, 15 Türme mit Zinnenkränzen auf Pechnasen und Fachwerk-Obergeschossen, gestufte Strebepfeiler, Torhaus mit Fallgitter und Zugbrücke, Drachenkopf-Brunnen.' },
     { id: 'bruecke', titel: 'Viadukt (Brücke)', datei: 'hogwarts-bruecke.litematic', erstelle: erzeugeBruecke,
       text: 'Zweistöckiges Viadukt mit 10 Bogenfeldern, vorspringenden Pfeilern, Wellenbrechern und Zinnenbrüstung. 123 Blöcke lang, 76 hoch.' },
     { id: 'hagrid', titel: 'Hagrids Hütte', datei: 'hogwarts-hagrids-huette.litematic', erstelle: erzeugeHagrid,
@@ -1755,6 +2078,8 @@
       text: 'Dorf mit 20 Fachwerkhäusern, gepflasterten Straßen, Marktplatz mit Brunnen, Marktständen und Laternen.' },
     { id: 'eulerei', titel: 'Eulerei', datei: 'hogwarts-eulerei.litematic', erstelle: erzeugeEulerei,
       text: 'Runder Eulenturm mit Einfluglöchern, Zinnenkranz und Spitzhelm auf einer Terrasse am Hang.' },
+    { id: 'burgturm', titel: 'Großer Burgturm', datei: 'hogwarts-burgturm.litematic', erstelle: erzeugeBurgturm,
+      text: 'Wehrturm am Seeufer nach Vorlage: Mauerwerk aus Bruchtiefenschiefer, Tuff und Andesit, Steinziegel-Eckquader, Pechnasen mit Konsolen, vorgekragtes Obergeschoss mit Spitzbogenfenstern, vier Ecktürmchen mit Ziegelhelmen, Ziegel-Satteldach, Holzerker und Efeu.' },
     { id: 'berg', titel: 'Berg & Gelände', datei: 'hogwarts-berg.litematic', erstelle: erzeugeBerg,
       text: '500 × 500 Blöcke: Gipfelplateau, Klippen, Schlucht, Südhügel, See mit Insel, Steg und Bootshaus, Fluss mit Kaskaden, Wälder, Wege, Leuchtturm mit Steg im Meer und eine sanfte Küste an allen Rändern.' }
   ];
@@ -1784,7 +2109,7 @@
     const [bx0, bz0, bx1, bz1] = bereich || [0, 0, 499, 499];
     const g = new Modell(bx1 - bx0 + 1, PLATEAU_Y + 1 + 100, bz1 - bz0 + 1);
     g.teile = [];
-    for (const b of ['berg', 'hauptschloss', 'bruecke', 'brueckenkopf', 'hagrid', 'gewaechshaeuser', 'quidditch', 'hogsmeade', 'eulerei'].map((id) => BAUWERKE.find((e) => e.id === id))) {
+    for (const b of ['berg', 'hauptschloss', 'bruecke', 'brueckenkopf', 'hagrid', 'gewaechshaeuser', 'quidditch', 'hogsmeade', 'eulerei', 'burgturm'].map((id) => BAUWERKE.find((e) => e.id === id))) {
       const m = b.erstelle(), [ox, oy, oz] = b.lage;
       g.teile.push({ id: b.id, titel: b.titel, lage: [ox - bx0, oy, oz - bz0], groesse: [m.sx, m.sy, m.sz] });
       const abb = m.keys.map((k) => g.id(k));
