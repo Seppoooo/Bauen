@@ -1,0 +1,81 @@
+/* Vollbild-3D-Ansicht: Welt füllt den Bildschirm, Bedienung schwebt darüber */
+:root {
+  color-scheme: dark;
+  --nacht: #0a1a33;
+  --tafel: rgba(12, 30, 60, 0.88);
+  --rand: #2f5591;
+  --text: #e8eefb;
+  --leise: #a9b8d6;
+  --gold: #e9c46a;
+  --titel: 'Cinzel', 'Times New Roman', serif;
+  --schrift: 'EB Garamond', Georgia, serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--nacht); color: var(--text); font-family: var(--schrift); }
+#welt { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+h1, h2 { font-family: var(--titel); margin: 0; }
+kbd { font-family: ui-monospace, Menlo, monospace; font-size: .78em; background: #1d3561; border: 1px solid var(--rand); border-radius: 3px; padding: 0 .3em; margin-right: 2px; }
+button { font: inherit; color: var(--text); background: #18315c; border: 1px solid var(--rand); border-radius: 5px; padding: 5px 9px; cursor: pointer; }
+button:hover, button:focus-visible { border-color: var(--gold); outline: none; }
+button[aria-pressed="true"] { background: var(--gold); color: #1a1405; border-color: var(--gold); }
+input[type="range"] { width: 100%; accent-color: var(--gold); }
+
+.kopf {
+  position: fixed; left: 12px; top: calc(10px + env(safe-area-inset-top, 0px));
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  text-shadow: 0 1px 4px #000; pointer-events: none;
+}
+.kopf h1 { font-size: 1.25rem; }
+.kopf a, .kopf .pos { pointer-events: auto; }
+.zurueck { color: var(--gold); text-decoration: none; font-size: .95rem; }
+.pos { margin: 0; font-family: ui-monospace, Menlo, monospace; font-size: .8rem; color: var(--leise); font-variant-numeric: tabular-nums; }
+
+.leiste {
+  position: fixed; right: 12px; top: calc(10px + env(safe-area-inset-top, 0px));
+  width: min(330px, calc(100vw - 24px)); max-height: calc(100% - 24px);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.leiste-knopf { align-self: flex-end; }
+.leiste-inhalt {
+  background: var(--tafel); border: 1px solid var(--rand); border-radius: 8px;
+  padding: 12px; overflow: auto; display: grid; gap: 14px;
+  backdrop-filter: blur(6px);
+}
+.leiste-inhalt h2 { font-size: .9rem; color: var(--gold); margin-bottom: 6px; letter-spacing: .03em; }
+.regler { display: flex; justify-content: space-between; font-size: .9rem; margin-bottom: 2px; }
+.regler output { color: var(--gold); font-family: ui-monospace, monospace; font-size: .85rem; }
+.knopfreihe { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.hinweis { font-size: .8rem; color: var(--leise); margin: 6px 0 0; }
+.orte { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.orte button { font-size: .85rem; text-align: left; }
+.breit { width: 100%; }
+.blockinfo { margin: 0; font-size: .9rem; min-height: 3em; }
+.blockinfo strong { color: var(--gold); }
+.blockinfo code { font-family: ui-monospace, monospace; font-size: .8rem; color: #9fd0ff; }
+.steuerung ul { margin: 0 0 8px; padding-left: 1.1em; font-size: .82rem; color: var(--leise); display: grid; gap: 4px; }
+
+.fadenkreuz { position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none; }
+.fadenkreuz::before, .fadenkreuz::after { content: ""; position: absolute; background: rgba(255, 255, 255, .85); box-shadow: 0 0 2px #000; }
+.fadenkreuz::before { left: 8px; top: 0; width: 2px; height: 18px; }
+.fadenkreuz::after { top: 8px; left: 0; height: 2px; width: 18px; }
+
+.touch { position: fixed; inset: auto 0 calc(16px + env(safe-area-inset-bottom, 0px)) 0; pointer-events: none; display: flex; justify-content: space-between; padding: 0 16px; }
+.joystick { width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .35); background: rgba(10, 26, 51, .35); position: relative; pointer-events: auto; touch-action: none; }
+.knauf { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(233, 196, 106, .75); }
+.hochrunter { display: grid; gap: 10px; pointer-events: auto; }
+.hochrunter button { width: 56px; height: 52px; font-size: 1.1rem; background: rgba(24, 49, 92, .8); touch-action: none; }
+
+.laden { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 70%, #3c3f7a, var(--nacht) 70%); z-index: 5; }
+.laden-box { width: min(360px, calc(100vw - 32px)); text-align: center; }
+.laden-box p { color: var(--leise); }
+.balken { height: 6px; background: #1b3363; border-radius: 3px; overflow: hidden; }
+.balken span { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s; }
+
+@media (max-width: 700px) {
+  .kopf h1 { font-size: 1rem; }
+  .leiste { width: min(300px, calc(100vw - 24px)); }
+  .leiste-inhalt { max-height: 55vh; }
+  .steuerung ul { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .balken span { transition: none; } }

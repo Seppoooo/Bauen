@@ -228,3 +228,11 @@ select {
   .bereich { padding: 24px 16px; }
   .tabelle { font-size: .8rem; }
 }
+
+.knopf-3d {
+  display: inline-block; margin-top: 10px; padding: 7px 14px;
+  background: var(--gold); color: #1a1405; text-decoration: none; text-shadow: none;
+  font-family: var(--schrift-titel); font-weight: 700; font-size: .95rem; border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+}
+.knopf-3d:hover, .knopf-3d:focus-visible { background: #f3d68c; outline: 2px solid #fff; outline-offset: 2px; }

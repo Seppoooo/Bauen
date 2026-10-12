@@ -848,8 +848,10 @@
   function erzeugeGesamt(bereich) {
     const [bx0, bz0, bx1, bz1] = bereich || [0, 0, 499, 499];
     const g = new Modell(bx1 - bx0 + 1, PLATEAU_Y + 1 + 100, bz1 - bz0 + 1);
+    g.teile = [];
     for (const b of ['berg', 'hauptschloss', 'bruecke', 'hagrid', 'gewaechshaeuser', 'quidditch'].map((id) => BAUWERKE.find((e) => e.id === id))) {
       const m = b.erstelle(), [ox, oy, oz] = b.lage;
+      g.teile.push({ id: b.id, titel: b.titel, lage: [ox - bx0, oy, oz - bz0], groesse: [m.sx, m.sy, m.sz] });
       const abb = m.keys.map((k) => g.id(k));
       for (let y = 0; y < m.sy; y++) for (let z = 0; z < m.sz; z++) {
         const gz = z + oz - bz0, gy = y + oy;
