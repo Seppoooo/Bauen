@@ -43,3 +43,12 @@ site/
   Meldungen schnell bearbeiten, CSAM an Behörden (z. B. NCMEC / BKA) melden. DSA-Pflichten in der EU beachten.
 - **Jugendschutzbeauftragte/r**, Impressum, DSGVO-konforme Datenschutzerklärung.
 - **Backend:** Upload, Transcoding (z. B. HLS), CDN, Nutzerkonten, Zahlungsanbieter mit Adult-Freigabe.
+
+## Eigene Videos einbinden (lokal)
+
+1. Videos in `site/media/` ablegen – Unterordner werden zu Kategorien (`site/media/Paare/video.mp4`).
+2. `python3 tools/scan_media.py` ausführen. Erzeugt `site/js/library.js`; mit installiertem ffmpeg
+   auch Länge und Vorschaubilder.
+3. Seite neu laden – die Platzhalter werden durch deine Videos ersetzt.
+
+`site/media/` und `site/js/library.js` stehen in `.gitignore` und werden nicht ins Repo hochgeladen.
