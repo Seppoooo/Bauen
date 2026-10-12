@@ -32,14 +32,32 @@
   }
   const flaeche = (c, staerke) => (px, r) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) px(x, y, c, 1 - staerke + r() * staerke * 2); };
 
+  // Relief für Ziegel/Fliesen: oben/links heller, unten/rechts dunkler – wie bei den echten Blocktexturen
+  function relief(feld) {
+    return (x, y) => {
+      const id = feld(x, y);
+      if (id < 0) return 0.6;
+      if (feld(x, y - 1) !== id || feld(x - 1, y) !== id) return 1.18;
+      if (feld(x, y + 1) !== id || feld(x + 1, y) !== id) return 0.78;
+      return 1;
+    };
+  }
   const MUSTER = {
     rauschen: (c) => flaeche(c, 0.1),
     fein: (c) => flaeche(c, 0.04),
-    ziegel: (c, moos) => (px, r) => {
+    ziegel: (c, art) => (px, r) => {
+      // echte Steinziegel: zwei Reihen, Fugen bei y 3/7/11/15, versetzte Stoßfugen
+      const feld = (x, y) => {
+        if (x < 0 || y < 0 || x > 15 || y > 15) return -2;
+        if (y % 8 === 7 || (y < 8 ? x === 15 : x === 7)) return -1;
+        return (y < 8 ? 0 : 10) + (y < 8 ? 0 : (x < 7 ? 1 : 2));
+      };
+      const rf = relief(feld);
       for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
-        const fuge = y % 8 === 7 || (y < 8 ? x === 7 : x === 15);
-        const m = moos && r() < 0.18;
-        px(x, y, m ? [80, 110, 55] : c, fuge ? 0.62 : 0.92 + r() * 0.16);
+        let farbe = c, f = rf(x, y) * (0.93 + r() * 0.12);
+        if (art === 'moos' && r() < 0.22 + (y > 10 ? 0.15 : 0)) farbe = [86, 116, 58];
+        if (art === 'riss' && ((x + y * 2) % 13 === 0 || (x * 3 + y) % 17 === 0) && feld(x, y) >= 0) f = 0.5;
+        px(x, y, farbe, f);
       }
     },
     bruch: (c, moos) => (px, r) => {
@@ -51,15 +69,25 @@
       }
     },
     fliesen: (c) => (px, r) => {
-      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
-        const fuge = y % 4 === 3 || (x + (Math.floor(y / 4) % 2) * 2) % 4 === 3;
-        px(x, y, c, fuge ? 0.55 : 0.9 + r() * 0.2);
-      }
+      // Tiefenschieferfliesen: 4×4 kleine Fliesen mit Relief
+      const feld = (x, y) => (x < 0 || y < 0 || x > 15 || y > 15) ? -2 : (x % 8 === 7 || y % 8 === 7) ? -1 : Math.floor(x / 8) + 2 * Math.floor(y / 8);
+      const klein = (x, y) => (x < 0 || y < 0 || x > 15 || y > 15) ? -2 : (x % 4 === 3 || y % 4 === 3) ? -1 : Math.floor(x / 4) + 4 * Math.floor(y / 4);
+      const rf = relief(klein);
+      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) px(x, y, c, rf(x, y) * (0.9 + r() * 0.16) * (feld(x, y) < 0 ? 0.9 : 1));
     },
     bretter: (c) => (px, r) => {
+      // vier Bretter à 4 Pixel, dunkle Fugen, Maserung und versetzte Brettenden
+      const enden = [3, 11, 7, 14];
       for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
-        const fuge = y % 4 === 3 || (x === ((Math.floor(y / 4) * 7) % 16));
-        px(x, y, c, fuge ? 0.68 : 0.9 + r() * 0.16 + (x % 5 === 0 ? -0.05 : 0));
+        const reihe = Math.floor(y / 4), fuge = y % 4 === 3 || x === enden[reihe];
+        const maser = ((x * 7 + reihe * 5) % 9 === 0) ? 0.88 : 1;
+        px(x, y, c, fuge ? 0.62 : (y % 4 === 0 ? 1.08 : 1) * maser * (0.94 + r() * 0.1));
+      }
+    },
+    birke: () => (px, r) => {
+      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
+        const fleck = (y * 5 + Math.floor(x / 3) * 7) % 11 < 2 && r() < 0.8;
+        px(x, y, fleck ? [40, 40, 36] : [216, 212, 200], 0.9 + r() * 0.12);
       }
     },
     rinde: (c) => (px, r) => {
@@ -73,9 +101,11 @@
       }
     },
     laub: (c) => (px, r) => {
+      // Laub in Büscheln: hellere Spitzen, dunkle Tiefe, einzelne Lücken
       for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) {
-        const loch = r() < 0.2;
-        px(x, y, c, 0.7 + r() * 0.5, loch ? 0 : 255);
+        const buschel = Math.sin(x * 1.7 + y * 0.9) + Math.cos(y * 1.3 - x * 0.7);
+        const loch = r() < 0.16;
+        px(x, y, c, (buschel > 0.6 ? 1.25 : buschel < -0.6 ? 0.7 : 0.95) * (0.88 + r() * 0.24), loch ? 0 : 255);
       }
     },
     glas: () => (px) => {
@@ -144,10 +174,19 @@
     const PLANKS = { spruce: '#6e5131', dark_oak: '#4a3220', oak: '#a0814f' };
     if (id === 'grass_block') return { o: kachel('gras', MUSTER.gras([93, 154, 59])), s: kachel('grasseite', MUSTER.grasseite([93, 154, 59], [134, 96, 67])), u: kachel('erde', MUSTER.rauschen([134, 96, 67])) };
     if (id === 'dirt_path') return { o: kachel('pfad', MUSTER.rauschen([148, 121, 63])), s: kachel('erde', MUSTER.rauschen([134, 96, 67])), u: kachel('erde', MUSTER.rauschen([134, 96, 67])) };
-    if (id.endsWith('_log')) { const holz = id.startsWith('oak') ? [176, 143, 88] : [118, 88, 55]; const t = kachel(id + '_oben', MUSTER.ringe(c, holz)); return { o: t, s: kachel(id, MUSTER.rinde(c)), u: t }; }
+    if (id.endsWith('_log')) {
+      const holz = { oak: [176, 143, 88], birch: [215, 200, 150], dark_oak: [70, 50, 30] }[id.replace('_log', '')] || [118, 88, 55];
+      const rinde = id === 'birch_log' ? kachel('birke', MUSTER.birke()) : kachel(id, MUSTER.rinde(c));
+      if (b.props.axis !== 'y') return { o: rinde, s: rinde, u: rinde };
+      const t = kachel(id + '_oben', MUSTER.ringe(c, holz)); return { o: t, s: rinde, u: t };
+    }
     if (id === 'bookshelf') { const t = kachel('oak_planks', MUSTER.bretter(rgb(PLANKS.oak))); return { o: t, s: kachel('regal', MUSTER.regal()), u: t }; }
     if (id === 'pumpkin') return { o: kachel('kuerbis_oben', MUSTER.rauschen([200, 120, 30])), s: kachel('kuerbis', MUSTER.kuerbis(c)), u: kachel('kuerbis_oben', MUSTER.rauschen([200, 120, 30])) };
-    if (id.includes('stone_brick')) return eine(id.includes('mossy') ? 'moosziegel' : id.includes('cracked') ? 'rissziegel' : 'steinziegel', MUSTER.ziegel(rgb('#7e7e7e'), id.includes('mossy')));
+    if (id.includes('stone_brick')) {
+      const art = id.includes('mossy') ? 'moos' : id.includes('cracked') ? 'riss' : '';
+      return eine('steinziegel_' + art, MUSTER.ziegel(rgb('#7e7e7e'), art));
+    }
+    if (id === 'stone' || id === 'andesite') return eine(id, flaeche(c, id === 'andesite' ? 0.18 : 0.08));
     if (id.includes('cobblestone')) return eine(id, MUSTER.bruch(rgb('#7a7a7a'), id.includes('mossy')));
     if (id.includes('deepslate_tile')) return eine('tiefenschiefer', MUSTER.fliesen(rgb('#3e3e45')));
     if (id.includes('planks') || id.includes('_slab') && id.includes('spruce') || id.includes('spruce_stairs') || id.includes('fence')) {
@@ -163,7 +202,12 @@
     if (['poppy', 'dandelion', 'cornflower', 'flowering_azalea'].includes(id)) return eine(id, MUSTER.blume(c));
     if (id === 'fern') return eine('farn', MUSTER.farn(c));
     if (id.includes('concrete')) return eine(id, MUSTER.fein(c));
-    if (id === 'polished_andesite') return eine(id, MUSTER.fein(c));
+    if (id === 'polished_andesite') return eine(id, (px, r) => {
+      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) px(x, y, c, (x === 0 || y === 0 ? 1.12 : x === 15 || y === 15 ? 0.8 : 1) * (0.95 + r() * 0.08));
+    });
+    if (id.endsWith('_wool')) return eine(id, (px, r) => {
+      for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) px(x, y, c, (Math.sin((x + y) * 1.2) * 0.06 + 0.96) * (0.95 + r() * 0.08));
+    });
     if (id === 'gravel') return eine(id, flaeche(c, 0.28));
     return eine(id, MUSTER.rauschen(c));
   }
@@ -173,10 +217,11 @@
   function boxen(b) {
     const p = b.props;
     switch (b.form) {
-      case 'stufe': return [[0, 0, 0, 1, 0.5, 1]];
+      case 'stufe': return p.type === 'top' ? [[0, 0.5, 0, 1, 1, 1]] : [[0, 0, 0, 1, 0.5, 1]];
       case 'treppe': {
-        const hinten = { north: [0, 0.5, 0, 1, 1, 0.5], south: [0, 0.5, 0.5, 1, 1, 1], east: [0.5, 0.5, 0, 1, 1, 1], west: [0, 0.5, 0, 0.5, 1, 1] }[p.facing];
-        return [[0, 0, 0, 1, 0.5, 1], hinten];
+        const oben = p.half === 'top', y0 = oben ? 0 : 0.5, y1 = oben ? 0.5 : 1;
+        const teil = { north: [0, y0, 0, 1, y1, 0.5], south: [0, y0, 0.5, 1, y1, 1], east: [0.5, y0, 0, 1, y1, 1], west: [0, y0, 0, 0.5, y1, 1] }[p.facing];
+        return [oben ? [0, 0.5, 0, 1, 1, 1] : [0, 0, 0, 1, 0.5, 1], teil];
       }
       case 'scheibe_ew': return [[0, 0, 0.44, 1, 1, 0.56]];
       case 'scheibe_ns': return [[0.44, 0, 0, 0.56, 1, 1]];
@@ -184,6 +229,7 @@
       case 'klein': return [[0.31, 0, 0.31, 0.69, 0.5, 0.69]];
       case 'klein_h': return [[0.31, 0.15, 0.31, 0.69, 0.65, 0.69]];
       case 'pfosten': {
+        if (b.id.includes('_wall')) return [[0.25, 0, 0.25, 0.75, 1, 0.75]];
         if (!b.id.includes('fence')) return [[0.44, 0, 0.44, 0.56, 1, 0.56]];
         const l = [[0.375, 0, 0.375, 0.625, 1, 0.625]];
         for (const y of [[0.38, 0.56], [0.75, 0.93]]) {
@@ -255,6 +301,40 @@
     if (maske & 32) quad(P, [x1, y0, z0], [-dx, 0, 0], [0, dy, 0], t.s, 1 - a1, 1 - a0, b0, b1, SCHATTEN.nz);
   }
 
+  // Würfel mit weichem Licht (Ambient Occlusion), Flächenreihenfolge wie die Bits der Maske
+  const FLAECHEN = [
+    { bit: 1, n: [0, 1, 0], p: [0, 1, 1], a: [1, 0, 0], b: [0, 0, -1], t: 'o', s: SCHATTEN.py },
+    { bit: 2, n: [0, -1, 0], p: [0, 0, 0], a: [1, 0, 0], b: [0, 0, 1], t: 'u', s: SCHATTEN.ny },
+    { bit: 4, n: [1, 0, 0], p: [1, 0, 1], a: [0, 0, -1], b: [0, 1, 0], t: 's', s: SCHATTEN.px },
+    { bit: 8, n: [-1, 0, 0], p: [0, 0, 0], a: [0, 0, 1], b: [0, 1, 0], t: 's', s: SCHATTEN.nx },
+    { bit: 16, n: [0, 0, 1], p: [0, 0, 1], a: [1, 0, 0], b: [0, 1, 0], t: 's', s: SCHATTEN.pz },
+    { bit: 32, n: [0, 0, -1], p: [1, 0, 0], a: [-1, 0, 0], b: [0, 1, 0], t: 's', s: SCHATTEN.nz }
+  ];
+  const AO = [1, 0.8, 0.64, 0.5];
+  const ECKEN = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  function wuerfelAO(P, x, y, z, inf, maske, schnitt) {
+    const fest = (cx, cy, cz) => { const n = zelle(cx, cy, cz, schnitt); return n && (n.deckend || n.laub) ? 1 : 0; };
+    for (const F of FLAECHEN) {
+      if (!(maske & F.bit)) continue;
+      const fx = x + F.n[0], fy = y + F.n[1], fz = z + F.n[2];
+      const ao = ECKEN.map(([sa, sb]) => {
+        const s1 = fest(fx + sa * F.a[0], fy + sa * F.a[1], fz + sa * F.a[2]);
+        const s2 = fest(fx + sb * F.b[0], fy + sb * F.b[1], fz + sb * F.b[2]);
+        const c = fest(fx + sa * F.a[0] + sb * F.b[0], fy + sa * F.a[1] + sb * F.b[1], fz + sa * F.a[2] + sb * F.b[2]);
+        return s1 && s2 ? 3 : s1 + s2 + c;
+      });
+      const n = P.pos.length / 3, p = [x + F.p[0], y + F.p[1], z + F.p[2]], a = F.a, b = F.b;
+      P.pos.push(p[0], p[1], p[2], p[0] + a[0], p[1] + a[1], p[2] + a[2],
+        p[0] + a[0] + b[0], p[1] + a[1] + b[1], p[2] + a[2] + b[2], p[0] + b[0], p[1] + b[1], p[2] + b[2]);
+      const kach = inf.tex[F.t], tu = kU(kach), tv = kV(kach), sk = 1 / SPALTEN;
+      const U = (f) => tu + E + f * (sk - 2 * E), V = (f) => tv + E + (1 - f) * (sk - 2 * E);
+      P.uv.push(U(0), V(0), U(1), V(0), U(1), V(1), U(0), V(1));
+      for (let i = 0; i < 4; i++) { const h = F.s * AO[ao[i]]; P.col.push(h, h, h); }
+      if (ao[0] + ao[2] > ao[1] + ao[3]) P.idx.push(n, n + 1, n + 3, n + 1, n + 2, n + 3);
+      else P.idx.push(n, n + 1, n + 2, n, n + 2, n + 3);
+    }
+  }
+
   function zelle(x, y, z, schnitt) {
     if (x < 0 || y < 0 || z < 0 || x >= SX || y >= SY || z >= SZ || y > schnitt) return null;
     return info[welt.daten[(y * SZ + z) * SX + x]];
@@ -290,8 +370,10 @@
             if (!verdeckt(inf, zelle(x, y, z + 1, schnitt))) m |= 16;
             if (!verdeckt(inf, zelle(x, y, z - 1, schnitt))) m |= 32;
             if (!m) continue;
-            const hoehe = inf.wasser && !(oben && oben.wasser) ? 0.875 : 1;
-            boxFlaechen(P, x, y, z, [0, 0, 0, 1, hoehe, 1], inf, m);
+            if (inf.transparent) {
+              const hoehe = inf.wasser && !(oben && oben.wasser) ? 0.875 : 1;
+              boxFlaechen(P, x, y, z, [0, 0, 0, 1, hoehe, 1], inf, m);
+            } else wuerfelAO(P, x, y, z, inf, m, schnitt);
             continue;
           }
           for (const bx of inf.boxen) boxFlaechen(P, x, y, z, bx, inf, 63);
@@ -407,6 +489,7 @@
     { name: 'Große Halle', pos: [226, 121, 164], ziel: [300, 118, 164] },
     { name: 'Bibliothek', pos: [220, 118, 186], ziel: [220, 116, 236] },
     { name: 'Hauptturm', pos: [285, 205, 160], ziel: [250, 190, 132] },
+    { name: 'Steinkreis', pos: [262, 124, 432], ziel: [250, 116, 400] },
     { name: 'Hagrids Hütte', pos: [341, 14, 460], ziel: [339, 8, 446] },
     { name: 'Quidditch-Feld', pos: [425, 30, 425], ziel: [425, 6, 379] },
     { name: 'Gewächshäuser', pos: [85, 13, 253], ziel: [85, 7, 237] },
@@ -454,7 +537,7 @@
     ziehen = null;
   });
   canvas.addEventListener('dblclick', () => { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) { /* nicht verfügbar */ } });
-  document.addEventListener('pointerlockchange', () => { $('#fadenkreuz').hidden = document.pointerLockElement !== canvas; });
+  
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); setzeTempo(tempo * (e.deltaY < 0 ? 1.15 : 0.87)); }, { passive: false });
   function dreh(dx, dy) {
     gier -= dx * 0.0032; nick -= dy * 0.0032;
@@ -610,6 +693,12 @@
       posTakt = 0;
       const p = kamera.position;
       $('#posAnzeige').textContent = `X ${Math.floor(p.x)} · Y ${Math.floor(p.y)} · Z ${Math.floor(p.z)}`;
+      const t = strahl(p, new THREE.Vector3(0, 0, -1).applyQuaternion(kamera.quaternion), 250);
+      const ziel = $('#zielBlock');
+      if (t) {
+        const inf = info[welt.daten[(t[1] * SZ + t[2]) * SX + t[0]]];
+        ziel.textContent = inf.b.mat; ziel.hidden = false;
+      } else ziel.hidden = true;
     }
     requestAnimationFrame(schleife);
   }

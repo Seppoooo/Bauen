@@ -11,7 +11,8 @@
 </head>
 <body>
 <canvas id="welt" tabindex="0" aria-label="3D-Welt: Hogwarts in Minecraft"></canvas>
-<div class="fadenkreuz" id="fadenkreuz" hidden></div>
+<div class="fadenkreuz" id="fadenkreuz"></div>
+<p class="zielblock" id="zielBlock" hidden></p>
 
 <header class="kopf">
   <a class="zurueck" id="zurueckLink" href="index.html">← Bauplan</a>
@@ -23,7 +24,7 @@
   <button type="button" class="leiste-knopf" id="leisteKnopf" aria-expanded="true" aria-controls="leisteInhalt">Menü</button>
   <div id="leisteInhalt" class="leiste-inhalt">
     <section>
-      <h2>Bauen ansehen</h2>
+      <h2>Bauen ansehen <small>· für Minecraft 26.3</small></h2>
       <label class="regler" for="bauRegler">Gebaut bis Ebene <output id="bauWert">alles</output></label>
       <input type="range" id="bauRegler" min="0" max="210" value="210">
       <div class="knopfreihe">
@@ -41,7 +42,7 @@
     </section>
     <section>
       <h2>Block</h2>
-      <p id="blockInfo" class="blockinfo">Klicke (oder tippe) auf einen Block, um zu sehen, was es ist und wo er hingehört.</p>
+      <p id="blockInfo" class="blockinfo">Das Fadenkreuz zeigt immer den Blocknamen. Klicke (oder tippe) auf einen Block für die genaue Block-ID mit Ausrichtung und die Koordinaten.</p>
     </section>
     <section class="steuerung">
       <h2>Steuerung</h2>

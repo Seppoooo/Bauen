@@ -38,8 +38,17 @@
   def('spruce_planks', 'minecraft:spruce_planks', 'Fichtenholzbretter', '#6e5131');
   def('spruce_slab', 'minecraft:spruce_slab', 'Fichtenholzstufe', '#6e5131',
     { form: 'stufe', props: { type: 'bottom', ...WL } });
-  def('spruce_log', 'minecraft:spruce_log', 'Fichtenstamm', '#3d2b1a', { props: { axis: 'y' } });
-  def('oak_log', 'minecraft:oak_log', 'Eichenstamm', '#6b5434', { props: { axis: 'y' } });
+  // Stämme: Schlüssel "<holz>_log" (senkrecht) sowie "<holz>_log_x" / "<holz>_log_z" (liegend, für Äste und Wurzeln)
+  for (const [holz, name, farbe] of [['spruce', 'Fichtenstamm', '#3d2b1a'], ['oak', 'Eichenstamm', '#6b5434'],
+    ['birch', 'Birkenstamm', '#d8d4c8'], ['dark_oak', 'Schwarzeichenstamm', '#3b2a17']]) {
+    def(holz + '_log', 'minecraft:' + holz + '_log', name, farbe, { props: { axis: 'y' } });
+    def(holz + '_log_x', 'minecraft:' + holz + '_log', name, farbe, { props: { axis: 'x' } });
+    def(holz + '_log_z', 'minecraft:' + holz + '_log', name, farbe, { props: { axis: 'z' } });
+  }
+  for (const [id, name, farbe] of [['birch_leaves', 'Birkenlaub', '#6f9a42'], ['dark_oak_leaves', 'Schwarzeichenlaub', '#2f5a1f'],
+    ['azalea_leaves', 'Azaleenlaub', '#5b7f2c']]) {
+    def(id, 'minecraft:' + id, name, farbe, { props: { distance: '1', persistent: 'true', waterlogged: 'false' } });
+  }
   def('oak_leaves', 'minecraft:oak_leaves', 'Eichenlaub', '#3f6b2a',
     { props: { distance: '1', persistent: 'true', ...WL } });
   def('bookshelf', 'minecraft:bookshelf', 'Bücherregal', '#7a5530');
@@ -86,16 +95,23 @@
 
   // Treppen: Schlüssel <präfix>_<n|s|e|w>, "facing" = Richtung der hohen Seite
   const RICHTUNG = { n: 'north', s: 'south', e: 'east', w: 'west' };
-  function treppen(praefix, id, mat, farbe) {
+  function treppen(praefix, id, mat, farbe, half) {
     for (const r of Object.keys(RICHTUNG)) {
       def(praefix + '_' + r, id, mat, farbe, {
         form: 'treppe', deckend: false,
-        props: { facing: RICHTUNG[r], half: 'bottom', shape: 'straight', ...WL }
+        props: { facing: RICHTUNG[r], half: half || 'bottom', shape: 'straight', ...WL }
       });
     }
   }
   treppen('dts', 'minecraft:deepslate_tile_stairs', 'Tiefenschieferfliesentreppe', '#38383e');
   treppen('sps', 'minecraft:spruce_stairs', 'Fichtenholztreppe', '#6e5131');
+  // Steinziegeltreppen für Fassadendetails: sbs = normal, sbt = kopfüber (half=top)
+  treppen('sbs', 'minecraft:stone_brick_stairs', 'Steinziegeltreppe', '#7e7e7e');
+  treppen('sbt', 'minecraft:stone_brick_stairs', 'Steinziegeltreppe', '#7e7e7e', 'top');
+  def('stone_brick_slab_top', 'minecraft:stone_brick_slab', 'Steinziegelstufe', '#7e7e7e',
+    { form: 'stufe', deckend: false, props: { type: 'top', ...WL } });
+  def('cobblestone_wall', 'minecraft:cobblestone_wall', 'Bruchsteinmauer', '#6b6b6b',
+    { form: 'pfosten', deckend: false, props: { east: 'none', north: 'none', south: 'none', up: 'true', west: 'none', ...WL } });
 
   // Zäune werden nach dem Bauen verbunden: "spruce_fence" oder "spruce_fence:nesw"
   function block(key) {
@@ -327,7 +343,101 @@
       });
     }
     satteldach(m, x0, z0, x1, z1, yt, achse);
+    if (!halle && etagen >= 2 && Math.min(x1 - x0, z1 - z0) >= 14) gauben(m, x0, z0, x1, z1, yt, achse);
     return yt;
+  }
+
+  /* Dachgauben: kleine Giebel mit Fenster auf beiden Dachseiten, alle 12 Blöcke */
+  function gauben(m, x0, z0, x1, z1, yt, achse) {
+    const lx = achse === 'x';
+    const a0 = lx ? x0 : z0, a1 = lx ? x1 : z1, b0 = lx ? z0 : x0, b1 = lx ? z1 : x1;
+    const S = (a, y, b, k) => (lx ? m.set(a, y, b, k) : m.set(b, y, a, k));
+    const plus = lx ? 'e' : 's', minus = lx ? 'w' : 'n';
+    const scheibe = lx ? 'pane_ew' : 'pane_ns';
+    for (let l = a0 + 7; l <= a1 - 6; l += 12) {
+      for (const [bw, sb] of [[b0, 1], [b1, -1]]) {
+        for (let t = 0; t <= 3; t++) {
+          const b = bw + sb * t;
+          for (let y = yt + 1; y <= yt + 3; y++) {
+            S(l - 1, y, b, mauer); S(l + 1, y, b, mauer);
+            S(l, y, b, t === 0 ? (y <= yt + 2 ? scheibe : mauer) : 'air');
+          }
+          S(l - 2, yt + 4, b, 'dts_' + plus); S(l + 2, yt + 4, b, 'dts_' + minus);
+          S(l - 1, yt + 4, b, 'dts_' + plus); S(l + 1, yt + 4, b, 'dts_' + minus);
+          S(l, yt + 4, b, 'deepslate_tiles'); S(l, yt + 5, b, 'deepslate_tile_slab');
+        }
+        S(l, yt, bw - sb, 'stone_brick_slab_top');
+      }
+    }
+  }
+
+  /* Fassadenrelief: Sockel, Pilaster, Fensterbänke und -bögen, Traufgesims – eine Blockschicht vor der Mauer */
+  function fassade(m, o, alle) {
+    const { x0, z0, x1, z1 } = o;
+    const y0 = 4, halle = !!o.halle, etagen = o.etagen || 1;
+    const yt = halle ? y0 + o.hoehe : y0 + 6 * etagen;
+    const inRechteck = (x, z) => alle.some((r) => x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1);
+    const seiten = [
+      { feste: z0, achse: 'x', von: x0, bis: x1, d: [0, -1], zurWand: 's' },
+      { feste: z1, achse: 'x', von: x0, bis: x1, d: [0, 1], zurWand: 'n' },
+      { feste: x0, achse: 'z', von: z0, bis: z1, d: [-1, 0], zurWand: 'e' },
+      { feste: x1, achse: 'z', von: z0, bis: z1, d: [1, 0], zurWand: 'w' }
+    ];
+    for (const sd of seiten) {
+      const entlangPlus = sd.achse === 'x' ? 'e' : 's', entlangMinus = sd.achse === 'x' ? 'w' : 'n';
+      const zelle = (a, tiefe) => sd.achse === 'x' ? [a, sd.feste + sd.d[1] * tiefe] : [sd.feste + sd.d[0] * tiefe, a];
+      const setze = (a, y, tiefe, k) => {
+        const [x, z] = zelle(a, tiefe);
+        if (inRechteck(x, z) || m.get(x, y, z) !== 'air') return;
+        m.set(x, y, z, k);
+      };
+      const wand = (a, y) => { const [x, z] = zelle(a, 0); return m.get(x, y, z); };
+      for (let a = sd.von; a <= sd.bis; a++) {
+        const p = a - sd.von;
+        const ecke = a === sd.von || a === sd.bis;
+        // Vor Türen und Toren im Erdgeschoss bleibt der Weg frei
+        if ([a - 1, a, a + 1].some((b) => wand(b, y0 + 1) === 'air' && wand(b, y0 + 2) === 'air')) {
+          setze(a, yt, 1, 'sbt_' + sd.zurWand);
+          continue;
+        }
+        // Schräger Sockel
+        setze(a, y0, 1, mauer);
+        // Pilaster bzw. Strebepfeiler
+        const pilaster = halle ? p % 8 === 0 : p % 4 === 0;
+        if (pilaster || ecke) {
+          const hoch = halle ? yt - 9 : yt - 1;
+          for (let y = y0 + 1; y <= hoch; y++) setze(a, y, 1, mauer);
+          if (halle && !ecke) {
+            // gestufter Strebepfeiler mit Fiale
+            for (let y = y0; y <= yt - 9; y++) setze(a, y, 2, mauer);
+            setze(a, yt - 8, 2, 'sbs_' + sd.zurWand);
+            for (let y = yt - 8; y <= yt - 1; y++) setze(a, y, 1, mauer);
+            for (let y = yt - 7; y <= yt + 2; y++) setze(a, y, 2, y <= yt ? mauer : 'cobblestone_wall');
+            setze(a, yt + 3, 2, 'lightning_rod');
+          }
+        } else {
+          setze(a, y0 + 1, 1, 'sbs_' + sd.zurWand);
+        }
+        // Fenster: Bank darunter, Spitzbogen darüber
+        if (halle) {
+          const q = p % 8;
+          if (q === 3 || q === 4) setze(a, y0 + 3, 1, 'stone_brick_slab_top');
+          if (q === 2) { setze(a, yt - 6, 1, 'sbt_' + entlangPlus); }
+          if (q === 5) { setze(a, yt - 6, 1, 'sbt_' + entlangMinus); }
+          if (q === 3) { setze(a, yt - 6, 1, mauer); setze(a, yt - 5, 1, 'sbt_' + entlangPlus); }
+          if (q === 4) { setze(a, yt - 6, 1, mauer); setze(a, yt - 5, 1, 'sbt_' + entlangMinus); }
+        } else if (!ecke) {
+          for (let k = 0; k < etagen; k++) {
+            const fy = y0 + 6 * k;
+            if (p % 4 === 2) { setze(a, fy + 1, 1, 'stone_brick_slab_top'); setze(a, fy + 5, 1, 'stone_brick_slab_top'); }
+            if (p % 4 === 1) setze(a, fy + 5, 1, 'sbt_' + entlangPlus);
+            if (p % 4 === 3) setze(a, fy + 5, 1, 'sbt_' + entlangMinus);
+          }
+        }
+        // Traufgesims unter dem Dach
+        setze(a, yt, 1, 'sbt_' + sd.zurWand);
+      }
+    }
   }
 
   /* Runder Turm mit Etagen, Leiter und Kegeldach */
@@ -369,6 +479,40 @@
       const decke = boeden[boeden.indexOf(fy) + 1];
       m.set(cx, decke - 1, cz, 'lantern_h');
     }
+    // Lisenen an den vier Diagonalen und Kragsteine unter dem Dachrand
+    const dg = Math.round((r + 1) / Math.SQRT2);
+    for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      for (let y = y0 + 1; y < top - 1; y++) if (m.get(cx + sx * dg, y, cz + sz * dg) === 'air') m.set(cx + sx * dg, y, cz + sz * dg, mauer);
+    }
+    for (let dz = -r - 1; dz <= r + 1; dz++) for (let dx = -r - 1; dx <= r + 1; dx++) {
+      if (!imKreis(dx, dz, r + 1) || imKreis(dx, dz, r)) continue;
+      const rr = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+      if (m.get(cx + dx, top - 1, cz + dz) === 'air') m.set(cx + dx, top - 1, cz + dz, 'sbt_' + rr);
+    }
+    // Fensterbänke und -stürze vor den Turmfenstern
+    for (const fy of boeden.slice(0, -1)) for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1]]) {
+      const ax = cx + ux * (r + 1), az = cz + uz * (r + 1);
+      if (!m.get(cx + ux * r, fy + 2, cz + uz * r).startsWith('pane')) continue;
+      if (m.get(ax, fy + 1, az) === 'air') m.set(ax, fy + 1, az, 'stone_brick_slab_top');
+      if (m.get(ax, fy + 5, az) === 'air') m.set(ax, fy + 5, az, 'stone_brick_slab_top');
+    }
+    // Wehrgang mit Zinnen an großen Türmen
+    if (r >= 7) {
+      const wy = top - 14;
+      for (let dz = -r - 3; dz <= r + 3; dz++) for (let dx = -r - 3; dx <= r + 3; dx++) {
+        const aussen = imKreis(dx, dz, r + 2), turm = imKreis(dx, dz, r);
+        if (!aussen || turm) continue;
+        const rr = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+        m.set(cx + dx, wy - 1, cz + dz, 'sbt_' + rr);
+        m.set(cx + dx, wy, cz + dz, 'stone_bricks');
+        if (!imKreis(dx, dz, r + 1)) {
+          m.set(cx + dx, wy + 1, cz + dz, mauer);
+          if ((dx + dz) % 2 === 0) m.set(cx + dx, wy + 2, cz + dz, mauer);
+        }
+      }
+      for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1]]) for (let y = wy + 1; y <= wy + 3; y++) m.set(cx + ux * r, y, cz + uz * r, 'air');
+      for (const [ux, uz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) m.set(cx + ux * (r - 1), wy + 3, cz + uz * (r - 1), 'lantern_h');
+    }
     const R = r + 1, H = Math.round(R * 2.6) + 2;
     const spitze = kegel(m, cx, cz, R, top + 1, H, 'deepslate_tiles', 'dts');
     m.set(cx, spitze, cz, 'lightning_rod');
@@ -386,13 +530,16 @@
     for (const [x0, z0, x1, z1] of flaechen) box(m, x0 - 2, 0, z0 - 2, x1 + 2, 3, z1 + 2, sockel);
 
     // Trakte (Reihenfolge wichtig: spätere räumen Überschneidungen frei)
-    fluegel(m, { x0: 58, z0: 120, x1: 122, z1: 136, etagen: 2, trennAb: 0 });          // Südflügel / Eingang
-    fluegel(m, { x0: 86, z0: 28, x1: 94, z1: 38, etagen: 2, achse: 'z' });             // Verbindung Hauptturm
-    fluegel(m, { x0: 58, z0: 38, x1: 122, z1: 70, halle: true, hoehe: 25 });           // Große Halle
-    fluegel(m, { x0: 40, z0: 70, x1: 68, z1: 128, etagen: 3, trennAb: 1 });            // Westflügel (Bibliothek)
-    fluegel(m, { x0: 112, z0: 70, x1: 140, z1: 128, etagen: 3, trennAb: 0 });          // Ostflügel
-    fluegel(m, { x0: 10, z0: 56, x1: 40, z1: 100, etagen: 2, trennAb: 0 });            // Westanbau
-    fluegel(m, { x0: 140, z0: 46, x1: 170, z1: 96, etagen: 2, trennAb: 0 });           // Ostanbau
+    const TRAKTE = [
+      { x0: 58, z0: 120, x1: 122, z1: 136, etagen: 2, trennAb: 0 },          // Südflügel / Eingang
+      { x0: 86, z0: 28, x1: 94, z1: 38, etagen: 2, achse: 'z' },             // Verbindung Hauptturm
+      { x0: 58, z0: 38, x1: 122, z1: 70, halle: true, hoehe: 25 },           // Große Halle
+      { x0: 40, z0: 70, x1: 68, z1: 128, etagen: 3, trennAb: 1 },            // Westflügel (Bibliothek)
+      { x0: 112, z0: 70, x1: 140, z1: 128, etagen: 3, trennAb: 0 },          // Ostflügel
+      { x0: 10, z0: 56, x1: 40, z1: 100, etagen: 2, trennAb: 0 },            // Westanbau
+      { x0: 140, z0: 46, x1: 170, z1: 96, etagen: 2, trennAb: 0 }            // Ostanbau
+    ];
+    for (const t of TRAKTE) fluegel(m, t);
 
     // Große Halle: Tische, Bänke, Banner, schwebende Laternen
     for (const z of [45, 51, 57, 63]) {
@@ -473,6 +620,9 @@
     for (let z = 121; z <= 135; z++) for (let y = 5; y <= 9; y++) { m.set(86, y, z, mauer); m.set(94, y, z, mauer); }
     for (let z = 122; z <= 134; z += 4) { m.set(87, 8, z, 'lantern_h'); m.set(93, 8, z, 'lantern_h'); }
 
+    // Fassadenrelief vor allen Außenwänden (nicht in Nachbartrakte hinein)
+    for (const t of TRAKTE) fassade(m, t, TRAKTE.filter((u) => u !== t));
+
     // Türme
     turm(m, { cx: 90, cz: 22, r: 7, top: 74 });   // Hauptturm (Astronomieturm)
     turm(m, { cx: 58, cz: 38, r: 5, top: 46 });
@@ -510,35 +660,129 @@
 
   /* ================================================== Viadukt / Brücke */
   function erzeugeBruecke() {
-    // Zweistöckiges Viadukt: oben kleine Bögen unter dem Deck, unten hohe Bögen über der Schlucht
-    const m = new Modell(11, 76, 123);
-    const deck = 72;
+    // Zweistöckiges Viadukt mit Tiefe: vorspringende Pfeiler, zurückgesetzte Bogenfelder, Kragsteine, Zinnenbrüstung
+    const m = new Modell(13, 76, 123);
+    const deck = 72, X0 = 1, X1 = 11; // Brückenkörper x 1..11, Pfeiler springen bis x 0 / 12 vor
     for (let z = 0; z < 123; z++) {
-      for (let x = 0; x <= 10; x++) {
-        for (let y = deck - 3; y <= deck; y++) m.set(x, y, z, y === deck && x > 0 && x < 10 ? ((x + z) % 2 ? 'polished_andesite' : 'stone_bricks') : mauer);
+      for (let x = X0; x <= X1; x++) {
+        for (let y = deck - 3; y <= deck; y++) m.set(x, y, z, y === deck && x > X0 && x < X1 ? ((x + z) % 2 ? 'polished_andesite' : 'stone_bricks') : mauer);
       }
-      m.set(0, deck + 1, z, mauer); m.set(10, deck + 1, z, mauer);
-      if (z % 6 === 1) { m.set(0, deck + 2, z, 'lantern'); m.set(10, deck + 2, z, 'lantern'); }
-      if (z % 6 === 4) { m.set(0, deck + 1, z, 'stone_brick_slab'); m.set(10, deck + 1, z, 'stone_brick_slab'); }
+      // Kragsteine unter dem Deckgesims
+      m.set(X0 - 1, deck - 3, z, 'sbt_e'); m.set(X1 + 1, deck - 3, z, 'sbt_w');
+      m.set(X0 - 1, deck - 2, z, 'stone_bricks'); m.set(X1 + 1, deck - 2, z, 'stone_bricks');
+      // Brüstung mit Zinnen
+      m.set(X0, deck + 1, z, mauer); m.set(X1, deck + 1, z, mauer);
+      m.set(X0 - 1, deck - 1, z, 'stone_brick_slab_top'); m.set(X1 + 1, deck - 1, z, 'stone_brick_slab_top');
+      if (z % 2 === 0) { m.set(X0, deck + 2, z, 'stone_brick_slab'); m.set(X1, deck + 2, z, 'stone_brick_slab'); }
     }
     for (let k = 0; k <= 10; k++) {
       const pz = 12 * k + 1;
-      for (let z = pz - 1; z <= pz + 1; z++) for (let x = 1; x <= 9; x++) for (let y = 0; y < deck - 3; y++) m.set(x, y, z, mauer);
-      for (let z = pz - 2; z <= pz + 2; z++) for (let x = 0; x <= 10; x++) for (let y = 0; y <= 8; y++) m.set(x, y, z, y === 8 ? 'polished_andesite' : sockel);
-      // Pfeilervorlagen
-      for (let y = 9; y < deck - 3; y++) { m.set(0, y, pz, mauer); m.set(10, y, pz, mauer); }
+      // Pfeiler: Kern, vorspringende Vorlagen, gestufter Fuß, Wellenbrecher
+      for (let z = pz - 1; z <= pz + 1; z++) for (let x = X0; x <= X1; x++) for (let y = 0; y < deck - 3; y++) m.set(x, y, z, mauer);
+      for (let z = pz - 1; z <= pz + 1; z++) for (let y = 9; y < deck - 4; y++) { m.set(X0 - 1, y, z, mauer); m.set(X1 + 1, y, z, mauer); }
+      for (let y = 9; y < deck - 4; y += 9) for (let z = pz - 1; z <= pz + 1; z++) { m.set(X0 - 1, y, z, 'polished_andesite'); m.set(X1 + 1, y, z, 'polished_andesite'); }
+      for (let z = pz - 2; z <= pz + 2; z++) for (let x = X0 - 1; x <= X1 + 1; x++) for (let y = 0; y <= 8; y++) m.set(x, y, z, y === 8 ? 'polished_andesite' : sockel);
+      for (let y = 0; y <= 7; y++) for (let x = X0 + 2; x <= X1 - 2; x++) {
+        const breite = Math.max(0, 3 - Math.floor(y / 3));
+        if (Math.abs(x - 6) <= breite) { m.set(x, y, pz - 3, sockel); m.set(x, y, pz + 3, sockel); }
+      }
+      m.set(X0 - 1, deck - 4, pz, 'sbt_e'); m.set(X1 + 1, deck - 4, pz, 'sbt_w');
+      // Laternen auf den Pfeilern
+      m.set(X0, deck + 2, pz, 'stone_bricks'); m.set(X1, deck + 2, pz, 'stone_bricks');
+      m.set(X0, deck + 3, pz, 'lantern'); m.set(X1, deck + 3, pz, 'lantern');
       if (k === 10) break;
       const zc = pz + 6;
       for (let z = pz + 2; z <= pz + 10; z++) {
         const d = Math.abs(z - zc);
         const oben = Math.ceil(deck - 12 + Math.sqrt(Math.max(0, 22 - d * d)));
         const unten = Math.ceil(26 + Math.sqrt(Math.max(0, 22 - d * d)) * 1.6);
-        for (let x = 1; x <= 9; x++) {
-          for (let y = oben; y < deck - 3; y++) m.set(x, y, z, y === oben ? 'polished_andesite' : mauer);
-          for (let y = unten; y <= 40; y++) m.set(x, y, z, y === unten ? 'polished_andesite' : y >= 38 ? 'polished_andesite' : mauer);
+        for (let x = X0; x <= X1; x++) {
+          const aussen = x === X0 || x === X1;
+          // Bogenring außen, Bogenfeld (Zwickel) einen Block zurückgesetzt
+          for (let y = oben; y < deck - 3; y++) {
+            const ring = y <= oben + 1;
+            if (aussen && !ring) continue;
+            m.set(x, y, z, y === oben ? 'polished_andesite' : ring && aussen ? 'stone_bricks' : mauer);
+          }
+          for (let y = unten; y <= 40; y++) {
+            const ring = y <= unten + 1, band = y >= 38;
+            if (aussen && !ring && !band) continue;
+            m.set(x, y, z, y === unten || band ? 'polished_andesite' : mauer);
+          }
+          if (aussen) { m.set(x, oben - 1, z, 'air'); }
         }
+        // Gesimsband zwischen den Stockwerken springt vor
+        m.set(X0 - 1, 40, z, 'stone_brick_slab_top'); m.set(X1 + 1, 40, z, 'stone_brick_slab_top');
       }
     }
+    return m;
+  }
+
+  /* ================================================== Brückenkopf mit Steinkreis (auf dem Südhügel) */
+  function erzeugeBrueckenkopf() {
+    const m = new Modell(33, 24, 33);
+    const c = 16;
+    for (let z = 0; z < 33; z++) for (let x = 0; x < 33; x++) {
+      const d = Math.hypot(x - c, z - c);
+      if (d > 15.5) continue;
+      const r = hash(x, 0, z);
+      m.set(x, 0, z, d > 14.5 ? 'stone_bricks' : r < 0.45 ? 'stone_bricks' : r < 0.7 ? 'andesite' : r < 0.85 ? 'cobblestone' : 'mossy_cobblestone');
+      if (d > 14.5) m.set(x, 1, z, (x + z) % 2 ? 'stone_brick_slab' : 'cobblestone_wall');
+    }
+    // Torhaus: zwei Türme mit Pyramidendach und Bogen über dem Brückenweg (Brücke kommt von Norden, x 12..20)
+    for (const tx of [7, 21]) {
+      for (let y = 0; y <= 14; y++) for (let z = 0; z <= 4; z++) for (let x = tx; x <= tx + 4; x++) {
+        const rand = x === tx || x === tx + 4 || z === 0 || z === 4;
+        if (rand) m.set(x, y, z, y === 5 || y === 10 ? 'polished_andesite' : mauer);
+        else if (y === 0 || y === 6 || y === 11) m.set(x, y, z, 'spruce_planks');
+        else m.set(x, y, z, 'air');
+      }
+      for (const y of [3, 4, 8, 9, 12, 13]) { m.set(tx + 2, y, 0, 'pane_ew'); m.set(tx + 2, y, 4, 'pane_ew'); }
+      for (let y = 1; y <= 3; y++) m.set(tx + 2, y, 4, 'air');
+      for (let k = 0; k <= 3; k++) {
+        const y = 15 + k;
+        for (let z = -1 + k; z <= 5 - k; z++) for (let x = tx - 1 + k; x <= tx + 5 - k; x++) {
+          const rand = x === tx - 1 + k || x === tx + 5 - k || z === -1 + k || z === 5 - k;
+          if (!rand && k < 3) continue;
+          const dx = x - (tx + 2), dz = z - 2;
+          const r = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 'w' : 'e') : (dz > 0 ? 'n' : 's');
+          m.set(x, y, z, k === 3 ? 'deepslate_tiles' : 'dts_' + r);
+        }
+      }
+      m.set(tx + 2, 19, 2, 'lightning_rod');
+      for (let x = tx - 1; x <= tx + 5; x++) for (const z of [-1, 5]) if (m.drin(x, 14, z)) m.set(x, 14, z, 'sbt_' + (z < 0 ? 's' : 'n'));
+    }
+    for (let x = 12; x <= 20; x++) for (let z = 0; z <= 4; z++) {
+      for (let y = 7; y <= 10; y++) {
+        const bogen = y === 7 && (x === 12 || x === 20) || y > 7;
+        if (bogen) m.set(x, y, z, y === 10 ? 'stone_bricks' : mauer);
+      }
+      if (z === 0 || z === 4) m.set(x, 11, z, x % 2 ? 'stone_bricks' : 'air');
+    }
+    for (let x = 13; x <= 19; x++) { m.set(x, 7, 0, 'sbt_' + (x < 16 ? 'w' : x > 16 ? 'e' : 's')); }
+    for (let z = 0; z <= 1; z++) for (let x = 12; x <= 20; x++) m.set(x, 0, z, 'stone_brick_slab');
+    m.set(16, 6, 2, 'lantern_h');
+    // Steinkreis
+    const steine = 11;
+    for (let i = 0; i < steine; i++) {
+      const w = i / steine * Math.PI * 2 + 0.3, sx = Math.round(c + Math.cos(w) * 9.5), sz = Math.round(c + 2 + Math.sin(w) * 8.5);
+      const hoch = 3 + Math.floor(hash(i, 1, 9) * 4), quer = Math.abs(Math.cos(w)) > Math.abs(Math.sin(w));
+      for (let y = 1; y <= hoch; y++) {
+        const k = hash(i, y, 3) < 0.3 ? 'mossy_cobblestone' : hash(i, y, 4) < 0.5 ? 'stone' : 'andesite';
+        m.set(sx, y, sz, k);
+        if (y < hoch - 1) quer ? m.set(sx, y, sz + 1, k) : m.set(sx + 1, y, sz, k);
+      }
+      if (hash(i, 2, 5) < 0.5) m.set(sx, hoch + 1, sz, quer ? 'stone_brick_slab' : 'cobblestone_wall');
+    }
+    // Mitte: Sonnenuhr mit Laterne, Bänke, Laternenpfosten
+    for (let y = 1; y <= 2; y++) m.set(c, y, c + 2, 'polished_andesite');
+    m.set(c, 3, c + 2, 'lantern');
+    for (const [x, z, f] of [[c - 3, c + 2, 'sps_w'], [c + 3, c + 2, 'sps_e'], [c, c + 5, 'sps_s']]) m.set(x, 1, z, f);
+    for (const [x, z] of [[9, 8], [23, 8], [5, 18], [27, 18], [10, 27], [22, 27]]) {
+      for (let y = 1; y <= 3; y++) m.set(x, y, z, 'cobblestone_wall');
+      m.set(x, 4, z, 'lantern');
+    }
+    for (let z = 28; z <= 32; z++) for (let x = 14; x <= 18; x++) if (m.get(x, 1, z) !== 'air' && Math.hypot(x - c, z - c) > 14.5) m.set(x, 1, z, 'air');
     return m;
   }
 
@@ -637,6 +881,94 @@
   }
 
 
+
+  /* ================================================== Selbstgebaute Bäume (jeder anders) */
+  function baumBauer(m, h0) {
+    const r = (a) => hash(h0, a, 77);
+    const blatt = (x, y, z, k) => { if (m.get(x, y, z) === 'air') m.set(x, y, z, k); };
+    const holz = (x, y, z, k) => { const t = m.get(x, y, z); if (t === 'air' || t.endsWith('leaves')) m.set(x, y, z, k); };
+    // unregelmäßige Laubwolke, Rand ausgefranst, zwei Laubarten gemischt
+    function wolke(cx, cy, cz, rad, k, k2, anteil2, flach) {
+      const g = Math.ceil(rad) + 1;
+      for (let dy = -g; dy <= g; dy++) for (let dz = -g; dz <= g; dz++) for (let dx = -g; dx <= g; dx++) {
+        const d = Math.sqrt(dx * dx + dy * dy * (flach || 1.3) + dz * dz);
+        const n = hash(cx + dx, cy + dy, cz + dz);
+        if (d > rad + (n - 0.5) * 1.4) continue;
+        if (d > rad - 1 && n < 0.18) continue;
+        blatt(cx + dx, cy + dy, cz + dz, n < anteil2 ? k2 : k);
+      }
+    }
+    // Ast als Linie aus liegenden Stämmen
+    function ast(x, y, z, dx, dy, dz, laenge, art) {
+      let px = x, py = y, pz = z;
+      for (let i = 1; i <= laenge; i++) {
+        const nx = Math.round(x + dx * i), ny = Math.round(y + dy * i), nz = Math.round(z + dz * i);
+        const ax = nx !== px ? '_log_x' : nz !== pz ? '_log_z' : '_log';
+        holz(nx, ny, nz, art + (ny !== py && nx === px && nz === pz ? '_log' : ax));
+        px = nx; py = ny; pz = nz;
+      }
+      return [px, py, pz];
+    }
+    function wurzeln(x, y, z, art, breit) {
+      const n = 2 + Math.floor(r(1) * 3);
+      for (let i = 0; i < n; i++) {
+        const w = r(10 + i) * Math.PI * 2, dx = Math.round(Math.cos(w)), dz = Math.round(Math.sin(w));
+        if (!dx && !dz) continue;
+        const l = 1 + Math.floor(r(20 + i) * (breit ? 3 : 2));
+        for (let j = 1; j <= l; j++) holz(x + dx * j + (breit && dx > 0 ? 1 : 0), y - (j > 1 ? 1 : 0), z + dz * j + (breit && dz > 0 ? 1 : 0), art + (Math.abs(dx) >= Math.abs(dz) ? '_log_x' : '_log_z'));
+      }
+    }
+    function eiche(x, h, z) {
+      const breit = r(2) < 0.35, hoch = 5 + Math.floor(r(3) * 4) + (breit ? 2 : 0);
+      for (let y = h + 1; y <= h + hoch; y++) for (let i = 0; i < (breit ? 4 : 1); i++) holz(x + (i & 1), y, z + (i >> 1), 'oak_log');
+      wurzeln(x, h + 1, z, 'oak', breit);
+      const aeste = 3 + Math.floor(r(4) * 3);
+      for (let i = 0; i < aeste; i++) {
+        const w = r(30 + i) * Math.PI * 2, start = h + Math.floor(hoch * (0.55 + r(40 + i) * 0.45));
+        const l = 3 + Math.floor(r(50 + i) * (breit ? 4 : 3));
+        const [ex, ey, ez] = ast(x, start, z, Math.cos(w), 0.55, Math.sin(w), l, 'oak');
+        wolke(ex, ey + 1, ez, 2.2 + r(60 + i) * 1.4, 'oak_leaves', 'azalea_leaves', 0.22);
+      }
+      wolke(x, h + hoch + 1, z, 2.8 + r(5) * 1.2, 'oak_leaves', 'azalea_leaves', 0.22);
+    }
+    function fichte(x, h, z) {
+      const hoch = 10 + Math.floor(r(3) * 8), maxR = 2.6 + r(4) * 2, top = h + hoch;
+      for (let y = h + 1; y <= top - 1; y++) holz(x, y, z, 'spruce_log');
+      wurzeln(x, h + 1, z, 'spruce', false);
+      const neig = r(6) * Math.PI * 2;
+      for (let y = h + 3 + Math.floor(r(5) * 3); y <= top; y++) {
+        const t = (top - y) / hoch;
+        const stufe = (top - y) % 3;
+        const rad = Math.max(0.6, maxR * t * (stufe === 0 ? 1 : stufe === 1 ? 0.75 : 0.5) + 0.6);
+        const g = Math.ceil(rad) + 1;
+        for (let dz = -g; dz <= g; dz++) for (let dx = -g; dx <= g; dx++) {
+          const winkel = Math.atan2(dz, dx);
+          const rr = rad * (0.85 + 0.3 * Math.sin(winkel * 3 + neig + y));
+          if (dx * dx + dz * dz <= rr * rr && hash(x + dx, y, z + dz) > 0.08) blatt(x + dx, y, z + dz, 'spruce_leaves');
+        }
+      }
+      blatt(x, top + 1, z, 'spruce_leaves'); blatt(x, top + 2, z, 'spruce_leaves');
+    }
+    function birke(x, h, z) {
+      const hoch = 6 + Math.floor(r(3) * 4);
+      const lx = r(7) < 0.5 ? 0 : (r(8) < 0.5 ? 1 : -1);
+      for (let y = h + 1; y <= h + hoch; y++) holz(x + (y > h + hoch - 2 ? lx : 0), y, z, 'birch_log');
+      wolke(x + lx, h + hoch, z, 2 + r(4), 'birch_leaves', 'oak_leaves', 0.1, 1.8);
+      if (r(9) < 0.6) { const [ex, ey, ez] = ast(x, h + hoch - 2, z, r(10) - 0.5, 0.6, r(11) - 0.5, 2, 'birch'); wolke(ex, ey + 1, ez, 1.7, 'birch_leaves', 'birch_leaves', 0); }
+    }
+    function schwarzeiche(x, h, z) {
+      const hoch = 4 + Math.floor(r(3) * 3);
+      for (let y = h + 1; y <= h + hoch; y++) for (let i = 0; i < 4; i++) holz(x + (i & 1), y, z + (i >> 1), 'dark_oak_log');
+      wurzeln(x, h + 1, z, 'dark_oak', true);
+      for (let i = 0; i < 4; i++) {
+        const w = (i + r(30 + i)) * Math.PI / 2, [ex, ey, ez] = ast(x, h + hoch - 1, z, Math.cos(w), 0.35, Math.sin(w), 3 + Math.floor(r(40 + i) * 2), 'dark_oak');
+        wolke(ex, ey + 1, ez, 3 + r(50 + i), 'dark_oak_leaves', 'oak_leaves', 0.15, 2.4);
+      }
+      wolke(x, h + hoch + 2, z, 3.5 + r(5) * 1.5, 'dark_oak_leaves', 'azalea_leaves', 0.12, 2.6);
+    }
+    return { eiche, fichte, birke, schwarzeiche };
+  }
+
   /* ================================================== Berg & Gelände 500×500 */
   // Weiches 2D-Rauschen (Value-Noise, mehrere Oktaven) im Bereich ca. -1..1
   function rauschen(x, z) {
@@ -661,10 +993,11 @@
   const LAGE = {
     berg: [0, 0, 0],
     hauptschloss: [160, PLATEAU_Y + 1, 110],
-    bruecke: [245, SATTEL_Y + 1, 261],
+    bruecke: [244, SATTEL_Y + 1, 261],
     hagrid: [330, TAL_Y + 1, 438],
     gewaechshaeuser: [70, TAL_Y + 1, 230],
-    quidditch: [390, TAL_Y + 1, 360]
+    quidditch: [390, TAL_Y + 1, 360],
+    brueckenkopf: [234, HUEGEL_Y + 1, 384]
   };
   const EBENEN = [ // geebnete Bauplätze [x0, z0, x1, z1]
     [330, 438, 352, 454], [70, 230, 100, 244], [390, 360, 460, 398]
@@ -709,7 +1042,7 @@
   }
 
   function erzeugeBerg() {
-    const N = 500, m = new Modell(N, HUEGEL_Y + 16, N);
+    const N = 500, m = new Modell(N, HUEGEL_Y + 24, N);
     const H = new Int16Array(N * N);
     for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) H[z * N + x] = gelaendeHoehe(x, z);
     const hAt = (x, z) => H[Math.max(0, Math.min(N - 1, z)) * N + Math.max(0, Math.min(N - 1, x))];
@@ -771,34 +1104,21 @@
       for (const [x0, z0, x1, z1] of EBENEN) if (x > x0 - 6 && x < x1 + 6 && z > z0 - 6 && z < z1 + 6) return true;
       return false;
     };
-    const blatt = (x, y, z, k) => { if (m.get(x, y, z) === 'air') m.set(x, y, z, k); };
-    for (let gz = 0; gz < N / 6; gz++) for (let gx = 0; gx < N / 6; gx++) {
-      const x = gx * 6 + Math.floor(hash(gx, 11, gz) * 5), z = gz * 6 + Math.floor(hash(gx, 12, gz) * 5);
-      if (x < 3 || z < 3 || x > N - 4 || z > N - 4) continue;
+    for (let gz = 0; gz < N / 7; gz++) for (let gx = 0; gx < N / 7; gx++) {
+      const x = gx * 7 + Math.floor(hash(gx, 11, gz) * 6), z = gz * 7 + Math.floor(hash(gx, 12, gz) * 6);
+      if (x < 6 || z < 6 || x > N - 7 || z > N - 7) continue;
       if (fbm(x / 70 + 9, z / 70) < -0.15 && hash(gx, 13, gz) < 0.75) continue;
-      if (hash(gx, 14, gz) < 0.25 || gesperrt(x, z) || wegZelle[z * N + x]) continue;
+      if (hash(gx, 14, gz) < 0.2 || gesperrt(x, z) || wegZelle[z * N + x]) continue;
       const t = oben[z * N + x];
       if (t !== 'grass_block' && t !== 'coarse_dirt' && t !== 'moss_block') continue;
       const h = H[z * N + x];
-      if (hash(gx, 15, gz) < 0.65) {
-        const hoch = 7 + Math.floor(hash(gx, 16, gz) * 5), spitze = h + hoch;
-        for (let y = h + 1; y <= spitze; y++) m.set(x, y, z, 'spruce_log');
-        blatt(x, spitze + 1, z, 'spruce_leaves');
-        for (let y = h + 3; y <= spitze; y++) {
-          const ab = spitze - y;
-          let r = Math.min(3, 1 + Math.floor(ab / 2.5));
-          if (ab % 2 === 1 && r > 1) r--;
-          for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
-            if ((dx || dz) && dx * dx + dz * dz <= r * r + 1) blatt(x + dx, y, z + dz, 'spruce_leaves');
-          }
-        }
-      } else {
-        const hoch = 4 + Math.floor(hash(gx, 17, gz) * 3), k = h + hoch;
-        for (let dy = -2; dy <= 2; dy++) for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
-          if (dx * dx + dy * dy * 1.6 + dz * dz <= 8 + hash(x + dx, k + dy, z + dz) * 3) blatt(x + dx, k + dy, z + dz, 'oak_leaves');
-        }
-        for (let y = h + 1; y <= k; y++) m.set(x, y, z, 'oak_log');
-      }
+      const baum = baumBauer(m, gx * 1000 + gz);
+      const w = hash(gx, 15, gz), hoehe = h / PLATEAU_Y;
+      // oben am Berg mehr Fichten, im Tal mehr Laubbäume
+      if (w < 0.25 + hoehe * 0.5) baum.fichte(x, h, z);
+      else if (w < 0.62 + hoehe * 0.3) baum.eiche(x, h, z);
+      else if (w < 0.82 + hoehe * 0.15) baum.birke(x, h, z);
+      else baum.schwarzeiche(x, h, z);
     }
     // Blumen und Farne
     for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
@@ -814,24 +1134,27 @@
     { id: 'hauptschloss', titel: 'Hauptschloss', datei: 'hogwarts-hauptschloss.litematic', erstelle: erzeugeHauptschloss,
       text: 'Große Halle, Innenhof mit Kreuzgang, West- und Ostflügel, Bibliothek, 15 Türme und Torbau.' },
     { id: 'bruecke', titel: 'Viadukt (Brücke)', datei: 'hogwarts-bruecke.litematic', erstelle: erzeugeBruecke,
-      text: 'Zweistöckiges Viadukt mit 10 Bogenfeldern, 123 Blöcke lang und 76 hoch. Verbindet den Torbau mit dem Südhügel.' },
+      text: 'Zweistöckiges Viadukt mit 10 Bogenfeldern, vorspringenden Pfeilern, Wellenbrechern und Zinnenbrüstung. 123 Blöcke lang, 76 hoch.' },
     { id: 'hagrid', titel: 'Hagrids Hütte', datei: 'hogwarts-hagrids-huette.litematic', erstelle: erzeugeHagrid,
       text: 'Runde Steinhütte mit Kegeldach, rauchendem Kamin und Kürbisbeet.' },
     { id: 'gewaechshaeuser', titel: 'Gewächshäuser', datei: 'hogwarts-gewaechshaeuser.litematic', erstelle: erzeugeGewaechshaeuser,
       text: 'Drei Glashäuser mit Fichtenholzrahmen, Pflanzbeeten und Laternen.' },
     { id: 'quidditch', titel: 'Quidditch-Feld', datei: 'hogwarts-quidditch.litematic', erstelle: erzeugeQuidditch,
       text: 'Ovales Spielfeld mit je drei Torringen und vier Tribünen in den Hausfarben.' },
+    { id: 'brueckenkopf', titel: 'Brückenkopf & Steinkreis', datei: 'hogwarts-brueckenkopf.litematic', erstelle: erzeugeBrueckenkopf,
+      text: 'Torhaus mit zwei Türmen, wo das Viadukt auf dem Südhügel ankommt, gepflasterter Platz mit Steinkreis, Sonnenuhr und Laternen.' },
     { id: 'berg', titel: 'Berg & Gelände', datei: 'hogwarts-berg.litematic', erstelle: erzeugeBerg,
       text: '500 × 500 Blöcke: Gipfelplateau, Klippen, Schlucht, Südhügel, See mit Strand, Wälder, Wege und Wasserfall-Quellen.' }
   ];
   for (const b of BAUWERKE) b.lage = LAGE[b.id];
 
   // Berg in zwei deckungsgleiche Teile zerlegen: erst Gelände formen, dann Wald setzen
-  const VEGETATION = new Set(['spruce_log', 'oak_log', 'spruce_leaves', 'oak_leaves', 'poppy', 'dandelion', 'cornflower', 'fern']);
+  const VEGETATION = new Set(['poppy', 'dandelion', 'cornflower', 'fern']);
+  const istVegetation = (k) => VEGETATION.has(k) || k.includes('_log') || k.endsWith('_leaves');
   function bergTeil(wald, berg) {
     const quelle = berg || erzeugeBerg();
     const m = new Modell(quelle.sx, quelle.sy, quelle.sz);
-    const abb = quelle.keys.map((k) => (k !== 'air' && VEGETATION.has(k) === wald ? m.id(k) : 0));
+    const abb = quelle.keys.map((k) => (k !== 'air' && istVegetation(k) === wald ? m.id(k) : 0));
     for (let i = 0; i < quelle.daten.length; i++) m.daten[i] = abb[quelle.daten[i]];
     return m;
   }
@@ -841,7 +1164,7 @@
       text: 'Berg ohne Bäume und Blumen: Fels, Erde, Gras, See, Strand, Wege und Wasserfall-Quellen. Zuerst bauen.' },
     { id: 'wald', titel: 'Berg – nur Wald', datei: 'hogwarts-berg-wald.litematic', lage: [0, 0, 0],
       erstelle: (berg) => bergTeil(true, berg),
-      text: '1.427 Fichten, 700 Eichen, Blumen und Farne – gleicher Ursprung wie das Gelände, passt exakt darauf.' }
+      text: 'Selbstgebaute Bäume (Eichen, Fichten, Birken, Schwarzeichen – jeder anders), Blumen und Farne. Gleicher Ursprung wie das Gelände.' }
   ];
 
   // Alle Bauwerke an ihrer Lage zu einem Gesamtmodell zusammensetzen (für Vorschau)
@@ -849,7 +1172,7 @@
     const [bx0, bz0, bx1, bz1] = bereich || [0, 0, 499, 499];
     const g = new Modell(bx1 - bx0 + 1, PLATEAU_Y + 1 + 100, bz1 - bz0 + 1);
     g.teile = [];
-    for (const b of ['berg', 'hauptschloss', 'bruecke', 'hagrid', 'gewaechshaeuser', 'quidditch'].map((id) => BAUWERKE.find((e) => e.id === id))) {
+    for (const b of ['berg', 'hauptschloss', 'bruecke', 'brueckenkopf', 'hagrid', 'gewaechshaeuser', 'quidditch'].map((id) => BAUWERKE.find((e) => e.id === id))) {
       const m = b.erstelle(), [ox, oy, oz] = b.lage;
       g.teile.push({ id: b.id, titel: b.titel, lage: [ox - bx0, oy, oz - bz0], groesse: [m.sx, m.sy, m.sz] });
       const abb = m.keys.map((k) => g.id(k));

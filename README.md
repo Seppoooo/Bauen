@@ -13,23 +13,25 @@ Eine Website mit einer detaillierten Bauanleitung für ein riesiges Hogwarts-Sch
 - **Materialliste** – exakt gezählt, mit Stacks und Shulkerkisten, pro Bauwerk oder für alles
 - **Bauabschnitte** – 7 Schritte zum Abhaken (der Fortschritt wird im Browser gespeichert)
 - **Ebenen-Viewer** – wie der Ebenen-Modus von Litematica: Ebene für Ebene, mit Koordinaten jedes Blocks und 3D-Vorschau
+- **3D-Ansicht (`3d.html`)** – frei durch die Welt fliegen, Bau im Zeitraffer, Blockname unter dem Fadenkreuz
 - **Litematica-Downloads** – alle Bauwerke als `.litematic`
 
 ## Bauwerke
 
 | Bauwerk | Größe (X × Y × Z) | Lage im Areal (X / Y / Z) | Datei |
 |---|---|---|---|
-| Berg & Gelände | 500 × 130 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg.litematic` |
-| ↳ nur Gelände (zuerst bauen) | 500 × 130 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg-gelaende.litematic` |
-| ↳ nur Wald (1.427 Fichten, 700 Eichen, Blumen) | 500 × 130 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg-wald.litematic` |
+| Berg & Gelände | 500 × 138 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg.litematic` |
+| ↳ nur Gelände (zuerst bauen) | 500 × 138 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg-gelaende.litematic` |
+| ↳ nur Wald (ca. 1.700 selbstgebaute Bäume, Blumen) | 500 × 138 × 500 | 0 / 0 / 0 | `schematics/hogwarts-berg-wald.litematic` |
 | Hauptschloss | 181 × 100 × 151 | 160 / 111 / 110 | `schematics/hogwarts-hauptschloss.litematic` |
-| Viadukt (Brücke) | 11 × 76 × 123 | 245 / 42 / 261 | `schematics/hogwarts-bruecke.litematic` |
+| Viadukt (Brücke) | 13 × 76 × 123 | 244 / 42 / 261 | `schematics/hogwarts-bruecke.litematic` |
+| Brückenkopf & Steinkreis | 33 × 24 × 33 | 234 / 115 / 384 | `schematics/hogwarts-brueckenkopf.litematic` |
 | Hagrids Hütte | 23 × 22 × 17 | 330 / 6 / 438 | `schematics/hogwarts-hagrids-huette.litematic` |
 | Gewächshäuser | 31 × 10 × 15 | 70 / 6 / 230 | `schematics/hogwarts-gewaechshaeuser.litematic` |
 | Quidditch-Feld | 71 × 20 × 39 | 390 / 6 / 360 | `schematics/hogwarts-quidditch.litematic` |
-| **Gesamtprojekt** | 500 × 211 × 500 | alle 6 als Regionen | `schematics/hogwarts-gesamt.litematic` |
+| **Gesamtprojekt** | 500 × 211 × 500 | alle 7 als Regionen | `schematics/hogwarts-gesamt.litematic` |
 
-Die Schematics sind für Minecraft 1.20.1 erstellt (Litematica konvertiert sie in neueren Versionen automatisch).
+Gebaut wird in **Minecraft 26.3** (Java). Die Schematics nutzen das Datenformat von 1.20.1; Litematica konvertiert sie beim Laden automatisch auf die eigene Version.
 Lege das Areal so, dass Y 0 ungefähr auf Höhe 60 liegt – dann endet die höchste Turmspitze bei ca. Y 270 (Bauhöhengrenze 320).
 
 ## Ansehen
