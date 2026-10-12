@@ -189,6 +189,10 @@
     }
     if (id === 'bricks' || id.startsWith('brick_')) return eine('ziegel', MUSTER.ziegel(rgb('#96503f'), ''));
     if (id === 'cobbled_deepslate') return eine(id, MUSTER.bruch(rgb('#4d4d52'), false));
+    if (id.startsWith('tuff_brick')) return eine('tuffziegel', MUSTER.ziegel(rgb('#62655e'), ''));
+    if (id === 'chiseled_tuff_bricks' || id === 'chiseled_resin_bricks') return eine(id, (px, r) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) { const rahmen = x < 2 || y < 2 || x > 13 || y > 13; px(x, y, c, rahmen ? 1.1 : (x + y) % 4 === 0 ? 0.8 : 0.95 + r() * 0.08); } });
+    if (id === 'resin_bricks') return eine(id, MUSTER.ziegel(c, ''));
+    if (id === 'leaf_litter' || id === 'wildflowers') return eine(id, (px, r) => { for (let y = 0; y < K; y++) for (let x = 0; x < K; x++) { const an = r() < 0.55; px(x, y, id === 'wildflowers' && r() < 0.3 ? [235, 210, 80] : c, 0.8 + r() * 0.35, an ? 255 : 0); } });
     if (id === 'stone' || id === 'andesite') return eine(id, flaeche(c, id === 'andesite' ? 0.18 : 0.08));
     if (id.includes('cobblestone')) return eine(id, MUSTER.bruch(rgb('#7a7a7a'), id.includes('mossy')));
     if (id.includes('deepslate_tile')) return eine('tiefenschiefer', MUSTER.fliesen(rgb('#3e3e45')));
@@ -219,7 +223,8 @@
     if (id === 'lantern') return eine('laterne', MUSTER.laterne());
     if (id === 'ladder') return eine('leiter', MUSTER.leiter(rgb('#a0773f')));
     if (id === 'campfire') return eine('feuer', MUSTER.feuer());
-    if (['poppy', 'dandelion', 'cornflower', 'flowering_azalea', 'allium', 'azure_bluet', 'oxeye_daisy'].includes(id)) return eine(id, MUSTER.blume(c));
+    if (['poppy', 'dandelion', 'cornflower', 'flowering_azalea', 'allium', 'azure_bluet', 'oxeye_daisy', 'amethyst_cluster'].includes(id)) return eine(id, MUSTER.blume(c));
+    if (['bush', 'firefly_bush', 'short_dry_grass', 'pointed_dripstone'].includes(id)) return eine(id, MUSTER.farn(c));
     if (id === 'fern') return eine('farn', MUSTER.farn(c));
     if (id.includes('concrete')) return eine(id, MUSTER.fein(c));
     if (id === 'polished_andesite') return eine(id, (px, r) => {
@@ -282,7 +287,7 @@
         deckend: b.deckend && !id.endsWith('leaves'),
         laub: id.endsWith('leaves'), glas: b.form === 'glas', wasser: b.form === 'wasser',
         transparent: b.form === 'glas' || b.form === 'wasser' || (b.form.startsWith('scheibe') && !id.includes('stained')),
-        kreuz: ['poppy', 'dandelion', 'cornflower', 'fern', 'flowering_azalea', 'allium', 'azure_bluet', 'oxeye_daisy', 'sugar_cane'].includes(id),
+        kreuz: ['poppy', 'dandelion', 'cornflower', 'fern', 'flowering_azalea', 'allium', 'azure_bluet', 'oxeye_daisy', 'sugar_cane', 'bush', 'firefly_bush', 'short_dry_grass', 'pointed_dripstone', 'amethyst_cluster'].includes(id),
         boxen: boxen(b)
       };
     });
@@ -514,6 +519,7 @@
     { name: 'Hogsmeade', pos: [420, 30, 140], ziel: [420, 10, 70] },
     { name: 'Eulerei', pos: [130, 50, 130], ziel: [100, 45, 96] },
     { name: 'Großer Burgturm', pos: [64, 30, 372], ziel: [64, 40, 336] },
+    { name: 'Höhle', pos: [372, 13, 70], ziel: [345, 14, 70] },
     { name: 'Leuchtturm', pos: [445, 20, 470], ziel: [482, 20, 478] },
     { name: 'Steinkreis', pos: [262, 124, 432], ziel: [250, 116, 400] },
     { name: 'Hagrids Hütte', pos: [341, 14, 460], ziel: [339, 8, 446] },

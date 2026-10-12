@@ -28,7 +28,7 @@ const STEPS = [
   { id: 6, name: 'Innenausbau', description: 'Böden, Treppen, Große Halle, Bibliothek, Klassenzimmer und Licht' },
   { id: 7, name: 'Brücke & Brückenkopf', description: 'Zweistöckiges Viadukt, Torhaus mit Fallgitter und Steinkreis auf dem Südhügel' },
   { id: 8, name: 'Gärten & Außenanlagen', description: 'Schlossterrasse, Innenhof, Hogsmeade, Eulerei, Gewächshäuser, Hagrids Hütte, Quidditch-Feld, Leuchtturm, Steg und Bootshaus' },
-  { id: 9, name: 'Wald & Natur', description: 'Selbstgebaute Bäume, Blumen, Seerosen und Zuckerrohr' },
+  { id: 9, name: 'Wald & Natur', description: 'Selbstgebaute Bäume, Laubstreu, Wildblumen, Glühwürmchenbüsche, Blumen, Seerosen und Zuckerrohr' },
   { id: 10, name: 'Großer Burgturm', description: 'Wehrturm am Seeufer: Sockel, Mauerwerk, Pechnasen, Obergeschoss, Ecktürmchen und Ziegeldächer' }
 ];
 const FLOORS = [
@@ -43,7 +43,7 @@ const FLOORS = [
 const PARTS = ['foundation', 'floor', 'wall', 'interior_wall', 'window', 'door', 'stairs', 'roof', 'decoration', 'terrain', 'other'];
 
 const GELAENDE = /^(stone|andesite|dirt|grass_block|sand|gravel|coarse_dirt|moss_block|water|dirt_path)$/;
-const NATUR = /(_log|_leaves)$|^(poppy|dandelion|cornflower|fern|allium|azure_bluet|oxeye_daisy|lily_pad|sugar_cane|flowering_azalea)$/;
+const NATUR = /(_log|_leaves)$|^(poppy|dandelion|cornflower|fern|allium|azure_bluet|oxeye_daisy|lily_pad|sugar_cane|flowering_azalea|leaf_litter|wildflowers|bush|firefly_bush|short_dry_grass)$/;
 const DACH = /deepslate_tile|deepslate_brick_stairs|lightning_rod|^brick|^bricks$/;
 const DEKO = /lantern|chain|iron_bars|candle|carpet|bookshelf|lectern|_wool|campfire|_slab$|spruce_stairs|pumpkin|azalea|moss|fence|concrete/;
 

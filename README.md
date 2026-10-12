@@ -31,7 +31,9 @@ Eine Website mit einer detaillierten Bauanleitung für ein riesiges Hogwarts-Sch
 | Quidditch-Feld | 71 × 20 × 39 | 390 / 6 / 360 | `schematics/hogwarts-quidditch.litematic` |
 | **Gesamtprojekt** | 500 × 211 × 500 | alle 7 als Regionen | `schematics/hogwarts-gesamt.litematic` |
 
-Gebaut wird in **Minecraft 26.3** (Java). Die Schematics nutzen das Datenformat von 1.20.1; Litematica konvertiert sie beim Laden automatisch auf die eigene Version.
+Gebaut wird in **Minecraft 26.3** (Java). Die Schematics nutzen das Datenformat von 1.21.5 und neuere Blöcke wie Tuffziegel, Harzziegel, Laubstreu, Wildblumen, Glühwürmchenbüsche, Tropfstein und Amethyst; Litematica in 26.3 konvertiert sie beim Laden automatisch.
+
+**Bauversion des Berges:** Berg-, Gelände- und Gesamtdatei enthalten kein Wasser. Rund ums Wasser und unter Sand/Kies sitzen Platzhalter aus magenta Wolle, und eine Grasblock-Linie auf Wasserhöhe steckt die 500 × 500 Fläche ab. Beides nach dem Bauen entfernen.
 Lege das Areal so, dass Y 0 ungefähr auf Höhe 60 liegt – dann endet die höchste Turmspitze bei ca. Y 270 (Bauhöhengrenze 320).
 
 ## Minecraft 3D Builder

@@ -18,6 +18,12 @@ export interface BlockTypeInfo {
 }
 
 const NAMEN: Record<string, string> = {
+  tuff_bricks: 'Tuffziegel', polished_tuff: 'Polierter Tuff', chiseled_tuff_bricks: 'Gemeißelte Tuffziegel', tuff_brick_stairs: 'Tuffziegeltreppe',
+  tuff_brick_wall: 'Tuffziegelmauer', resin_bricks: 'Harzziegel', chiseled_resin_bricks: 'Gemeißelte Harzziegel', calcite: 'Kalzit',
+  cobbled_deepslate: 'Bruchtiefenschiefer', brick_stairs: 'Ziegeltreppe', brick_slab: 'Ziegelstufe',
+  dripstone_block: 'Tropfsteinblock', pointed_dripstone: 'Spitzer Tropfstein', amethyst_block: 'Amethystblock', amethyst_cluster: 'Amethysthaufen',
+  smooth_basalt: 'Glatter Basalt', moss_carpet: 'Moosteppich', leaf_litter: 'Laubstreu', wildflowers: 'Wildblumen', bush: 'Busch',
+  firefly_bush: 'Glühwürmchenbusch', short_dry_grass: 'Kurzes Trockengras', magenta_wool: 'Platzhalter (Magenta Wolle)',
   stone: 'Stein', cobblestone: 'Bruchstein', mossy_cobblestone: 'Bemooster Bruchstein', stone_bricks: 'Steinziegel',
   mossy_stone_bricks: 'Bemooste Steinziegel', cracked_stone_bricks: 'Rissige Steinziegel', chiseled_stone_bricks: 'Gemeißelte Steinziegel',
   polished_andesite: 'Polierter Andesit', andesite: 'Andesit', deepslate_tiles: 'Tiefenschieferfliesen', deepslate_bricks: 'Tiefenschieferziegel',
@@ -43,6 +49,10 @@ const NAMEN: Record<string, string> = {
 };
 
 const FARBEN: Record<string, string> = {
+  tuff_bricks: '#62655e', polished_tuff: '#5f635c', chiseled_tuff_bricks: '#5d605a', tuff_brick_stairs: '#62655e', tuff_brick_wall: '#62655e',
+  resin_bricks: '#c45a1d', chiseled_resin_bricks: '#b9531a', calcite: '#dfe0dc', cobbled_deepslate: '#4d4d52', dripstone_block: '#866b5c',
+  pointed_dripstone: '#866b5c', amethyst_block: '#8a64c4', amethyst_cluster: '#a77fe0', smooth_basalt: '#48484e', moss_carpet: '#596e2d',
+  leaf_litter: '#8a6a35', wildflowers: '#e8d35a', bush: '#4f7a2e', firefly_bush: '#4b6a2a', short_dry_grass: '#b8a46a', tuff: '#6c6d66',
   stone: '#7a7a7a', cobblestone: '#6f6f6f', mossy_cobblestone: '#61704c', stone_bricks: '#7e7e7e', mossy_stone_bricks: '#6d7859',
   cracked_stone_bricks: '#747371', chiseled_stone_bricks: '#7a7a7a', polished_andesite: '#8f9393', andesite: '#88898a',
   deepslate_tiles: '#3a3a40', deepslate_bricks: '#47474d', oak_planks: '#a2834f', spruce_planks: '#6e5131', dark_oak_planks: '#4a3220',
@@ -118,7 +128,7 @@ function farbeAusFarbwort(id: string): string {
   return wort ? f[wort] : '#c4e6f2';
 }
 
-const PFLANZEN = /^(poppy|dandelion|cornflower|allium|azure_bluet|oxeye_daisy|fern|sugar_cane|short_grass|grass|tall_grass|rose_bush|lilac|peony|sweet_berry_bush|.*_sapling|.*_tulip|lily_of_the_valley|dead_bush|wheat)$/;
+const PFLANZEN = /^(poppy|dandelion|cornflower|allium|azure_bluet|oxeye_daisy|fern|sugar_cane|short_grass|grass|tall_grass|rose_bush|lilac|peony|sweet_berry_bush|.*_sapling|.*_tulip|lily_of_the_valley|dead_bush|wheat|bush|firefly_bush|short_dry_grass|pointed_dripstone|amethyst_cluster)$/;
 
 export function shapeOf(id: string): Shape {
   if (id.endsWith('_stairs')) return 'stairs';
@@ -127,7 +137,7 @@ export function shapeOf(id: string): Shape {
   if (id.endsWith('_wall')) return 'wall';
   if (id.endsWith('_fence') || id === 'chain' || id === 'lightning_rod' || id === 'end_rod' || id === 'torch') return 'post';
   if (PFLANZEN.test(id)) return 'cross';
-  if (id.endsWith('_carpet') || id === 'lily_pad' || id.endsWith('_pressure_plate')) return 'carpet';
+  if (id.endsWith('_carpet') || id === 'lily_pad' || id === 'leaf_litter' || id === 'wildflowers' || id.endsWith('_pressure_plate')) return 'carpet';
   if (id === 'lantern' || id === 'candle' || id === 'flower_pot' || id === 'campfire') return 'small';
   if (id === 'ladder' || id.endsWith('_trapdoor')) return 'thin';
   if (id.endsWith('_door')) return 'door';

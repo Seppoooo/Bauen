@@ -8,9 +8,9 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const { BAUWERKE, TEILE, block } = require('../js/modell.js');
+const { BAUWERKE, TEILE, block, bauhilfe } = require('../js/modell.js');
 
-const DATA_VERSION = 3465; // Minecraft 1.20.1 – neuere Versionen werden von Litematica automatisch hochkonvertiert
+const DATA_VERSION = 4325; // Minecraft 1.21.5 (Tuff-, Harzziegel, Laubstreu, Wildblumen …) – Litematica in 26.3 konvertiert automatisch hoch
 
 /* ---------- minimaler NBT-Schreiber ---------- */
 const T = { end: 0, byte: 1, short: 2, int: 3, long: 4, string: 8, list: 9, compound: 10, longArray: 12 };
@@ -148,7 +148,8 @@ if (require.main === module) {
   fs.mkdirSync(ziel, { recursive: true });
   const teile = [];
   for (const b of BAUWERKE) {
-    const m = b.erstelle();
+    // Berg als Bauversion: ohne Wasser, mit Platzhaltern und Grasrahmen (siehe bauhilfe in js/modell.js)
+    const m = b.id === 'berg' ? bauhilfe(b.erstelle()) : b.erstelle();
     teile.push({ name: b.titel, modell: m, pos: b.lage });
     const daten = schreibeNbt(litematic('Hogwarts – ' + b.titel, b.text, [{ name: b.titel, modell: m, pos: [0, 0, 0] }]));
     fs.writeFileSync(path.join(ziel, b.datei), daten);

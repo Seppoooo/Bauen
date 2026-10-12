@@ -57,6 +57,7 @@ describe('Litematica-Import', () => {
     const nbt = readNbt(await gunzip(ab(readFileSync(join(wurzel, 'schematics', 'hogwarts-bruecke.litematic')))));
     const roh = readLitematic(nbt);
     expect(roh.length).toBe(58213);
+    expect(nbt.MinecraftDataVersion).toBeGreaterThanOrEqual(4325); // Datenformat 1.21.5 oder neuer
     // Blockwechsel: Tuff, Tiefenschiefer und gemeißelte Nischen geben der Brücke Tiefe
     for (const t of ['tuff', 'deepslate_bricks', 'deepslate_tiles', 'chiseled_stone_bricks', 'polished_andesite']) expect(roh.some((b) => b.type === t)).toBe(true);
     expect(roh.some((b) => b.type === 'stone_brick_stairs' && b.props?.half === 'top')).toBe(true);
@@ -137,6 +138,10 @@ describe('Hogwarts-Baupläne (.mcbp)', () => {
     expect(turm.length).toBeGreaterThan(5000);
     expect(turm.every((b) => b.x >= 53 && b.x < 76 && b.z >= 325 && b.z < 348)).toBe(true);
     expect(turm.some((b) => b.type === 'brick_stairs')).toBe(true);
+    // Blöcke aus neueren Versionen (für 26.3): Tuff-/Harzziegel, Laubstreu, Wildblumen, Höhle mit Tropfstein und Amethyst
+    for (const t of ['tuff_bricks', 'tuff_brick_stairs', 'chiseled_resin_bricks', 'leaf_litter', 'wildflowers', 'firefly_bush', 'pointed_dripstone', 'amethyst_cluster', 'calcite']) {
+      expect(p.blocks.some((b) => b.type === t), t).toBe(true);
+    }
   });
   it('Schloss-Details: Fallgitter, Zugbrücke mit Ketten, Fachwerk und Drachenbrunnen', async () => {
     const p = await readBinaryProject(ab(readFileSync(join(__dirname, '..', 'public', 'projekte', 'hogwarts-schloss.mcbp.gz'))));
