@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MotoGP Karriere</title>
+<style>
+:root{
+  --bg:#f4f4f6; --card:#ffffff; --text:#16161a; --muted:#6b6b76; --line:#e2e2e8;
+  --accent:#e10600; --accent-2:#ff6a00; --gold:#c99a06; --silver:#8a8f98; --bronze:#a0592a;
+  --ok:#1a8f4a; --bad:#c62828; --input:#fafafc;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0e0e12; --card:#18181f; --text:#f1f1f4; --muted:#9a9aa6; --line:#2a2a34;
+    --input:#121218; --gold:#f2c230; --silver:#c3c7cf; --bronze:#d48a52; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:linear-gradient(120deg,#111 0%,#2a0000 60%,var(--accent) 100%);color:#fff;padding:28px 16px 22px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header .wrap{padding:0}
+h1{margin:0;font-size:28px;letter-spacing:.5px;font-style:italic;font-weight:900}
+h1 span{color:var(--accent-2)}
+.rider{margin-top:6px;opacity:.9;font-size:15px}
+.rider b{font-size:18px}
+h2{font-size:18px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-left:4px solid var(--accent)}
+.stat .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat.gold{border-left-color:var(--gold)}
+form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+label.chk{flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--text)}
+input,select{font:inherit;color:var(--text);background:var(--input);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+label.chk input{width:auto}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff}
+button.sec{background:transparent;color:var(--text);border:1px solid var(--line)}
+button.mini{padding:4px 8px;font-size:13px}
+button.danger{background:transparent;color:var(--bad);border:1px solid var(--line)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 0}
+.tabs button{background:var(--card);color:var(--text);border:1px solid var(--line)}
+.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
+td.n,th.n{text-align:right}
+.pos{display:inline-block;min-width:30px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:700}
+.p1{background:var(--gold);color:#000}.p2{background:var(--silver);color:#000}.p3{background:var(--bronze);color:#fff}
+.dnf{color:var(--bad);font-weight:700}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:4px;color:var(--muted)}
+.muted{color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:24px}
+.chart{width:100%;height:220px}
+.hidden{display:none}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filters select{width:auto}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>MOTO<span>GP</span> KARRIERE</h1>
+    <div class="rider" id="riderLine"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs" id="tabs">
+    <button data-tab="races" class="on">Rennen</button>
+    <button data-tab="seasons">Saisons</button>
+    <button data-tab="tracks">Strecken</button>
+    <button data-tab="profile">Profil &amp; Daten</button>
+  </div>
+
+  <!-- RENNEN -->
+  <section id="tab-races">
+    <div class="card">
+      <h2 id="formTitle">Rennen eintragen</h2>
+      <form id="raceForm">
+        <div class="grid">
+          <label>Saison<input name="season" type="number" min="1949" max="2100" required></label>
+          <label>Runde<input name="round" type="number" min="1" max="40"></label>
+          <label>Grand Prix / Strecke<input name="track" list="trackList" required placeholder="z.B. Mugello"></label>
+          <label>Klasse
+            <select name="cls"><option>MotoGP</option><option>Moto2</option><option>Moto3</option><option>MotoE</option></select>
+          </label>
+          <label>Team<input name="team" list="teamList" placeholder="Team"></label>
+          <label>Bike<input name="bike" list="bikeList" placeholder="z.B. Ducati"></label>
+          <label>Startplatz<input name="grid" type="number" min="1" max="40"></label>
+          <label>Sprint-Platz<input name="sprint" type="number" min="1" max="40" placeholder="leer = kein Sprint"></label>
+          <label>Rennen-Platz<input name="pos" type="number" min="1" max="40" placeholder="leer bei DNF"></label>
+          <label>Punkte (auto)<input name="points" type="number" min="0" step="0.5" placeholder="automatisch"></label>
+        </div>
+        <div class="row">
+          <label class="chk"><input type="checkbox" name="dnf"> DNF / Sturz</label>
+          <label class="chk"><input type="checkbox" name="fl"> Schnellste Runde</label>
+          <label class="chk"><input type="checkbox" name="wet"> Regenrennen</label>
+        </div>
+        <div class="row">
+          <button type="submit" id="saveBtn">Speichern</button>
+          <button type="button" class="sec hidden" id="cancelEdit">Abbrechen</button>
+          <span class="note">Punkte werden nach offiziellem System berechnet (Rennen 25–1, Sprint 12–1), außer du trägst sie selbst ein.</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Alle Rennen</h2>
+      <div class="filters">
+        <select id="fSeason"><option value="">Alle Saisons</option></select>
+        <select id="fClass"><option value="">Alle Klassen</option></select>
+      </div>
+      <div class="tw"><table id="raceTable"></table></div>
+    </div>
+  </section>
+
+  <!-- SAISONS -->
+  <section id="tab-seasons" class="hidden">
+    <div class="card">
+      <h2>Punkte pro Saison</h2>
+      <svg class="chart" id="chart"></svg>
+    </div>
+    <div class="card">
+      <h2>Saison-Übersicht</h2>
+      <div class="tw"><table id="seasonTable"></table></div>
+      <p class="note">Tipp: Den WM-Endstand kannst du direkt in der Tabelle eintragen – Platz 1 zählt als Titel.</p>
+    </div>
+  </section>
+
+  <!-- STRECKEN -->
+  <section id="tab-tracks" class="hidden">
+    <div class="card">
+      <h2>Bilanz pro Strecke</h2>
+      <div class="tw"><table id="trackTable"></table></div>
+    </div>
+  </section>
+
+  <!-- PROFIL -->
+  <section id="tab-profile" class="hidden">
+    <div class="card">
+      <h2>Fahrerprofil</h2>
+      <form id="profileForm">
+        <div class="grid">
+          <label>Name<input name="name" placeholder="Dein Name"></label>
+          <label>Startnummer<input name="number" placeholder="#"></label>
+          <label>Nation<input name="nation" placeholder="z.B. Deutschland"></label>
+          <label>Spitzname<input name="nick" placeholder="optional"></label>
+        </div>
+        <div class="row"><button type="submit">Profil speichern</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Daten sichern</h2>
+      <p class="muted">Alles wird lokal in deinem Browser gespeichert. Exportiere regelmäßig eine Sicherung.</p>
+      <div class="row">
+        <button type="button" id="exportBtn">Export (JSON)</button>
+        <button type="button" class="sec" id="csvBtn">Export (CSV)</button>
+        <button type="button" class="sec" id="importBtn">Import</button>
+        <input type="file" id="importFile" accept="application/json" class="hidden">
+        <button type="button" class="danger" id="resetBtn">Alles löschen</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<datalist id="trackList"></datalist>
+<datalist id="teamList"></datalist>
+<datalist id="bikeList"></datalist>
+
+<script>
+const KEY = 'motogp-career-v1';
+const RACE_PTS = [25,20,16,13,11,10,9,8,7,6,5,4,3,2,1];
+const SPRINT_PTS = [12,9,7,6,5,4,3,2,1];
+const DEFAULT_TRACKS = ['Losail','Termas de Río Hondo','Austin (COTA)','Jerez','Le Mans','Silverstone','Aragón','Mugello','Assen','Sachsenring','Brünn','Spielberg','Barcelona','Misano','Balaton Park','Mandalika','Motegi','Phillip Island','Sepang','Buriram','Portimão','Valencia'];
+
+let data = load();
+let editId = null;
+let sort = {key:'date', dir:-1};
+
+function load(){
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.races)) return {profile:{}, seasons:{}, ...d}; }catch(e){}
+  return {profile:{}, races:[], seasons:{}};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){ alert('Speichern im Browser nicht möglich.'); } }
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => v === '' || v == null ? null : Number(v);
+
+function calcPoints(r){
+  if(r.points != null) return r.points;
+  let p = 0;
+  if(!r.dnf && r.pos) p += RACE_PTS[r.pos-1] || 0;
+  if(r.sprint) p += SPRINT_PTS[r.sprint-1] || 0;
+  return p;
+}
+function posCell(p, dnf){
+  if(dnf) return '<span class="dnf">DNF</span>';
+  if(!p) return '<span class="muted">–</span>';
+  return `<span class="pos ${p<=3?'p'+p:''}">${p}</span>`;
+}
+
+function aggregate(races){
+  const a = {starts:0,wins:0,podiums:0,poles:0,points:0,dnf:0,fl:0,top10:0,sprintWins:0,best:null,sumPos:0,nPos:0};
+  for(const r of races){
+    a.starts++;
+    a.points += calcPoints(r);
+    if(r.grid===1) a.poles++;
+    if(r.fl) a.fl++;
+    if(r.sprint===1) a.sprintWins++;
+    if(r.dnf){ a.dnf++; continue; }
+    if(r.pos){
+      if(r.pos===1) a.wins++;
+      if(r.pos<=3) a.podiums++;
+      if(r.pos<=10) a.top10++;
+      a.best = a.best==null ? r.pos : Math.min(a.best, r.pos);
+      a.sumPos += r.pos; a.nPos++;
+    }
+  }
+  a.avg = a.nPos ? (a.sumPos/a.nPos).toFixed(1) : '–';
+  return a;
+}
+
+function renderHeader(){
+  const p = data.profile;
+  const parts = [];
+  if(p.number) parts.push('#'+esc(p.number));
+  parts.push(`<b>${esc(p.name || 'Unbekannter Fahrer')}</b>`);
+  if(p.nick) parts.push(`„${esc(p.nick)}“`);
+  if(p.nation) parts.push(esc(p.nation));
+  const seasons = [...new Set(data.races.map(r=>r.season))].sort();
+  if(seasons.length) parts.push(seasons.length>1 ? `${seasons[0]}–${seasons.at(-1)}` : seasons[0]);
+  $('#riderLine').innerHTML = parts.join(' · ');
+}
+
+function renderStats(){
+  const a = aggregate(data.races);
+  const titles = Object.values(data.seasons).filter(s=>Number(s.champ)===1).length;
+  const items = [
+    ['WM-Titel', titles, 'gold'],['Starts', a.starts],['Siege', a.wins, 'gold'],['Podien', a.podiums],
+    ['Poles', a.poles],['Punkte', fmt(a.points)],['Sprint-Siege', a.sprintWins],['Schnellste Runden', a.fl],
+    ['Top 10', a.top10],['DNFs', a.dnf],['Ø Platz', a.avg],
+    ['Siegquote', a.starts ? Math.round(a.wins/a.starts*100)+'%' : '–'],
+  ];
+  $('#stats').innerHTML = items.map(([l,v,c])=>`<div class="stat ${c||''}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+const fmt = n => Number.isInteger(n) ? n : n.toFixed(1);
+
+function renderFilters(){
+  const fill = (sel, vals, label) => {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option ${String(v)===cur?'selected':''}>${esc(v)}</option>`).join('');
+  };
+  fill($('#fSeason'), [...new Set(data.races.map(r=>r.season))].sort((a,b)=>b-a), 'Alle Saisons');
+  fill($('#fClass'), [...new Set(data.races.map(r=>r.cls))], 'Alle Klassen');
+  const dl = (id, vals) => $(id).innerHTML = [...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('');
+  dl('#trackList', [...data.races.map(r=>r.track), ...DEFAULT_TRACKS]);
+  dl('#teamList', data.races.map(r=>r.team));
+  dl('#bikeList', [...data.races.map(r=>r.bike),'Ducati','Aprilia','KTM','Honda','Yamaha','Kalex','Boscoscuro','Husqvarna','Gas Gas','CFMoto']);
+}
+
+function renderRaces(){
+  const fs = $('#fSeason').value, fc = $('#fClass').value;
+  let rows = data.races.filter(r => (!fs || String(r.season)===fs) && (!fc || r.cls===fc));
+  const val = (r,k) => k==='date' ? r.season*100+(r.round||0) : k==='points' ? calcPoints(r) : k==='pos' ? (r.dnf?99:(r.pos||98)) : (r[k] ?? '');
+  rows.sort((x,y)=>{ const a=val(x,sort.key), b=val(y,sort.key); return (a>b?1:a<b?-1:0)*sort.dir; });
+  const cols = [['date','Saison/Rd'],['track','Grand Prix'],['cls','Klasse'],['team','Team / Bike'],['grid','Start','n'],['sprint','Sprint','n'],['pos','Rennen','n'],['points','Pkt','n']];
+  const head = '<tr>'+cols.map(([k,l,c])=>`<th class="${c||''}" data-sort="${k}">${l}${sort.key===k?(sort.dir>0?' ▲':' ▼'):''}</th>`).join('')+'<th></th></tr>';
+  if(!rows.length){ $('#raceTable').innerHTML = head + '<tr><td colspan="9" class="empty">Noch keine Rennen eingetragen. Leg oben los!</td></tr>'; return; }
+  $('#raceTable').innerHTML = head + rows.map(r=>`<tr>
+    <td>${r.season}${r.round?' · R'+r.round:''}</td>
+    <td>${esc(r.track)}${r.wet?'<span class="tag">Regen</span>':''}${r.fl?'<span class="tag">FL</span>':''}</td>
+    <td>${esc(r.cls)}</td>
+    <td>${esc(r.team||'')}${r.bike?' <span class="muted">('+esc(r.bike)+')</span>':''}</td>
+    <td class="n">${r.grid ? (r.grid===1?'<b>P1</b>':r.grid) : '–'}</td>
+    <td class="n">${r.sprint ? posCell(r.sprint) : '<span class="muted">–</span>'}</td>
+    <td class="n">${posCell(r.pos, r.dnf)}</td>
+    <td class="n"><b>${fmt(calcPoints(r))}</b></td>
+    <td><button class="sec mini" data-edit="${r.id}">Bearbeiten</button> <button class="danger mini" data-del="${r.id}">✕</button></td>
+  </tr>`).join('');
+}
+
+function seasonGroups(){
+  const g = {};
+  for(const r of data.races){ const k = r.season+'|'+r.cls; (g[k] ||= {season:r.season, cls:r.cls, races:[]}).races.push(r); }
+  return Object.values(g).sort((a,b)=>b.season-a.season || a.cls.localeCompare(b.cls));
+}
+
+function renderSeasons(){
+  const groups = seasonGroups();
+  const head = '<tr><th>Saison</th><th>Klasse</th><th>Team</th><th class="n">Starts</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">DNF</th><th class="n">Punkte</th><th class="n">WM-Platz</th></tr>';
+  if(!groups.length){ $('#seasonTable').innerHTML = head+'<tr><td colspan="10" class="empty">Noch keine Daten.</td></tr>'; $('#chart').innerHTML=''; return; }
+  $('#seasonTable').innerHTML = head + groups.map(g=>{
+    const a = aggregate(g.races);
+    const teams = [...new Set(g.races.map(r=>r.team).filter(Boolean))].join(', ');
+    const key = g.season+'|'+g.cls;
+    const champ = data.seasons[key]?.champ ?? '';
+    return `<tr><td><b>${g.season}</b></td><td>${esc(g.cls)}</td><td>${esc(teams)||'–'}</td>
+      <td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="n">${a.dnf}</td>
+      <td class="n"><b>${fmt(a.points)}</b></td>
+      <td class="n"><input data-champ="${esc(key)}" type="number" min="1" value="${esc(champ)}" style="width:70px;text-align:right" placeholder="–">${Number(champ)===1?' 🏆':''}</td></tr>`;
+  }).join('');
+  drawChart(groups);
+}
+
+function drawChart(groups){
+  const svg = $('#chart');
+  const by = {};
+  for(const g of groups){ by[g.season] = (by[g.season]||0) + aggregate(g.races).points; }
+  const yrs = Object.keys(by).sort();
+  const W = svg.clientWidth || 600, H = 220, pad = 28;
+  const max = Math.max(...Object.values(by), 1);
+  const bw = Math.min(60, (W-pad*2)/yrs.length*0.7);
+  const step = (W-pad*2)/yrs.length;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = yrs.map((y,i)=>{
+    const h = (by[y]/max)*(H-60), x = pad + i*step + (step-bw)/2, yy = H-28-h;
+    return `<rect x="${x}" y="${yy}" width="${bw}" height="${h}" rx="4" fill="var(--accent)"/>
+      <text x="${x+bw/2}" y="${yy-6}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">${fmt(by[y])}</text>
+      <text x="${x+bw/2}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--muted)">${y}</text>`;
+  }).join('') + `<line x1="${pad}" x2="${W-pad}" y1="${H-28}" y2="${H-28}" stroke="var(--line)"/>`;
+}
+
+function renderTracks(){
+  const g = {};
+  for(const r of data.races) (g[r.track] ||= []).push(r);
+  const rows = Object.entries(g).map(([t,rs])=>[t, aggregate(rs)]).sort((a,b)=>b[1].wins-a[1].wins || b[1].podiums-a[1].podiums || b[1].points-a[1].points);
+  const head = '<tr><th>Strecke</th><th class="n">Starts</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Bestes</th><th class="n">Ø Platz</th><th class="n">DNF</th><th class="n">Punkte</th></tr>';
+  $('#trackTable').innerHTML = head + (rows.length ? rows.map(([t,a])=>`<tr><td>${esc(t)}</td><td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="n">${a.best?posCell(a.best):'–'}</td><td class="n">${a.avg}</td><td class="n">${a.dnf}</td><td class="n"><b>${fmt(a.points)}</b></td></tr>`).join('') : '<tr><td colspan="9" class="empty">Noch keine Daten.</td></tr>');
+}
+
+function renderAll(){ renderHeader(); renderStats(); renderFilters(); renderRaces(); renderSeasons(); renderTracks(); }
+
+// ---- Formular ----
+const form = $('#raceForm');
+function resetForm(){
+  const keep = {season: form.season.value, cls: form.cls.value, team: form.team.value, bike: form.bike.value};
+  form.reset();
+  form.season.value = keep.season || new Date().getFullYear();
+  form.cls.value = keep.cls || 'MotoGP'; form.team.value = keep.team; form.bike.value = keep.bike;
+  const last = data.races.filter(r=>String(r.season)===form.season.value).reduce((m,r)=>Math.max(m,r.round||0),0);
+  form.round.value = last+1;
+  editId = null; $('#formTitle').textContent='Rennen eintragen'; $('#saveBtn').textContent='Speichern'; $('#cancelEdit').classList.add('hidden');
+}
+form.addEventListener('submit', e=>{
+  e.preventDefault();
+  const f = form;
+  const r = {
+    id: editId || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+    season: Number(f.season.value), round: num(f.round.value), track: f.track.value.trim(), cls: f.cls.value,
+    team: f.team.value.trim(), bike: f.bike.value.trim(), grid: num(f.grid.value), sprint: num(f.sprint.value),
+    pos: f.dnf.checked ? null : num(f.pos.value), points: num(f.points.value),
+    dnf: f.dnf.checked, fl: f.fl.checked, wet: f.wet.checked,
+  };
+  if(!r.dnf && !r.pos && !confirm('Kein Platz und kein DNF angegeben. Trotzdem speichern?')) return;
+  if(editId) data.races = data.races.map(x=>x.id===editId?r:x); else data.races.push(r);
+  save(); resetForm(); renderAll();
+});
+$('#cancelEdit').onclick = resetForm;
+form.dnf.addEventListener('change', ()=>{ form.pos.disabled = form.dnf.checked; });
+
+$('#raceTable').addEventListener('click', e=>{
+  const th = e.target.closest('th[data-sort]');
+  if(th){ const k=th.dataset.sort; sort = {key:k, dir: sort.key===k ? -sort.dir : (k==='date'||k==='points'?-1:1)}; renderRaces(); return; }
+  const ed = e.target.dataset.edit, del = e.target.dataset.del;
+  if(del && confirm('Dieses Rennen löschen?')){ data.races = data.races.filter(r=>r.id!==del); save(); renderAll(); }
+  if(ed){
+    const r = data.races.find(x=>x.id===ed); editId = ed;
+    for(const k of ['season','round','track','cls','team','bike','grid','sprint','pos','points']) form[k].value = r[k] ?? '';
+    for(const k of ['dnf','fl','wet']) form[k].checked = !!r[k];
+    form.pos.disabled = r.dnf;
+    $('#formTitle').textContent='Rennen bearbeiten'; $('#saveBtn').textContent='Änderungen speichern'; $('#cancelEdit').classList.remove('hidden');
+    form.scrollIntoView({behavior:'smooth'});
+  }
+});
+$('#fSeason').onchange = $('#fClass').onchange = renderRaces;
+
+$('#seasonTable').addEventListener('change', e=>{
+  const k = e.target.dataset.champ; if(!k) return;
+  data.seasons[k] = {...data.seasons[k], champ: num(e.target.value)};
+  save(); renderAll();
+});
+
+// ---- Tabs ----
+$('#tabs').addEventListener('click', e=>{
+  const t = e.target.dataset.tab; if(!t) return;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+  document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('hidden', s.id!=='tab-'+t));
+  if(t==='seasons') renderSeasons();
+});
+
+// ---- Profil ----
+const pf = $('#profileForm');
+for(const k of ['name','number','nation','nick']) pf[k].value = data.profile[k] || '';
+pf.addEventListener('submit', e=>{
+  e.preventDefault();
+  for(const k of ['name','number','nation','nick']) data.profile[k] = pf[k].value.trim();
+  save(); renderHeader();
+});
+
+// ---- Export / Import ----
+function download(name, text, type){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text],{type})); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+$('#exportBtn').onclick = ()=> download('motogp-karriere.json', JSON.stringify(data,null,2), 'application/json');
+$('#csvBtn').onclick = ()=>{
+  const cols = ['season','round','track','cls','team','bike','grid','sprint','pos','dnf','fl','wet'];
+  const lines = [[...cols,'points'].join(';'), ...data.races.map(r=>[...cols.map(c=>String(r[c]??'').replace(/;/g,',')), calcPoints(r)].join(';'))];
+  download('motogp-karriere.csv', lines.join('\n'), 'text/csv');
+};
+$('#importBtn').onclick = ()=> $('#importFile').click();
+$('#importFile').onchange = async e=>{
+  const file = e.target.files[0]; if(!file) return;
+  try{
+    const d = JSON.parse(await file.text());
+    if(!Array.isArray(d.races)) throw 0;
+    if(!confirm(`${d.races.length} Rennen importieren? Aktuelle Daten werden ersetzt.`)) return;
+    data = {profile:{}, seasons:{}, ...d}; save();
+    for(const k of ['name','number','nation','nick']) pf[k].value = data.profile[k] || '';
+    renderAll();
+  }catch(err){ alert('Ungültige Datei.'); }
+  e.target.value = '';
+};
+$('#resetBtn').onclick = ()=>{
+  if(confirm('Wirklich ALLE Daten löschen? Das kann nicht rückgängig gemacht werden.')){ data = {profile:{}, races:[], seasons:{}}; save(); pf.reset(); renderAll(); resetForm(); }
+};
+window.addEventListener('resize', ()=>{ if(!$('#tab-seasons').classList.contains('hidden')) drawChart(seasonGroups()); });
+
+resetForm(); renderAll();
+</script>
+</body>
+</html>
