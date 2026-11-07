@@ -154,6 +154,32 @@ tbody tr:hover td{background:var(--panel-2)}
 .champ-ro{font:800 18px/1 var(--display)}
 .trophy{color:var(--gold);font:900 13px/1 var(--display);letter-spacing:1px;margin-left:6px}
 
+/* TEAMS */
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:14px}
+.team{background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.team.drop{outline:2px dashed var(--gold);outline-offset:-2px}
+.team-h{display:flex;gap:12px;align-items:center;padding:14px 12px 12px 14px;border-bottom:1px solid var(--line)}
+.team-h .bar{width:6px;height:40px;flex:none;transform:skewX(-14deg)}
+.team-h .tx{min-width:0;flex:1}
+.team-h .tn{font:800 19px/1.05 var(--display);text-transform:uppercase;letter-spacing:.3px;overflow-wrap:anywhere}
+.team-h .mk{font:700 12px/1 var(--display);color:var(--mute);text-transform:uppercase;letter-spacing:1.4px;margin-top:4px}
+.team-h .rowact{flex:none}
+.rider{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border-bottom:1px solid var(--line)}
+.ro .rider{cursor:default}
+.rider.drag{cursor:grab}
+.rider.dragging{opacity:.4}
+.rnum{font:italic 900 34px/1 var(--display);width:52px;flex:none;text-align:center}
+.rname{min-width:0;flex:1}
+.rname .fn{font-size:13px;color:var(--mute);line-height:1.2}
+.rname .ln{font:800 19px/1.05 var(--display);text-transform:uppercase;overflow-wrap:anywhere}
+.nat{font:700 12px/1 var(--display);letter-spacing:1px;border:1px solid var(--line-2);padding:4px 6px;color:var(--mute);flex:none}
+.team .norider{padding:14px;color:var(--mute);font-size:13px;flex:1}
+.team .add{margin-top:auto;width:100%;background:none;border:0;color:var(--mute);padding:12px;cursor:pointer;font:700 13px/1 var(--display);letter-spacing:1.2px;text-transform:uppercase}
+.team .add:hover{color:var(--fg);background:var(--panel-2)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.mgrid .w2{grid-column:span 2}
+input[type=color]{height:40px;padding:3px}
+
 /* MODAL */
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:grid;place-items:center;padding:16px}
 .modal .box{background:var(--panel);border:1px solid var(--line-2);border-top:4px solid var(--red);max-width:440px;width:100%;padding:20px}
@@ -178,6 +204,7 @@ footer .in{padding-block:18px}
       <button class="on" data-tab="results" id="t-results">Ergebnisse</button>
       <button data-tab="seasons" id="t-seasons">Saisons</button>
       <button data-tab="tracks" id="t-tracks">Strecken</button>
+      <button data-tab="teams" id="t-teams">Teams</button>
       <button data-tab="rider" id="t-rider">Fahrer</button>
     </div>
     <div class="sync" id="sync"><i></i><span>Verbinde…</span></div>
@@ -276,6 +303,18 @@ footer .in{padding-block:18px}
     </div>
   </section>
 
+  <!-- TEAMS -->
+  <section class="sect" id="tab-teams" style="margin-top:28px" hidden>
+    <div>
+      <div class="h"><h2>Starterfeld MotoGP</h2><span class="sub" id="teamsSub"></span></div>
+      <div class="actions owner-only" style="margin:0 0 14px">
+        <button class="btn" type="button" id="addTeam">Team hinzufügen</button>
+        <span class="hint">Fahrer per Ziehen auf ein anderes Team setzen oder über den Stift bearbeiten.</span>
+      </div>
+      <div class="teams" id="teams"></div>
+    </div>
+  </section>
+
   <!-- FAHRER -->
   <section class="sect" id="tab-rider" style="margin-top:28px" hidden>
     <div class="owner-only">
@@ -347,14 +386,23 @@ const num=v=>v===''||v==null||isNaN(Number(v))?null:Number(v);
 const fmt=n=>Number.isInteger(n)?String(n):n.toFixed(1);
 const icon={edit:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 14h3l8-8-3-3-8 8z"/></svg>',del:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h10M6 4V2h4v2M4.5 4l.7 10h5.6l.7-10"/></svg>'};
 
-let state={profile:{},seasons:{},races:[]};
+let state={profile:{},seasons:{},races:[],teams:[],riders:[]};
 let db=null, canWrite=true, mode='local';
 let editId=null, sort={key:'date',dir:-1}, tab='results';
 
 /* ---------- Speicher ---------- */
-function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LKEY));if(d&&Array.isArray(d.races))return{profile:{},seasons:{},...d};}catch(e){}return null;}
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LKEY));if(d&&Array.isArray(d.races))return{profile:{},seasons:{},teams:[],riders:[],...d};}catch(e){}return null;}
 function saveLocal(){if(mode!=='local')return;try{localStorage.setItem(LKEY,JSON.stringify(state));}catch(e){}}
 const clean=o=>Object.fromEntries(Object.entries(o).filter(([k,v])=>k!=='id'&&v!==undefined));
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+async function putDoc(col,o){
+  if(mode==='db'){await db.collection(col).doc(o.id).set(clean(o));}
+  else{const a=state[col];const i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);saveLocal();render();}
+}
+async function delDoc(col,id){
+  if(mode==='db'){await db.collection(col).doc(id).delete();}
+  else{state[col]=state[col].filter(x=>x.id!==id);saveLocal();render();}
+}
 async function putRace(r){
   if(mode==='db'){await db.collection('races').doc(r.id).set(clean(r));}
   else{const i=state.races.findIndex(x=>x.id===r.id);if(i>=0)state.races[i]=r;else state.races.push(r);saveLocal();render();}
@@ -375,7 +423,7 @@ async function connect(){
   if(!window.claude?.use){setSync('local','Nur in diesem Browser');$('#storeInfo').textContent='Gespeichert in diesem Browser.';return;}
   const [d,u]=await Promise.all([window.claude.use('db').catch(()=>null),window.claude.use('user').catch(()=>null)]);
   if(!d){setSync('local','Nur in diesem Browser');$('#storeInfo').textContent='Gespeichert in diesem Browser. Exportiere regelmäßig eine Sicherung.';return;}
-  db=d; mode='db'; state={profile:{},seasons:{},races:[]};
+  db=d; mode='db'; state={profile:{},seasons:{},races:[],teams:[],riders:[]};
   try{canWrite=u?await u.isOwner():false;}catch(e){canWrite=false;}
   applyRole(); setSync('','Lade Daten…'); $('#storeInfo').textContent='Online gespeichert und auf jedem Gerät verfügbar.';
   let got=0; const timer=setTimeout(()=>{if(!got)setSync('local','Keine Verbindung');},10000);
@@ -383,6 +431,8 @@ async function connect(){
   const fail=e=>{clearTimeout(timer);setSync('local',e?.code==='not_granted'?'Kein Zugriff':'Verbindungsfehler');};
   db.collection('races').onSnapshot(s=>{state.races=s.docs.map(x=>({id:x.id,...x.data()}));ok();render();},fail);
   db.doc('meta/profile').onSnapshot(s=>{state.profile=s.exists?s.data():{};render();},fail);
+  db.collection('teams').onSnapshot(s=>{state.teams=s.docs.map(x=>({id:x.id,...x.data()}));render();},fail);
+  db.collection('riders').onSnapshot(s=>{state.riders=s.docs.map(x=>({id:x.id,...x.data()}));render();},fail);
   db.doc('meta/seasons').onSnapshot(s=>{state.seasons=s.exists?(s.data().map||{}):{};render();},fail);
 }
 async function saveSeasons(map){ if(mode==='db') await db.doc('meta/seasons').set({map}); else {state.seasons=map;saveLocal();render();} }
@@ -424,7 +474,7 @@ function groups(rs){
 /* ---------- Render ---------- */
 function render(){
   const v=view(); $('#demo').hidden=!isDemo();
-  renderHero(v); renderCareer(v); renderFilters(v); renderRaces(v); renderSeasons(v); renderTracks(v); fillProfileForm();
+  renderHero(v); renderCareer(v); renderFilters(v); renderRaces(v); renderSeasons(v); renderTracks(v); renderTeams(); fillProfileForm();
 }
 function renderHero(v){
   const p=v.profile||{};
@@ -456,7 +506,7 @@ function renderFilters(v){
   fill($('#fClass'),[...new Set(v.races.map(r=>r.cls))],'Alle Klassen');
   const dl=(id,vals)=>$(id).innerHTML=[...new Set(vals.filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('');
   dl('#trackList',[...state.races.map(r=>r.track),...TRACKS]);
-  dl('#teamList',state.races.map(r=>r.team));
+  dl('#teamList',[...state.teams.map(t=>t.name),...state.races.map(r=>r.team)]);
   dl('#bikeList',[...state.races.map(r=>r.bike),'Ducati','Aprilia','KTM','Honda','Yamaha','Kalex','Boscoscuro','Triumph','Gas Gas','Husqvarna','CFMoto']);
 }
 function renderRaces(v){
@@ -518,10 +568,81 @@ function renderTracks(v){
   $('#trackTable').innerHTML=head+'<tbody>'+(rows.length?rows.map(([t,a,rs])=>`<tr><td><div class="gp"><i class="stripe" style="background:${a.wins?'var(--gold)':a.podiums?'var(--red)':'var(--line-2)'}"></i><span class="t">${esc(t)}</span></div></td><td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="c">${posBox(a.best,null,true)}</td><td class="n">${a.avg}</td><td class="n">${a.dnf}</td><td class="n"><span class="pts">${fmt(a.pts)}</span></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Noch keine Daten.</td></tr>')+'</tbody>';
 }
 
+/* ---------- Teams ---------- */
+const teamSort=(a,b)=>(a.order??99)-(b.order??99)||String(a.name).localeCompare(b.name);
+function teamColor(t){return t?.color||color(t?.bike);}
+function renderTeams(){
+  const teams=[...state.teams].sort(teamSort);
+  const by={}; for(const r of state.riders)(by[teams.some(t=>t.id===r.teamId)?r.teamId:'_free']||=[]).push(r);
+  const nums=(a,b)=>(Number(a.number)||999)-(Number(b.number)||999);
+  $('#teamsSub').textContent=teams.length?`Saison 2025 · ${teams.length} Teams · ${state.riders.length} Fahrer`:'';
+  const card=(t,rs)=>`<article class="team" data-team="${esc(t.id)}">
+    <div class="team-h"><i class="bar" style="background:${esc(teamColor(t))}"></i><div class="tx"><div class="tn">${esc(t.name)}</div><div class="mk">${esc(t.bike||'')}</div></div>
+    ${t.id==='_free'?'':`<div class="rowact owner-only"><button class="ib" data-tedit="${esc(t.id)}" aria-label="Team bearbeiten">${icon.edit}</button><button class="ib del" data-tdel="${esc(t.id)}" aria-label="Team löschen">${icon.del}</button></div>`}</div>
+    ${rs.length?rs.sort(nums).map(r=>`<div class="rider${canWrite?' drag':''}" draggable="${canWrite}" data-rider="${esc(r.id)}">
+      <span class="rnum" style="color:${esc(teamColor(t))}">${esc(r.number||'–')}</span>
+      <div class="rname"><div class="fn">${esc(r.first||'')}</div><div class="ln">${esc(r.last||'')}</div></div>
+      ${r.nation?`<span class="nat">${esc(r.nation)}</span>`:''}
+      <div class="rowact owner-only"><button class="ib" data-redit="${esc(r.id)}" aria-label="Fahrer bearbeiten">${icon.edit}</button><button class="ib del" data-rdel="${esc(r.id)}" aria-label="Fahrer entfernen">${icon.del}</button></div>
+    </div>`).join(''):'<div class="norider">Noch kein Fahrer.</div>'}
+    <button class="add owner-only" type="button" data-radd="${esc(t.id)}">+ Fahrer</button></article>`;
+  let html=teams.map(t=>card(t,by[t.id]||[])).join('');
+  if(by._free)html+=card({id:'_free',name:'Ohne Team',bike:'Ersatz- & Testfahrer',color:'var(--line-2)'},by._free);
+  $('#teams').innerHTML=html||'<div class="panel empty">Noch keine Teams. Leg mit „Team hinzufügen“ das erste an.</div>';
+}
+function teamOptions(sel){return [...state.teams].sort(teamSort).map(t=>`<option value="${esc(t.id)}"${t.id===sel?' selected':''}>${esc(t.name)}</option>`).join('')+`<option value=""${!sel||sel==='_free'?' selected':''}>Ohne Team</option>`;}
+async function editRider(r,teamId){
+  const isNew=!r; r=r||{id:genId(),teamId};
+  const ok=await ask(isNew?'Fahrer hinzufügen':'Fahrer bearbeiten','',{ok:'Speichern',extra:`<div class="mgrid">
+    <label class="f"><span>Startnummer</span><input id="m-num" value="${esc(r.number||'')}" maxlength="3"></label>
+    <label class="f"><span>Nation</span><input id="m-nat" value="${esc(r.nation||'')}" maxlength="3" placeholder="ESP"></label>
+    <label class="f"><span>Vorname</span><input id="m-first" value="${esc(r.first||'')}"></label>
+    <label class="f"><span>Nachname</span><input id="m-last" value="${esc(r.last||'')}"></label>
+    <label class="f w2"><span>Team</span><select id="m-team">${teamOptions(r.teamId)}</select></label></div>`});
+  if(!ok)return;
+  const n={...r,number:$('#m-num').value.trim(),nation:$('#m-nat').value.trim().toUpperCase(),first:$('#m-first').value.trim(),last:$('#m-last').value.trim(),teamId:$('#m-team').value};
+  if(!n.last){toast('Nachname fehlt');return;}
+  try{await putDoc('riders',n);toast('Fahrer gespeichert');}catch(e){toast('Speichern fehlgeschlagen');}
+}
+async function editTeam(t){
+  const isNew=!t; t=t||{id:genId(),order:state.teams.length+1};
+  const ok=await ask(isNew?'Team hinzufügen':'Team bearbeiten','',{ok:'Speichern',extra:`<div class="mgrid">
+    <label class="f w2"><span>Teamname</span><input id="m-tname" value="${esc(t.name||'')}"></label>
+    <label class="f"><span>Hersteller</span><input id="m-tbike" list="bikeList" value="${esc(t.bike||'')}"></label>
+    <label class="f"><span>Teamfarbe</span><input id="m-tcol" type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(t.color||'')?t.color:'#e4002b')}"></label>
+    <label class="f"><span>Reihenfolge</span><input id="m-tord" type="number" min="1" value="${esc(t.order??'')}"></label></div>`});
+  if(!ok)return;
+  const n={...t,name:$('#m-tname').value.trim(),bike:$('#m-tbike').value.trim(),color:$('#m-tcol').value,order:num($('#m-tord').value)};
+  if(!n.name){toast('Teamname fehlt');return;}
+  try{await putDoc('teams',n);toast('Team gespeichert');}catch(e){toast('Speichern fehlgeschlagen');}
+}
+$('#addTeam').onclick=()=>editTeam(null);
+$('#teams').addEventListener('click',async e=>{
+  const b=e.target.closest('button'); if(!b||!canWrite)return; const d=b.dataset;
+  if(d.radd)editRider(null,d.radd==='_free'?'':d.radd);
+  if(d.redit)editRider(state.riders.find(r=>r.id===d.redit));
+  if(d.tedit)editTeam(state.teams.find(t=>t.id===d.tedit));
+  if(d.rdel){const r=state.riders.find(x=>x.id===d.rdel);
+    if(await ask('Fahrer entfernen?',`#${r.number||''} ${r.first||''} ${r.last||''} wird aus dem Starterfeld gelöscht.`,{ok:'Entfernen',danger:true})){try{await delDoc('riders',r.id);toast('Fahrer entfernt');}catch(err){toast('Löschen fehlgeschlagen');}}}
+  if(d.tdel){const t=state.teams.find(x=>x.id===d.tdel);const n=state.riders.filter(r=>r.teamId===t.id).length;
+    if(await ask('Team löschen?',`${t.name} wird gelöscht.${n?` ${n} Fahrer landen unter „Ohne Team“.`:''}`,{ok:'Löschen',danger:true})){try{await delDoc('teams',t.id);toast('Team gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}}}
+});
+let dragId=null;
+$('#teams').addEventListener('dragstart',e=>{const r=e.target.closest('.rider');if(!r||!canWrite)return;dragId=r.dataset.rider;r.classList.add('dragging');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragId);}catch(err){}});
+$('#teams').addEventListener('dragend',e=>{e.target.closest('.rider')?.classList.remove('dragging');document.querySelectorAll('.team.drop').forEach(x=>x.classList.remove('drop'));});
+$('#teams').addEventListener('dragover',e=>{const t=e.target.closest('.team');if(!t||!dragId)return;e.preventDefault();document.querySelectorAll('.team.drop').forEach(x=>x!==t&&x.classList.remove('drop'));t.classList.add('drop');});
+$('#teams').addEventListener('drop',async e=>{
+  const t=e.target.closest('.team');if(!t||!dragId)return;e.preventDefault();t.classList.remove('drop');
+  const r=state.riders.find(x=>x.id===dragId);dragId=null;const to=t.dataset.team==='_free'?'':t.dataset.team;
+  if(!r||(r.teamId||'')===to)return;
+  try{await putDoc('riders',{...r,teamId:to});toast(`${r.last} → ${state.teams.find(x=>x.id===to)?.name||'Ohne Team'}`);}catch(err){toast('Umsetzen fehlgeschlagen');}
+});
+$('#f-team').addEventListener('change',()=>{const t=state.teams.find(x=>x.name===$('#f-team').value);if(t&&t.bike&&!$('#f-bike').value)$('#f-bike').value=t.bike;});
+
 /* ---------- Dialog & Toast ---------- */
 function ask(title,text,{ok='OK',danger=false,extra=''}={}){
   return new Promise(res=>{
-    $('#mTitle').textContent=title;$('#mText').textContent=text;$('#mExtra').innerHTML=extra;
+    $('#mTitle').textContent=title;$('#mText').textContent=text;$('#mText').hidden=!text;$('#mExtra').innerHTML=extra;
     $('#mOk').textContent=ok;$('#mOk').style.background=danger?'var(--bad)':'';$('#modal').hidden=false;$('#mOk').focus();
     const done=v=>{$('#modal').hidden=true;$('#mOk').onclick=$('#mCancel').onclick=null;res(v);};
     $('#mOk').onclick=()=>done(true);$('#mCancel').onclick=()=>done(false);
@@ -580,7 +701,7 @@ $('#seasonTable').addEventListener('change',async e=>{
 /* ---------- Tabs ---------- */
 function switchTab(t){
   tab=t; document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
-  for(const s of ['results','seasons','tracks','rider'])$('#tab-'+s).hidden=s!==t;
+  for(const s of ['results','seasons','tracks','teams','rider'])$('#tab-'+s).hidden=s!==t;
   if(t==='seasons')drawChart(view(),groups(view().races));
   try{localStorage.setItem(LKEY+'-tab',t);}catch(e){}
 }
@@ -594,7 +715,7 @@ P.addEventListener('submit',async e=>{e.preventDefault();const p={};for(const k 
   try{await putMeta('profile',p);profDirty=false;toast('Profil gespeichert');if(mode==='local')render();}catch(err){toast('Speichern fehlgeschlagen');}});
 
 /* ---------- Export / Import ---------- */
-function exportData(){return{profile:state.profile,seasons:state.seasons,races:state.races};}
+function exportData(){return{profile:state.profile,seasons:state.seasons,races:state.races,teams:state.teams,riders:state.riders};}
 async function offerFile(name,text,type){
   let dl=null; try{dl=await window.claude?.use?.('downloads');}catch(e){}
   if(dl){try{await dl.save({filename:name,data:new Blob([text],{type})});return;}catch(e){if(e?.code==='declined')return;}}
@@ -616,6 +737,8 @@ $('#importFile').onchange=async e=>{
   if(!(await ask('Import starten?',`${d.races.length} Rennen werden hinzugefügt. Rennen mit gleicher ID werden überschrieben.`,{ok:'Importieren'})))return;
   try{
     for(const r of d.races)await putRace({...r,id:String(r.id||(Date.now().toString(36)+Math.random().toString(36).slice(2,6)))});
+    for(const t of d.teams||[])if(t.id)await putDoc('teams',t);
+    for(const r of d.riders||[])if(r.id)await putDoc('riders',r);
     if(d.profile)await putMeta('profile',d.profile); if(d.seasons)await saveSeasons({...state.seasons,...d.seasons});
     profDirty=false; toast('Import fertig');
   }catch(err){toast('Import teilweise fehlgeschlagen');}
