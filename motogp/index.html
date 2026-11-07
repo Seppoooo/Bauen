@@ -215,6 +215,52 @@ tr.me td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
 .champ .cup{font:italic 900 15px/1 var(--display);letter-spacing:2px;color:var(--gold);text-transform:uppercase}
 .champ .cw{font:italic 900 26px/1 var(--display);text-transform:uppercase}
 
+/* SEASON STRIP */
+.strip{padding:14px 16px;display:grid;gap:12px}
+.strip-top{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;justify-content:space-between}
+.strip-top .big{font:italic 900 26px/1 var(--display);text-transform:uppercase}
+.strip-top .big b{color:var(--red)}
+.segs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px}
+.segs i{height:12px;background:var(--panel-3);transform:skewX(-14deg);position:relative}
+.segs i.next{background:transparent;box-shadow:inset 0 0 0 1px var(--fg)}
+.segs i.mine::after{content:"";position:absolute;left:50%;top:-6px;width:4px;height:4px;border-radius:50%;background:var(--gold);transform:translateX(-50%) skewX(14deg)}
+.nextgp{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--mute)}
+.nextgp b{color:var(--fg)}
+.fight{display:inline-block;font:700 11px/1 var(--display);letter-spacing:1px;text-transform:uppercase;padding:4px 7px}
+.fight.won{background:var(--gold);color:#111}.fight.in{background:rgba(51,196,107,.15);color:var(--ok)}.fight.out{color:var(--mute)}
+.mathbar{display:flex;flex-wrap:wrap;gap:6px 22px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel-2);font-size:13px;color:var(--mute)}
+.mathbar b{color:var(--fg)}
+/* RECORDS */
+.recs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(270px,100%),1fr));gap:14px}
+.rec{background:var(--panel);border:1px solid var(--line);min-width:0}
+.rec h3{margin:0;padding:12px 14px;font:800 15px/1 var(--display);letter-spacing:1.6px;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.rec ol{list-style:none;margin:0;padding:0}
+.rec li{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.rec li:last-child{border-bottom:0}
+.rec li .rk{font:italic 900 18px/1 var(--display);width:22px;color:var(--mute)}
+.rec li:first-child .rk{color:var(--gold)}
+.rec li .rd{flex:1}
+.rec li .val{font:italic 900 24px/1 var(--display)}
+.rec li:first-child .val{font-size:30px}
+.rec li.me{background:rgba(242,194,48,.07)}
+/* DUEL */
+.duels{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:14px}
+.duel{background:var(--panel);border:1px solid var(--line);padding:14px;display:grid;gap:12px;min-width:0}
+.duel-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.drow{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:10px}
+.drow .dv{font:italic 900 26px/1 var(--display);text-align:center}
+.drow .dl{font:700 11px/1 var(--display);letter-spacing:1.4px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:5px}
+.dbar{display:flex;height:8px;background:var(--panel-3);overflow:hidden}
+.dbar i{display:block;height:100%}
+.flag{font-size:15px;line-height:1;margin-right:4px}
+/* HERO LIVERY */
+.livery{position:absolute;right:-40px;top:0;bottom:0;width:min(40%,420px);display:flex;gap:18px;justify-content:flex-end;pointer-events:none;z-index:0}
+.livery i{width:38px;height:100%;background:var(--hc,#e4002b);transform:skewX(-18deg);opacity:.18}
+.livery i:nth-child(2){opacity:.32;width:22px}.livery i:nth-child(3){opacity:.55;width:10px}
+@media (max-width:640px){.livery{width:50%;gap:10px}.livery i{width:20px}}
+td.tc{box-shadow:inset 4px 0 0 var(--tcol,transparent)}
+tr.me td.tc{box-shadow:inset 4px 0 0 var(--gold)}
+
 /* MODAL */
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:16px;overflow-y:auto}
 .modal .box{background:var(--panel);border:1px solid var(--line-2);border-top:4px solid var(--red);max-width:480px;width:100%;padding:20px}
@@ -241,6 +287,7 @@ footer .in{padding-block:18px}
       <button data-tab="races">Rennen</button>
       <button data-tab="standings">WM-Stand</button>
       <button data-tab="riders">Fahrer</button>
+      <button data-tab="records">Rekorde</button>
       <button data-tab="careers">Karrieren</button>
     </div>
     <div class="cswitch">
@@ -251,6 +298,7 @@ footer .in{padding-block:18px}
 </nav>
 
 <header class="hero" id="hero">
+  <div class="livery" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="in">
     <div class="bignum" id="heroNum">00</div>
     <div>
@@ -268,6 +316,10 @@ footer .in{padding-block:18px}
     <div>
       <div class="h"><h2 id="homeStatsTitle">Deine Bilanz</h2><span class="sub" id="homeStatsSub"></span></div>
       <div class="panel" id="homeStats"></div>
+    </div>
+    <div id="homeStripWrap">
+      <div class="h"><h2 id="stripTitle">Saison</h2><span class="sub" id="stripSub"></span></div>
+      <div class="panel strip" id="homeStrip"></div>
     </div>
     <div class="cols">
       <div>
@@ -330,6 +382,15 @@ footer .in{padding-block:18px}
     <div id="riderDetail" class="view" hidden></div>
   </section>
 
+  <!-- REKORDE -->
+  <section class="view" id="v-records" hidden>
+    <div>
+      <div class="h"><h2>Bestenliste</h2><span class="sub" id="recSub">Alle Saisons dieser Karriere</span></div>
+      <div class="toolbar"><select id="recSeason" style="width:auto" aria-label="Zeitraum"></select></div>
+      <div class="recs" id="recs"></div>
+    </div>
+  </section>
+
   <!-- KARRIEREN -->
   <section class="view" id="v-careers" hidden>
     <div>
@@ -343,6 +404,7 @@ footer .in{padding-block:18px}
           <label class="f w2"><span>Name der Karriere</span><input id="nc-name" required placeholder="z. B. Karriere 2 – Rookie bei Tech3"></label>
           <label class="f"><span>Klasse</span><select id="nc-cls"><option>MotoGP</option><option>Moto2</option><option>Moto3</option></select></label>
           <label class="f"><span>Startsaison</span><input id="nc-season" type="number" min="1949" max="2100" required></label>
+          <label class="f"><span>Rennen pro Saison</span><input id="nc-per" type="number" min="1" max="40" value="22"></label>
           <label class="f w2"><span>Starterfeld</span><select id="nc-tpl"><option value="2025">MotoGP 2025 (Original-Starterfeld)</option><option value="copy">Aus aktueller Karriere übernehmen</option><option value="empty">Leer – alles selbst anlegen</option></select></label>
         </div>
         <div class="h" style="margin:20px 0 10px"><h2 style="font-size:20px">Dein Fahrer</h2></div>
@@ -474,7 +536,7 @@ function setSync(kind,text){const el=$('#sync');el.className='sync '+kind;el.tit
 const st=x=>x?.status||'OK';
 function resPts(x,race){
   if(!x)return 0; let p=0;
-  if(st(x)==='OK'&&x.pos)p+=RACE_PTS[x.pos-1]||0;
+  if(st(x)==='OK'&&x.pos)p+=(RACE_PTS[x.pos-1]||0)*(race.half?.5:1);
   if(race.hasSprint!==false&&x.sprint&&st(x)!=='DSQ')p+=SPRINT_PTS[x.sprint-1]||0;
   return p;
 }
@@ -519,17 +581,32 @@ function makerStandings(season){
     for(const [rid,x] of Object.entries(race.results||{})){
       const mk=team(x.teamId||rider(rid)?.teamId)?.bike; if(!mk)continue;
       const b=(best[mk]||={race:0,sprint:0,win:0});
-      if(st(x)==='OK'&&x.pos){b.race=Math.max(b.race,RACE_PTS[x.pos-1]||0);if(x.pos===1)b.win=1;}
+      if(st(x)==='OK'&&x.pos){b.race=Math.max(b.race,(RACE_PTS[x.pos-1]||0)*(race.half?.5:1));if(x.pos===1)b.win=1;}
       if(race.hasSprint!==false&&x.sprint&&st(x)!=='DSQ')b.sprint=Math.max(b.sprint,SPRINT_PTS[x.sprint-1]||0);
     }
     for(const [mk,b] of Object.entries(best)){const e=(m[mk]||={id:mk,pts:0,wins:0});e.pts+=b.race+b.sprint;e.wins+=b.win;}
   }
   return Object.values(m).sort((a,b)=>b.pts-a.pts||b.wins-a.wins);
 }
-function titlesOf(rid){const c=career();return (c?.closed||[]).filter(s=>standings(s)[0]?.id===rid).length;}
+const perSeason=()=>Number(career()?.racesPerSeason)||22;
+const maxWeekend=()=>(career()?.cls==='Moto2'||career()?.cls==='Moto3')?25:37;
+function titleMath(season){
+  const list=standings(season); const done=S.races.filter(r=>r.season===season).length;
+  const left=Math.max(0,perSeason()-done); const maxLeft=left*maxWeekend();
+  const closed=(career()?.closed||[]).includes(season);
+  const leadPts=list[0]?.pts||0, second=list[1]?.pts||0;
+  const clinched=list.length>0&&(closed||left===0||leadPts>second+maxLeft);
+  const status={}; for(const e of list)status[e.id]=e.rank===1?(clinched?'won':'in'):(clinched||e.pts+maxLeft<leadPts?'out':'in');
+  return {list,done,left,maxLeft,clinched,champion:clinched?list[0]?.id:null,status,closed};
+}
+function championOf(season){return titleMath(season).champion;}
+function titlesOf(rid){return seasons().filter(s=>championOf(s)===rid).length;}
 function wmRank(rid,season){return standings(season).find(e=>e.id===rid)?.rank||null;}
 
 /* ================= Bausteine ================= */
+const ISO={ITA:'IT',ESP:'ES',FRA:'FR',AUS:'AU',POR:'PT',RSA:'ZA',JPN:'JP',THA:'TH',GER:'DE',AUT:'AT',GBR:'GB',USA:'US',NED:'NL',SUI:'CH',BEL:'BE',ARG:'AR',BRA:'BR',INA:'ID',IDN:'ID',MAS:'MY',MYS:'MY',CZE:'CZ',TUR:'TR',FIN:'FI',SWE:'SE',NOR:'NO',DEN:'DK',POL:'PL',HUN:'HU',CAN:'CA',MEX:'MX',COL:'CO',CHN:'CN',IND:'IN',PHI:'PH',QAT:'QA',UAE:'AE',SMR:'SM',IRL:'IE',NZL:'NZ',CRO:'HR',SLO:'SI',SVK:'SK',RUS:'RU',UKR:'UA',VEN:'VE',CHI:'CL',KOR:'KR'};
+function flag(code){const c=String(code||'').toUpperCase();const i2=ISO[c]||(c.length===2?c:null);if(!i2)return '';return `<span class="flag" aria-hidden="true">${String.fromCodePoint(...[...i2].map(ch=>0x1F1E6+ch.charCodeAt(0)-65))}</span>`;}
+const natCell=n=>n?`${flag(n)}${esc(n)}`:'';
 function posBox(p,s,small){
   const sm=small?' sm':'';
   if(s&&s!=='OK')return `<span class="posb st${sm}">${s}</span>`;
@@ -551,13 +628,14 @@ function statPanel(a,titles){
 function render(){
   document.body.classList.toggle('ro',!canWrite);
   renderCareerSel(); renderHero(); fillDatalists();
-  for(const t of ['home','races','standings','riders','careers'])$('#v-'+t).hidden=t!==tab;
+  for(const t of ['home','races','standings','riders','records','careers'])$('#v-'+t).hidden=t!==tab;
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
   if(tab==='home')renderHome();
   if(tab==='races')renderRaces();
   if(tab==='standings')renderStandings();
   if(tab==='riders')renderRiders();
   if(tab==='careers')renderCareers();
+  if(tab==='records')renderRecords();
 }
 function go(t){
   if(raceDraft&&t!=='races')raceDraft=null;
@@ -592,9 +670,9 @@ function renderHero(){
   const rank=wmRank(focus.id,cur), a=riderStats(focus.id,S.races);
   const f=[];
   if(t)f.push(`<span class="chip"><i class="sw" style="background:${esc(teamColor(t))}"></i><b>${esc(t.name)}</b>${t.bike?' · '+esc(t.bike):''}</span>`);
-  if(focus.nation)f.push(`<span>Nation <b>${esc(focus.nation)}</b></span>`);
+  if(focus.nation)f.push(`<span>Nation <b>${natCell(focus.nation)}</b></span>`);
   if(rank)f.push(`<span>WM ${cur} <b>P${rank}</b> · <b>${fmt(standings(cur).find(e=>e.id===focus.id).pts)}</b> Pkt</span>`);
-  const tt=titlesOf(focus.id); if(tt)f.push(`<span><b style="color:var(--gold)">${tt}× Weltmeister</b></span>`);
+  const tt=titlesOf(focus.id); if(rank&&cur){const tm=titleMath(cur);if(tm.status[focus.id]==='won'&&!tm.closed&&tm.left>0)f.push(`<span><b style="color:var(--gold)">Vorzeitig Weltmeister ${cur}</b></span>`);} if(tt)f.push(`<span><b style="color:var(--gold)">${tt}× Weltmeister</b></span>`);
   if(!rank&&a.entries===0)f.push(`<span>Saison <b>${c.season}</b></span>`);
   $('#heroFacts').innerHTML=f.join('');
 }
@@ -605,6 +683,21 @@ function fillDatalists(){
 }
 
 /* ---------- Übersicht ---------- */
+function renderStrip(){
+  const c=career(); if(!c){$('#homeStripWrap').hidden=true;return;} $('#homeStripWrap').hidden=false;
+  const ss=seasons(); let cur=ss.at(-1)??c.season; let done=S.races.filter(r=>r.season===cur).length;
+  const n=perSeason(); if(done>=n&&ss.length){cur=cur+1;done=0;}
+  const rs=racesSorted().filter(r=>r.season===cur); const me=playerId();
+  const nextTrack=TRACKS[done]||'';
+  $('#stripTitle').textContent=`Saison ${cur}`; $('#stripSub').textContent=done>=n?'Saison beendet':`${n-done} Rennwochenenden übrig`;
+  const tm=titleMath(cur); const myRank=me?wmRank(me,cur):null;
+  $('#homeStrip').innerHTML=`<div class="strip-top"><div class="big">Runde <b>${Math.min(done+1,n)}</b> / ${n}</div>
+    <div class="nextgp">${done<n?`<span>Nächster Grand Prix <b>${esc(nextTrack||'frei wählbar')}</b></span>`:''}${myRank?`<span>Dein WM-Platz <b>P${myRank}</b></span>`:''}${me&&tm.status[me]?`<span>Titelchance <b>${tm.status[me]==='won'?'Weltmeister!':tm.status[me]==='in'?'lebt':'vorbei'}</b></span>`:''}</div></div>
+    <div class="segs" aria-label="Saisonfortschritt">${Array.from({length:n},(_,i)=>{const r=rs[i];if(!r)return `<i class="${i===done?'next':''}" title="Runde ${i+1}${TRACKS[i]?' · '+esc(TRACKS[i]):''}"></i>`;
+      const w=Object.entries(r.results||{}).find(([,x])=>st(x)==='OK'&&x.pos===1);const col=w?riderColor(rider(w[0])):'var(--line-2)';const mine=me&&w&&w[0]===me;
+      return `<i class="${mine?'mine':''}" style="background:${esc(col)}" title="R${r.round||i+1} ${esc(r.track)}${w?' · Sieg '+esc(shortName(rider(w[0]))):''}"></i>`;}).join('')}</div>
+    ${canWrite&&done<n?`<div><button class="btn sm" type="button" id="stripNext">${esc(nextTrack?nextTrack.split(' – ').pop():'Nächstes Rennen')} eintragen</button></div>`:''}`;
+}
 function renderHome(){
   const c=career(), me=rider(playerId());
   if(!c){$('#homeStats').innerHTML=`<div class="empty">${loaded?'Leg unter „Karrieren“ deine erste Karriere an.':'Lade Daten…'}${loaded?'<br><button class="btn owner-only" type="button" data-go="careers">Karriere anlegen</button>':''}</div>`;$('#homeStandings').innerHTML='';$('#homeLast').innerHTML='';$('#homeForm').innerHTML='';return;}
@@ -612,6 +705,7 @@ function renderHome(){
   const a=me?riderStats(me.id,S.races):null;
   $('#homeStatsSub').textContent=me?`${a.entries} Rennwochenenden in „${c.name}“`:'';
   $('#homeStats').innerHTML=me?statPanel(a,titlesOf(me.id)):'<div class="empty">Wähle oder erstelle deinen Fahrer, dann siehst du hier deine Karriere-Bilanz.</div>';
+  renderStrip();
   const ss=seasons(), cur=ss.at(-1);
   $('#homeStTitle').textContent=cur?`WM-Stand ${cur}`:'WM-Stand';
   if(!cur){$('#homeStandings').innerHTML='<div class="empty">Noch kein Rennen gefahren.</div>';}
@@ -651,7 +745,7 @@ function renderRaces(){
     const win=res.find(([,x])=>st(x)==='OK'&&x.pos===1), pole=res.find(([,x])=>x.grid===1);
     const mx=me?race.results?.[me]:null;
     return `<tr><td><b>${race.season}</b><div class="hint">Runde ${race.round||'–'}</div></td>
-      <td><span class="rd"><span><span class="t">${esc(race.track)}</span>${race.wet?'<span class="tag wet">Regen</span>':''}${race.hasSprint===false?'<span class="tag">Ohne Sprint</span>':''}</span></span></td>
+      <td><span class="rd"><span><span class="t">${esc(race.track)}</span>${race.wet?'<span class="tag wet">Regen</span>':''}${race.half?'<span class="tag">½ Punkte</span>':''}${race.hasSprint===false?'<span class="tag">Ohne Sprint</span>':''}</span></span></td>
       <td>${pole?riderCell(rider(pole[0]),null,{short:true}):'<span class="hint">–</span>'}</td>
       <td>${win?riderCell(rider(win[0]),null,{short:true}):'<span class="hint">–</span>'}</td>
       ${me?`<td class="c">${mx?.grid||'<span class="hint">–</span>'}</td><td class="c">${race.hasSprint===false?'<span class="hint">–</span>':(mx?.sprint?posBox(mx.sprint,null,true):'<span class="hint">–</span>')}</td><td class="c">${mx?posBox(mx.pos,st(mx)):posBox(null)}</td><td class="n"><span class="pts${resPts(mx,race)?'':' zero'}">${fmt(resPts(mx,race))}</span></td>`:''}
@@ -662,9 +756,10 @@ function openRace(id){
   const r=id?S.races.find(x=>x.id===id):null; const c=career();
   if(r){raceDraft=JSON.parse(JSON.stringify(r));raceDraft.results||={};}
   else{
-    const last=racesSorted().at(-1); const season=last?.season??c.season;
+    const last=racesSorted().at(-1); let season=last?.season??c.season;
+    if(S.races.filter(x=>x.season===season).length>=perSeason())season++;
     const round=Math.max(0,...S.races.filter(x=>x.season===season).map(x=>x.round||0))+1;
-    raceDraft={id:genId(),season,round,track:'',wet:false,hasSprint:c.cls!=='Moto2'&&c.cls!=='Moto3',results:{},fl:null,isNew:true};
+    raceDraft={id:genId(),season,round,track:TRACKS[round-1]||'',wet:false,hasSprint:c.cls!=='Moto2'&&c.cls!=='Moto3',results:{},fl:null,isNew:true};
   }
   tapCol=null; tab='races'; render(); window.scrollTo({top:0});
 }
@@ -698,6 +793,7 @@ function renderEditor(){
       <div class="checks" style="margin-bottom:14px">
         <label><input type="checkbox" id="e-sprint"${d.hasSprint!==false?' checked':''}> Mit Sprintrennen</label>
         <label><input type="checkbox" id="e-wet"${d.wet?' checked':''}> Regenrennen</label>
+        <label><input type="checkbox" id="e-half"${d.half?' checked':''}> Rennen verkürzt – halbe Punkte</label>
       </div>
     </div>
     <div class="tapbar">
@@ -771,11 +867,12 @@ function renderStandings(){
   const closed=(c.closed||[]).includes(cur); $('#stClosed').checked=closed;
   const nRaces=S.races.filter(r=>r.season===cur).length; $('#stSub').textContent=`Saison ${cur} · ${nRaces} Rennen${closed?' · abgeschlossen':''}`;
   const list=standings(cur);
-  $('#stChamp').innerHTML=closed&&list[0]?`<div class="champ"><span class="cup">Weltmeister ${cur}</span><button class="link" type="button" data-rider="${esc(list[0].id)}"><span class="cw ln">${esc(fullName(rider(list[0].id)))}</span></button><span class="hint">${fmt(list[0].pts)} Punkte</span></div>`:'';
+  const chId=championOf(cur); $('#stChamp').innerHTML=chId&&list[0]?`<div class="champ"><span class="cup">${closed||titleMath(cur).left===0?'Weltmeister':'Vorzeitig Weltmeister'} ${cur}</span><button class="link" type="button" data-rider="${esc(list[0].id)}"><span class="cw ln">${esc(fullName(rider(list[0].id)))}</span></button><span class="hint">${fmt(list[0].pts)} Punkte</span></div>`:'';
   if(stKind==='riders'){
-    const lead=list[0]?.pts||0;
-    $('#stTable').innerHTML=`<table><thead><tr><th class="c">Pos</th><th>Fahrer</th><th>Team</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Punkte</th><th class="n">Rückstand</th></tr></thead><tbody>${list.map(e=>{const r=rider(e.id);const tn=[...e.teams].map(t=>team(t)?.name).filter(Boolean).join(' / ');
-      return `<tr class="${e.id===playerId()?'me':''}"><td class="c">${posBox(e.rank)}</td><td>${riderCell(r,esc(r?.nation||''))}</td><td class="mute">${esc(tn||team(r?.teamId)?.name||'–')}</td><td class="n">${e.wins}</td><td class="n">${e.podiums}</td><td class="n">${e.poles}</td><td class="n"><span class="pts">${fmt(e.pts)}</span></td><td class="n gap">${e.rank===1?'':'−'+fmt(lead-e.pts)}</td></tr>`;}).join('')}</tbody></table>`;
+    const lead=list[0]?.pts||0; const tm=titleMath(cur);
+    const fl={won:'<span class="fight won">Weltmeister</span>',in:'<span class="fight in">Im Titelkampf</span>',out:'<span class="fight out">–</span>'};
+    $('#stTable').innerHTML=`<div class="mathbar"><span>Gefahren <b>${tm.done}</b> von <b>${perSeason()}</b> Rennwochenenden</span><span>Noch zu vergeben <b>${tm.maxLeft}</b> Punkte</span><span>Im Titelkampf <b>${Object.values(tm.status).filter(v=>v!=='out').length}</b> Fahrer</span></div><table><thead><tr><th class="c">Pos</th><th>Fahrer</th><th>Team</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Punkte</th><th class="n">Rückstand</th><th>Titel</th></tr></thead><tbody>${list.map(e=>{const r=rider(e.id);const tn=[...e.teams].map(t=>team(t)?.name).filter(Boolean).join(' / ');
+      return `<tr class="${e.id===playerId()?'me':''}"><td class="c tc" style="--tcol:${esc(riderColor(r))}">${posBox(e.rank)}</td><td>${riderCell(r,natCell(r?.nation))}</td><td class="mute">${esc(tn||team(r?.teamId)?.name||'–')}</td><td class="n">${e.wins}</td><td class="n">${e.podiums}</td><td class="n">${e.poles}</td><td class="n"><span class="pts">${fmt(e.pts)}</span></td><td class="n gap">${e.rank===1?'':'−'+fmt(lead-e.pts)}</td><td>${fl[tm.status[e.id]]}</td></tr>`;}).join('')}</tbody></table>`;
   }else if(stKind==='teams'){
     const tl=teamStandings(cur);
     $('#stTable').innerHTML=`<table><thead><tr><th class="c">Pos</th><th>Team</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Punkte</th></tr></thead><tbody>${tl.map((e,i)=>{const t=team(e.id);
@@ -823,7 +920,7 @@ function renderRiders(){
       <span class="rnum" style="color:${esc(teamColor(t))}">${esc(r.number||'–')}</span>
       <button class="link rname" type="button" data-rider="${esc(r.id)}"><div class="fn">${esc(r.first||'')}${r.id===playerId()?'<span class="tag me">Du</span>':''}${r.custom?'<span class="tag own">Eigener</span>':''}</div><div class="ln">${esc(r.last||'')}</div></button>
       ${cur?`<span class="rpts">${fmt(pts[r.id]||0)}</span>`:''}
-      ${r.nation?`<span class="nat">${esc(r.nation)}</span>`:''}
+      ${r.nation?`<span class="nat">${natCell(r.nation)}</span>`:''}
       <div class="rowact owner-only"><button class="ib" type="button" data-pedit="${esc(r.id)}" aria-label="Fahrer bearbeiten">${icon.edit}</button></div>
     </div>`).join(''):'<div class="norider">Noch kein Fahrer.</div>'}
     <button class="add owner-only" type="button" data-padd="${esc(t.id)}">+ Fahrer</button></article>`;
@@ -842,14 +939,50 @@ function renderRiderDetail(){
     <span class="owner-only" style="display:flex;gap:10px;flex-wrap:wrap">${isMe?'':`<button class="btn ghost sm" type="button" data-setme="${esc(r.id)}">Als meinen Fahrer festlegen</button>`}<button class="btn sm" type="button" data-pedit="${esc(r.id)}">Fahrer bearbeiten</button></span></div>
   <div><div class="h"><h2>Karriere-Statistik</h2><span class="sub">${a.entries} Rennwochenenden${r.custom?' · Eigener Fahrer':''}${isMe?' · Dein Fahrer':''}</span></div>
   <div class="panel">${statPanel(a,titlesOf(r.id))}</div></div>
+  ${riderInsights(r)}
   <div><div class="h"><h2>Saisons</h2></div>
   <div class="panel tw">${ss.length?`<table><thead><tr><th>Saison</th><th>Team</th><th class="n">Rennen</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Ausf.</th><th class="n">Punkte</th><th class="c">WM</th></tr></thead><tbody>${ss.reverse().map(s=>{
     const sr=S.races.filter(x=>x.season===s); const sa=riderStats(r.id,sr); const rk=wmRank(r.id,s);
     const tn=[...new Set(sr.map(x=>x.results?.[r.id]?.teamId).filter(Boolean))].map(t=>team(t)?.name).filter(Boolean).join(' / ');
-    const champ=closed.includes(s)&&rk===1;
+    const champ=championOf(s)===r.id;
     return `<tr><td><b>${s}</b>${closed.includes(s)?'':'<div class="hint">läuft</div>'}</td><td class="mute">${esc(tn||'–')}</td><td class="n">${sa.entries}</td><td class="n">${sa.wins}</td><td class="n">${sa.podiums}</td><td class="n">${sa.poles}</td><td class="n">${sa.dnf}</td><td class="n"><span class="pts">${fmt(sa.pts)}</span></td><td class="c">${posBox(rk,null,true)}${champ?'<span class="tag" style="background:var(--gold);color:#111">Weltmeister</span>':''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Noch keine Rennen mit diesem Fahrer.</div>'}</div></div>
   ${races.length?`<div><div class="h"><h2>Alle Ergebnisse</h2></div><div class="panel tw"><table><thead><tr><th>Saison</th><th>Grand Prix</th><th>Team</th><th class="c">Start</th><th class="c">Sprint</th><th class="c">Rennen</th><th class="n">Pkt</th></tr></thead><tbody>${races.map(race=>{const x=race.results[r.id];
     return `<tr><td><b>${race.season}</b><div class="hint">Runde ${race.round||'–'}</div></td><td><span class="t" style="font:800 16px/1 var(--display);text-transform:uppercase">${esc(race.track)}</span>${x.grid===1?'<span class="tag pole">Pole</span>':''}${race.fl===r.id?'<span class="tag fl">SR</span>':''}${race.wet?'<span class="tag wet">Regen</span>':''}</td><td class="mute">${esc(team(x.teamId)?.name||'–')}</td><td class="c">${x.grid||'<span class="hint">–</span>'}</td><td class="c">${x.sprint?posBox(x.sprint,null,true):'<span class="hint">–</span>'}</td><td class="c">${posBox(x.pos,st(x))}</td><td class="n"><span class="pts${resPts(x,race)?'':' zero'}">${fmt(resPts(x,race))}</span></td></tr>`;}).join('')}</tbody></table></div></div>`:''}`;
+}
+function riderInsights(r){
+  const races=racesSorted().filter(x=>x.results?.[r.id]);
+  if(!races.length)return '';
+  // Positionsverlauf
+  const last=races.slice(-24); const W=760,H=200,L=34,R=10,T=14,B=26; const maxP=Math.max(10,...last.map(x=>x.results[r.id].pos||0),...last.map(x=>x.results[r.id].grid||0));
+  const X=i=>L+(W-L-R)*(last.length===1?.5:i/(last.length-1)), Y=p=>T+(H-T-B)*((p-1)/(maxP-1));
+  const col=riderColor(r);
+  let g=''; for(const t of [1,3,5,10,15,20].filter(t=>t<=maxP))g+=`<line x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)" ${t>1?'stroke-dasharray="2 4"':''}/><text x="${L-8}" y="${Y(t)+4}" text-anchor="end" font-size="11" fill="var(--mute)">P${t}</text>`;
+  const gp=last.map((x,i)=>x.results[r.id].grid?`${X(i)},${Y(x.results[r.id].grid)}`:null).filter(Boolean);
+  if(gp.length>1)g+=`<polyline fill="none" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="4 4" points="${gp.join(' ')}"/>`;
+  const segs=[];let cur=[];last.forEach((x,i)=>{const y=x.results[r.id];if(st(y)==='OK'&&y.pos)cur.push(`${X(i)},${Y(y.pos)}`);else{if(cur.length)segs.push(cur);cur=[];}});if(cur.length)segs.push(cur);
+  for(const sg of segs)if(sg.length>1)g+=`<polyline fill="none" stroke="${esc(col)}" stroke-width="3" stroke-linejoin="round" points="${sg.join(' ')}"/>`;
+  last.forEach((x,i)=>{const y=x.results[r.id];const tl=`R${x.round||''} ${esc(x.track)}`;
+    if(st(y)==='OK'&&y.pos){const c2=y.pos===1?'var(--gold)':y.pos<=3?'var(--fg)':esc(col);g+=`<circle cx="${X(i)}" cy="${Y(y.pos)}" r="${y.pos<=3?5.5:4}" fill="${c2}" stroke="var(--panel)" stroke-width="2"><title>${tl}: P${y.pos}</title></circle>`;}
+    else g+=`<text x="${X(i)}" y="${H-B-4}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--bad)">✕<title>${tl}: ${st(y)}</title></text>`;
+    if(last.length<=12||i%2===0)g+=`<text x="${X(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--mute)">${String(x.season).slice(2)}·${x.round||''}</text>`;});
+  // Teamkollegen-Duelle
+  const duel={};
+  for(const x of races){const me=x.results[r.id];const tid=me.teamId;if(!tid)continue;
+    for(const [oid,o] of Object.entries(x.results)){if(oid===r.id||o.teamId!==tid)continue;
+      const d=(duel[oid]||={race:[0,0],quali:[0,0],pts:[0,0],n:0});d.n++;
+      d.pts[0]+=resPts(me,x);d.pts[1]+=resPts(o,x);
+      if(me.grid&&o.grid)d.quali[me.grid<o.grid?0:1]++;
+      const a=st(me)==='OK'&&me.pos?me.pos:99,b=st(o)==='OK'&&o.pos?o.pos:99; if(a!==b)d.race[a<b?0:1]++;}}
+  const bar=(a,b,c1)=>{const t=a+b||1;return `<div class="dbar"><i style="width:${a/t*100}%;background:${esc(c1)}"></i><i style="width:${b/t*100}%;background:var(--line-2)"></i></div>`;};
+  const duelHtml=Object.entries(duel).sort((a,b)=>b[1].n-a[1].n).map(([oid,d])=>{const o=rider(oid);return `<div class="duel"><div class="duel-h"><span class="hint">gegen</span>${riderCell(o,`${d.n} gemeinsame Rennen`,{short:true})}</div>
+    ${[['Rennen',d.race],['Qualifying',d.quali],['Punkte',d.pts]].map(([l,v])=>`<div><div class="dl" style="text-align:left">${l}</div><div class="drow"><span class="dv" style="color:${v[0]>v[1]?esc(col):'var(--mute)'}">${fmt(v[0])}</span>${bar(v[0],v[1],col)}<span class="dv" style="color:${v[1]>v[0]?'var(--fg)':'var(--mute)'}">${fmt(v[1])}</span></div></div>`).join('')}</div>`;}).join('');
+  // Lieblingsstrecken
+  const tr={}; for(const x of races){const y=x.results[r.id];const e=(tr[x.track]||={n:0,pts:0,best:null,wins:0});e.n++;e.pts+=resPts(y,x);if(st(y)==='OK'&&y.pos){e.best=e.best?Math.min(e.best,y.pos):y.pos;if(y.pos===1)e.wins++;}}
+  const tl=Object.entries(tr).sort((a,b)=>b[1].pts/b[1].n-a[1].pts/a[1].n).slice(0,5);
+  return `<div><div class="h"><h2>Formkurve</h2><span class="sub">Zielplatz pro Rennen · gestrichelt: Startplatz · ✕ Ausfall</span></div>
+    <div class="panel chartbox"><svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:auto" role="img" aria-label="Formkurve">${g}</svg></div></div>
+    ${duelHtml?`<div><div class="h"><h2>Teamkollegen-Duell</h2><span class="sub">Links ${esc(shortName(r))}</span></div><div class="duels">${duelHtml}</div></div>`:''}
+    <div><div class="h"><h2>Beste Strecken</h2><span class="sub">Nach Punkten pro Start</span></div><div class="panel tw"><table><thead><tr><th>Grand Prix</th><th class="n">Starts</th><th class="n">Siege</th><th class="c">Bestes</th><th class="n">Ø Punkte</th></tr></thead><tbody>${tl.map(([t,e])=>`<tr><td><span class="t" style="font:800 16px/1 var(--display);text-transform:uppercase">${esc(t)}</span></td><td class="n">${e.n}</td><td class="n">${e.wins}</td><td class="c">${posBox(e.best,null,true)}</td><td class="n"><span class="pts">${fmt(Math.round(e.pts/e.n*10)/10)}</span></td></tr>`).join('')}</tbody></table></div></div>`;
 }
 function showRider(id){detailRider=id;tab='riders';lsSet('gp-tab','riders');raceDraft=null;render();window.scrollTo({top:0});}
 
@@ -895,13 +1028,28 @@ async function editTeam(t){
   try{await Store.set(sub(S.cid,'teams'),n.id,n);toast('Team gespeichert');}catch(e){toast('Speichern fehlgeschlagen');}
 }
 
+/* ---------- Rekorde ---------- */
+function renderRecords(){
+  const sel=$('#recSeason'); const cur=sel.value; const ss=seasons().reverse();
+  sel.innerHTML=`<option value="">Ganze Karriere</option>`+ss.map(s=>`<option value="${s}"${String(s)===cur?' selected':''}>Saison ${s}</option>`).join('');
+  const races=sel.value?S.races.filter(r=>String(r.season)===sel.value):S.races;
+  if(!races.length){$('#recs').innerHTML='<div class="panel empty">Noch keine Rennen – sobald du Ergebnisse einträgst, entstehen hier die Bestenlisten.</div>';return;}
+  const ids=new Set(); for(const r of races)for(const k of Object.keys(r.results||{}))ids.add(k);
+  const stats=[...ids].map(id=>({id,a:riderStats(id,races),t:sel.value?(championOf(Number(sel.value))===id?1:0):titlesOf(id)}));
+  const cats=[['Weltmeistertitel',x=>x.t],['Siege',x=>x.a.wins],['Podestplätze',x=>x.a.podiums],['Pole-Positions',x=>x.a.poles],['Punkte',x=>x.a.pts],['Sprint-Siege',x=>x.a.sprintW],['Schnellste Runden',x=>x.a.fl],['Top-10-Ergebnisse',x=>x.a.top10],['Ausfälle',x=>x.a.dnf]];
+  $('#recSub').textContent=sel.value?`Saison ${sel.value} · ${races.length} Rennen`:`Alle Saisons · ${races.length} Rennen`;
+  $('#recs').innerHTML=cats.map(([l,f])=>{const top=stats.filter(x=>f(x)>0).sort((a,b)=>f(b)-f(a)).slice(0,5);
+    return `<section class="rec"><h3><span>${l}</span></h3>${top.length?`<ol>${top.map((x,i)=>`<li class="${x.id===playerId()?'me':''}"><span class="rk">${i+1}</span>${riderCell(rider(x.id),esc(team(rider(x.id)?.teamId)?.name||''),{short:true})}<span class="val">${fmt(f(x))}</span></li>`).join('')}</ol>`:'<div class="empty" style="padding:18px">Noch niemand</div>'}</section>`;}).join('');
+}
+$('#recSeason').addEventListener('change',renderRecords);
+
 /* ---------- Karrieren ---------- */
 function renderCareers(){
   const list=[...S.careers].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   $('#careerList').innerHTML=list.length?list.map(c=>{const on=c.id===S.cid;const me=on?rider(c.playerId):null;
     return `<article class="ccard${on?' on':''}"><div class="eyebrow">${esc(c.cls||'MotoGP')} · Start ${esc(c.season)}${on?' · aktiv':''}</div><div class="cn">${esc(c.name)}</div>
     <div class="cm">${on?`<span>Fahrer <b>${esc(me?fullName(me):'–')}</b></span><span>Rennen <b>${S.races.length}</b></span><span>Saisons <b>${seasons().length}</b></span>`:`<span>Angelegt <b>${c.createdAt?new Date(c.createdAt).toLocaleDateString('de-DE'):'–'}</b></span>`}</div>
-    <div class="actions">${on?'':`<button class="btn sm" type="button" data-copen="${esc(c.id)}">Öffnen</button>`}<button class="btn ghost sm owner-only" type="button" data-cren="${esc(c.id)}">Umbenennen</button><button class="btn warn sm owner-only" type="button" data-cdel="${esc(c.id)}">Löschen</button></div></article>`;}).join(''):`<div class="panel empty">${loaded?'Noch keine Karriere. Starte unten deine erste.':'Lade…'}</div>`;
+    <div class="actions">${on?'':`<button class="btn sm" type="button" data-copen="${esc(c.id)}">Öffnen</button>`}<button class="btn ghost sm owner-only" type="button" data-cren="${esc(c.id)}">Bearbeiten</button><button class="btn warn sm owner-only" type="button" data-cdel="${esc(c.id)}">Löschen</button></div></article>`;}).join(''):`<div class="panel empty">${loaded?'Noch keine Karriere. Starte unten deine erste.':'Lade…'}</div>`;
   ncSync(true);
 }
 function ncTemplateTeams(){
@@ -936,7 +1084,7 @@ $('#newCareer').addEventListener('submit',async e=>{
   $('#nc-go').disabled=true; $('#nc-hint').textContent='Karriere wird angelegt…';
   try{
     await Promise.all([...teams.map(t=>Store.set(sub(cid,'teams'),t.id,t)),...riders.map(r=>Store.set(sub(cid,'riders'),r.id,r))]);
-    await Store.set('careers',cid,{name:v('#nc-name'),cls:$('#nc-cls').value,season:num($('#nc-season').value),playerId:me.id,createdAt:Date.now(),closed:[]});
+    await Store.set('careers',cid,{name:v('#nc-name'),cls:$('#nc-cls').value,season:num($('#nc-season').value),racesPerSeason:num($('#nc-per').value)||22,playerId:me.id,createdAt:Date.now(),closed:[]});
     $('#newCareer').reset(); switchCareer(cid); tab='home'; lsSet('gp-tab','home'); render(); window.scrollTo({top:0});
     toast('Neue Karriere gestartet');
   }catch(err){toast('Anlegen fehlgeschlagen');}
@@ -1007,7 +1155,7 @@ document.addEventListener('click',async e=>{
   if(d.rider){showRider(d.rider);return;}
   if(b.id==='heroOwn'||b.id==='addOwnRider'){if(canWrite)editRider(null,'',true);return;}
   if(b.id==='addTeam'){if(canWrite)editTeam(null);return;}
-  if(['homeNewRace','homeFirstRace','newRace','emptyNewRace'].includes(b.id)){if(canWrite&&career())openRace(null);return;}
+  if(['homeNewRace','homeFirstRace','newRace','emptyNewRace','stripNext'].includes(b.id)){if(canWrite&&career())openRace(null);return;}
   if(b.id==='backRiders'){detailRider=null;render();return;}
   if(!canWrite)return;
   if(d.redit){openRace(d.redit);return;}
@@ -1019,7 +1167,7 @@ document.addEventListener('click',async e=>{
   if(d.tdel){const t=team(d.tdel);const n=S.riders.filter(r=>r.teamId===t.id).length;
     if(await ask('Team löschen?',`${t.name} wird gelöscht.${n?` ${n} Fahrer landen unter „Ohne Team“.`:''}`,{ok:'Löschen',danger:true})){try{await Promise.all(S.riders.filter(r=>r.teamId===t.id).map(r=>Store.set(sub(S.cid,'riders'),r.id,{...r,teamId:''})));await Store.del(sub(S.cid,'teams'),t.id);toast('Team gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}}return;}
   if(d.copen){switchCareer(d.copen);go('home');toast('Karriere geöffnet');return;}
-  if(d.cren){const c=S.careers.find(x=>x.id===d.cren);if(await ask('Karriere umbenennen','',{ok:'Speichern',extra:`<label class="f"><span>Name</span><input id="m-cname" value="${esc(c.name)}"></label>`})){const n=$('#m-cname').value.trim();if(n)await Store.set('careers',c.id,{...c,name:n});}return;}
+  if(d.cren){const c=S.careers.find(x=>x.id===d.cren);if(await ask('Karriere bearbeiten','',{ok:'Speichern',extra:`<div class="mgrid"><label class="f w2"><span>Name</span><input id="m-cname" value="${esc(c.name)}"></label><label class="f"><span>Rennen pro Saison</span><input id="m-cper" type="number" min="1" max="40" value="${esc(c.racesPerSeason||22)}"></label><label class="f"><span>Klasse</span><select id="m-ccls">${['MotoGP','Moto2','Moto3'].map(k=>`<option${(c.cls||'MotoGP')===k?' selected':''}>${k}</option>`).join('')}</select></label></div>`})){const n=$('#m-cname').value.trim();if(n)await Store.set('careers',c.id,{...c,name:n,racesPerSeason:num($('#m-cper').value)||22,cls:$('#m-ccls').value});toast('Karriere gespeichert');}return;}
   if(d.cdel){deleteCareer(S.careers.find(x=>x.id===d.cdel));return;}
 });
 /* Rennen-Editor */
@@ -1037,6 +1185,8 @@ $('#raceEditor').addEventListener('change',e=>{
   const el=e.target; const d=raceDraft; if(!d)return;
   if(el.id==='e-sprint'){d.hasSprint=el.checked;if(tapCol==='sprint')tapCol=null;renderEditor();return;}
   if(el.id==='e-wet'){d.wet=el.checked;return;}
+  if(el.id==='e-half'){d.half=el.checked;renderEditor();return;}
+  if(el.id==='e-round'){d.round=num(el.value);if(d.isNew&&(!d.track||TRACKS.includes(d.track))&&TRACKS[d.round-1]){d.track=TRACKS[d.round-1];renderEditor();}return;}
   if(el.id==='e-season'){d.season=num(el.value);return;}
   if(el.id==='e-round'){d.round=num(el.value);return;}
   if(el.id==='e-track'){d.track=el.value;return;}
