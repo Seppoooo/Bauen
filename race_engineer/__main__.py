@@ -12,9 +12,11 @@ from .engineer import Engineer
 from .model import Callout
 from .speech import Speaker
 
-CONFIG_FILE = Path("settings.json")
+# settings.json lives next to RaceEngineer.exe (frozen) or in the working directory
+APP_DIR = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path.cwd()
+CONFIG_FILE = APP_DIR / "settings.json"
 DEFAULTS = {"port": 8080, "verbosity": 2, "voice": None, "rate": 1, "volume": 100,
-            "speech": True}
+            "speech": True, "open_browser": True}
 
 
 def load_config() -> dict:
@@ -41,7 +43,19 @@ def parse_args(cfg: dict):
     ap.add_argument("--no-voice", action="store_true", default=not cfg["speech"],
                     help="keine Sprachausgabe am PC (nur Dashboard)")
     ap.add_argument("--hz", type=float, default=20.0, help="Telemetrie-Abtastrate")
+    ap.add_argument("--no-browser", action="store_true", default=not cfg["open_browser"],
+                    help="Dashboard nicht automatisch im Browser öffnen")
     return ap.parse_args()
+
+
+def fatal(message: str):
+    print(message)
+    if getattr(sys, "frozen", False):           # keep the EXE window open so the message is readable
+        try:
+            input("\nEnter drücken zum Schließen …")
+        except EOFError:
+            pass
+    sys.exit(1)
 
 
 def make_source(args):
@@ -53,12 +67,16 @@ def make_source(args):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):      # never crash on a console without UTF-8
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
     args = parse_args(load_config())
     try:
         source = make_source(args)
     except RuntimeError as exc:
-        print(exc)
-        sys.exit(1)
+        fatal(str(exc))
 
     engineer = Engineer(verbosity=args.verbosity)
     speaker = Speaker(enabled=not args.no_voice, voice=args.voice,
@@ -78,11 +96,20 @@ def main():
     try:
         start_server(hub, port=args.port)
     except OSError as exc:
-        print(f"Dashboard konnte Port {args.port} nicht öffnen ({exc}). Anderen Port mit --port wählen.")
-        sys.exit(1)
+        fatal(f"Dashboard konnte Port {args.port} nicht öffnen ({exc}).\n"
+              f"Läuft der Race Engineer schon? Sonst in settings.json einen anderen \"port\" eintragen.")
     print(f"Race Engineer läuft – Quelle: {source.name}")
     print(f"Dashboard:  http://localhost:{args.port}   (Handy/Tablet im WLAN: http://{lan_ip()}:{args.port})")
-    print("Beenden mit Strg+C\n")
+    print("Beenden mit Strg+C oder Fenster schließen\n")
+    if not args.demo:
+        print("So koppelst du das Spiel: RaceRoom starten und auf die Strecke fahren –")
+        print("der Engineer verbindet sich automatisch (Anzeige oben im Dashboard: 'RaceRoom live').\n")
+    if not args.no_browser:
+        import webbrowser
+        try:
+            webbrowser.open(f"http://localhost:{args.port}")
+        except Exception:
+            pass
 
     was_connected = False
     period = 1.0 / args.hz

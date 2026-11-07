@@ -18,7 +18,18 @@ Ein digitaler Renningenieur, der live die Telemetrie von **RaceRoom Racing Exper
 
 Veraltete Ansagen werden verworfen (du hörst nichts mehr über eine gelbe Flagge, die längst weg ist), wichtige Meldungen kommen vor unwichtigen.
 
-## Installation (Windows)
+## Mit dem Spiel koppeln – der schnelle Weg (Windows)
+
+1. Auf GitHub unter **Releases → „Race Engineer – Windows-Download“** die Datei **`RaceEngineer-Windows.zip`** herunterladen und entpacken.
+2. **`RaceEngineer.exe`** doppelklicken. Das Dashboard öffnet sich automatisch im Browser.
+   Windows zeigt beim ersten Mal evtl. „Der Computer wurde durch Windows geschützt“ (die EXE ist nicht signiert) → **Weitere Informationen → Trotzdem ausführen**.
+3. **RaceRoom starten und auf die Strecke fahren.** Der Engineer koppelt sich von selbst: oben im Dashboard steht dann grün **„RaceRoom live“**, und du hörst „Verbindung zu RaceRoom steht“.
+
+Reihenfolge egal: Du kannst den Engineer auch erst starten, wenn RaceRoom schon läuft. Im Spiel muss nichts eingestellt werden.
+
+**Kopplung ohne Spiel testen:** `python tools/fake_r3e.py` spielt 60 Sekunden lang „RaceRoom“ (legt dieselbe Schnittstelle an wie das Spiel). Startest du dabei den Engineer, muss er sich verbinden.
+
+## Installation mit Python (Alternative)
 
 1. **Python 3.10 oder neuer** installieren: <https://www.python.org/downloads/> – beim Installieren den Haken bei **„Add Python to PATH“** setzen.
 2. Dieses Repository herunterladen (grüner Button **Code → Download ZIP**) und entpacken.
@@ -56,10 +67,12 @@ In `settings.json` (oder als Parameter an `start.bat`):
 | `volume` | `--volume 80` | Lautstärke 0–100 |
 | `speech` | `--no-voice` | Sprachausgabe am PC aus (nur Dashboard) |
 | `port` | `--port 8081` | Port des Dashboards |
+| `open_browser` | `--no-browser` | Dashboard beim Start nicht automatisch öffnen |
 
 ## Problemlösung
 
-- **„Warte auf RaceRoom …“ obwohl das Spiel läuft:** Läuft RaceRoom als Administrator, muss auch `start.bat` als Administrator gestartet werden.
+- **„Warte auf RaceRoom …“ obwohl das Spiel läuft:** Du musst auf der Strecke sein (im Hauptmenü gibt es keine Daten). Läuft RaceRoom als Administrator, muss auch der Engineer als Administrator gestartet werden.
+- **Die Online-Vorschau auf claude.ai wird nicht live:** Richtig so – die läuft im Internet und darf deinen PC nicht erreichen. Live ist das Dashboard, das die EXE öffnet (`http://localhost:8080`).
 - **Keine Stimme:** Prüfen, ob eine deutsche Sprachausgabe installiert ist (siehe oben). Im Konsolenfenster steht beim Start, welche Stimme verwendet wird.
 - **Dashboard am Handy lädt nicht:** PC und Handy müssen im selben Netz sein, und die Windows-Firewall muss Python erlauben.
 

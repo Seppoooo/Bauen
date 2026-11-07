@@ -1,8 +1,10 @@
 import ctypes as C
+import sys
+import time
 import unittest
 
 from race_engineer import model as M
-from race_engineer.games.r3e import convert
+from race_engineer.games.r3e import R3ESource, convert
 from race_engineer.games.r3e_struct import DriverData, R3EShared
 
 
@@ -97,3 +99,32 @@ class ConvertTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(sys.platform == "win32", "RaceRoom shared memory exists only on Windows")
+class SharedMemoryTest(unittest.TestCase):
+    """Creates a "$R3E" mapping exactly like the game does and reads it live."""
+
+    def test_live_coupling(self):
+        import mmap
+        from race_engineer.games.r3e_struct import R3E_SHARED_MEMORY_NAME
+        source = R3ESource()
+        self.assertFalse(source.read().connected)          # game not running yet
+
+        game = mmap.mmap(-1, C.sizeof(R3EShared), tagname=R3E_SHARED_MEMORY_NAME)
+        try:
+            data = ConvertTest.make(self)
+            game.seek(0)
+            game.write(bytes(data))
+            snap = source.read()
+            self.assertTrue(snap.connected and snap.active)
+            self.assertEqual(snap.position, 2)
+            self.assertEqual(snap.track, "Nürburgring – Grand Prix")
+
+            data.position = 1                               # game updates its data
+            game.seek(0)
+            game.write(bytes(data))
+            self.assertEqual(source.read().position, 1)
+        finally:
+            source.close()
+            game.close()
