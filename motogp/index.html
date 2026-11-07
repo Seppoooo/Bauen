@@ -1,439 +1,634 @@
-<!doctype html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MotoGP Karriere</title>
+<title>Meine GP-Karriere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,500;0,700;0,800;0,900;1,800;1,900&family=Titillium+Web:wght@400;600;700&display=swap">
 <style>
+/* Layout: Live-Timing-Look. Sticky Nav, Fahrer-Hero mit großer Startnummer, Karriere-Panel, Zeitentafel-Tabellen. Bewusst nur dunkel. */
 :root{
-  --bg:#f4f4f6; --card:#ffffff; --text:#16161a; --muted:#6b6b76; --line:#e2e2e8;
-  --accent:#e10600; --accent-2:#ff6a00; --gold:#c99a06; --silver:#8a8f98; --bronze:#a0592a;
-  --ok:#1a8f4a; --bad:#c62828; --input:#fafafc;
-}
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#0e0e12; --card:#18181f; --text:#f1f1f4; --muted:#9a9aa6; --line:#2a2a34;
-    --input:#121218; --gold:#f2c230; --silver:#c3c7cf; --bronze:#d48a52; }
+  --ink:#0a0a0d; --panel:#141419; --panel-2:#1c1c23; --line:#2a2a33; --line-2:#3a3a45;
+  --fg:#f4f4f6; --mute:#9a9aa8; --red:#e4002b; --red-deep:#8f0019;
+  --gold:#f2c230; --silver:#c9ccd3; --bronze:#cf8a55; --ok:#33c46b; --bad:#ff4d5e;
+  --display:"Saira Condensed","Arial Narrow",Impact,sans-serif;
+  --body:"Titillium Web",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --gutter-l:max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r:max(16px, env(safe-area-inset-right, 0px));
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{background:linear-gradient(120deg,#111 0%,#2a0000 60%,var(--accent) 100%);color:#fff;padding:28px 16px 22px}
-.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
-header .wrap{padding:0}
-h1{margin:0;font-size:28px;letter-spacing:.5px;font-style:italic;font-weight:900}
-h1 span{color:var(--accent-2)}
-.rider{margin-top:6px;opacity:.9;font-size:15px}
-.rider b{font-size:18px}
-h2{font-size:18px;margin:0 0 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-left:4px solid var(--accent)}
-.stat .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
-.stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-.stat.gold{border-left-color:var(--gold)}
-form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
-label.chk{flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--text)}
-input,select{font:inherit;color:var(--text);background:var(--input);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
-label.chk input{width:auto}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
-button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff}
-button.sec{background:transparent;color:var(--text);border:1px solid var(--line)}
-button.mini{padding:4px 8px;font-size:13px}
-button.danger{background:transparent;color:var(--bad);border:1px solid var(--line)}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 0}
-.tabs button{background:var(--card);color:var(--text);border:1px solid var(--line)}
-.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+[hidden]{display:none!important}
+html,body{background:var(--ink)}
+body{color:var(--fg);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--ink)}
+.in{max-width:1180px;margin:0 auto;padding-left:var(--gutter-l);padding-right:var(--gutter-r)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* NAV */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(10,10,13,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .in{display:flex;align-items:center;gap:20px;min-height:58px}
+.mark{display:flex;align-items:center;gap:8px;font:italic 900 22px/1 var(--display);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.mark svg{width:34px;height:20px;flex:none}
+.mark b{color:var(--red)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{background:none;border:0;padding:19px 12px 17px;font:700 15px/1 var(--display);letter-spacing:1px;text-transform:uppercase;color:var(--mute);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button:hover{color:var(--fg)}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--red)}
+.sync{font-size:12px;color:var(--mute);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--mute);display:inline-block}
+.sync.live i{background:var(--ok);box-shadow:0 0 0 3px rgba(51,196,107,.18)}
+.sync.local i{background:var(--gold)}
+@media (max-width:640px){.sync span{display:none}.mark .t{display:none}}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;background:
+  radial-gradient(120% 140% at 100% 0%, rgba(228,0,43,.55) 0%, rgba(143,0,25,.25) 35%, transparent 65%),
+  linear-gradient(180deg,#121217 0%,var(--ink) 100%);border-bottom:1px solid var(--line)}
+.hero::after{content:"";position:absolute;right:0;top:0;bottom:0;width:min(46%,520px);opacity:.07;
+  background:repeating-conic-gradient(#fff 0 25%, transparent 0 50%) 0 0/28px 28px;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 70%);mask:linear-gradient(90deg,transparent,#000 70%)}
+.hero .in{position:relative;z-index:1;display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:end;padding-block:36px 30px}
+.bignum{font:italic 900 clamp(96px,16vw,190px)/.8 var(--display);color:transparent;-webkit-text-stroke:2px var(--red);letter-spacing:-4px;padding-right:10px}
+.who{min-width:0}
+.eyebrow{font:700 13px/1 var(--display);letter-spacing:2.5px;text-transform:uppercase;color:var(--mute)}
+.name{margin:8px 0 6px;font:italic 900 clamp(40px,7vw,78px)/.9 var(--display);text-transform:uppercase;letter-spacing:.5px;text-wrap:balance;overflow-wrap:anywhere}
+.name .first{display:block;font-weight:800;font-size:.5em;color:var(--mute);letter-spacing:1px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font-size:14px;color:var(--mute)}
+.facts b{color:var(--fg);font-weight:700}
+.facts .chip{display:inline-flex;align-items:center;gap:8px}
+.facts .sw{width:4px;height:16px;background:var(--red);transform:skewX(-14deg)}
+@media (max-width:640px){.hero .in{grid-template-columns:1fr;gap:6px}.bignum{font-size:110px}}
+
+/* DEMO BANNER */
+.demo{background:var(--gold);color:#111;font-weight:600;font-size:14px}
+.demo .in{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding-block:10px}
+.demo button{background:#111;color:#fff;border:0;padding:6px 12px;font:700 13px/1 var(--display);letter-spacing:1px;text-transform:uppercase;cursor:pointer;clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%)}
+
+/* SECTIONS */
+main{padding-block:28px 60px}
+.sect{display:grid;gap:22px;grid-template-columns:minmax(0,1fr)}
+.sect>*{min-width:0}
+body{margin:0}
+.h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.h h2{margin:0;font:italic 900 28px/1 var(--display);text-transform:uppercase;letter-spacing:.5px}
+.h h2::before{content:"";display:inline-block;width:6px;height:22px;background:var(--red);transform:skewX(-14deg);margin-right:12px;vertical-align:-2px}
+.h .sub{color:var(--mute);font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line)}
+
+/* CAREER STATS */
+.career{display:grid;grid-template-columns:repeat(6,1fr)}
+.career .k{padding:18px 18px 16px;border-right:1px solid var(--line);min-width:0}
+.career .k:last-child{border-right:0}
+.career .v{font:italic 900 52px/.95 var(--display);font-variant-numeric:tabular-nums}
+.career .l{font:700 12px/1.2 var(--display);letter-spacing:1.6px;text-transform:uppercase;color:var(--mute);margin-top:6px}
+.career .k.title .v{color:var(--gold)}
+.career .k.win .v{color:var(--red)}
+.minor{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);background:var(--panel-2)}
+.minor .k{padding:10px 18px;border-right:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:baseline;min-width:0}
+.minor .k:last-child{border-right:0}
+.minor .l{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:1px}
+.minor .v{font:800 20px/1 var(--display);font-variant-numeric:tabular-nums}
+@media (max-width:900px){.career,.minor{grid-template-columns:repeat(3,1fr)}.career .k:nth-child(3n),.minor .k:nth-child(3n){border-right:0}.career .k:nth-child(-n+3){border-bottom:1px solid var(--line)}.minor .k:nth-child(-n+3){border-bottom:1px solid var(--line)}}
+@media (max-width:460px){.career .v{font-size:40px}.career .k{padding:14px 12px}.minor .k{padding:10px 12px;flex-direction:column;gap:2px}}
+
+/* FORM */
+.form{padding:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.grid .w2{grid-column:span 2}
+@media (max-width:420px){.grid .w2{grid-column:auto}}
+label.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+label.f span{font:700 12px/1 var(--display);letter-spacing:1.4px;text-transform:uppercase;color:var(--mute)}
+input,select{background:var(--ink);border:1px solid var(--line-2);border-radius:0;padding:9px 10px;width:100%;min-width:0}
+input:focus,select:focus{border-color:var(--red);outline:none}
+input:disabled{opacity:.4}
+.checks{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:14px}
+.checks label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.checks input{width:18px;height:18px;accent-color:var(--red)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.btn{background:var(--red);border:0;color:#fff;padding:11px 20px;font:800 15px/1 var(--display);letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+.btn:hover{background:#ff1745}
+.btn.ghost{background:var(--panel-2);color:var(--fg)}
+.btn.ghost:hover{background:var(--line-2)}
+.btn.warn{background:transparent;color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad);clip-path:none}
+.hint{font-size:13px;color:var(--mute)}
+.ptspreview{font:800 18px/1 var(--display);color:var(--gold);letter-spacing:.5px}
+
+/* TABLE (timing screen) */
 .tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
-th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
-th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
-td.n,th.n{text-align:right}
-.pos{display:inline-block;min-width:30px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:700}
-.p1{background:var(--gold);color:#000}.p2{background:var(--silver);color:#000}.p3{background:var(--bronze);color:#fff}
-.dnf{color:var(--bad);font-weight:700}
-.tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:4px;color:var(--muted)}
-.muted{color:var(--muted)}
-.empty{color:var(--muted);text-align:center;padding:24px}
-.chart{width:100%;height:220px}
-.hidden{display:none}
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.filters select{width:auto}
-.note{font-size:12px;color:var(--muted);margin-top:8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font:700 12px/1 var(--display);letter-spacing:1.4px;text-transform:uppercase;color:var(--mute);text-align:left;padding:12px 10px;border-bottom:1px solid var(--line-2);white-space:nowrap;background:var(--panel)}
+th[data-sort]{cursor:pointer}
+th[data-sort]:hover{color:var(--fg)}
+td{padding:0 10px;height:52px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:15px}
+tbody tr:hover td{background:var(--panel-2)}
+.n{text-align:right}
+.c{text-align:center}
+.posb{display:inline-grid;place-items:center;width:40px;height:34px;font:italic 900 22px/1 var(--display);background:var(--panel-2)}
+.posb.p1{background:var(--gold);color:#111}.posb.p2{background:var(--silver);color:#111}.posb.p3{background:var(--bronze);color:#111}
+.posb.st{font-size:14px;font-style:normal;letter-spacing:.5px;color:var(--bad);background:rgba(255,77,94,.1)}
+.posb.sm{width:32px;height:28px;font-size:17px}
+.posb.none{background:none;color:var(--mute);font-size:16px}
+.gp{display:flex;align-items:center;gap:12px}
+.stripe{width:5px;height:34px;flex:none;transform:skewX(-14deg)}
+.gp .t{font:800 17px/1.05 var(--display);text-transform:uppercase;letter-spacing:.4px}
+.gp .s{font-size:12px;color:var(--mute)}
+.tag{display:inline-block;font:700 11px/1 var(--display);letter-spacing:1px;text-transform:uppercase;padding:3px 6px;margin-left:6px;vertical-align:2px}
+.tag.fl{background:#7b2ff7;color:#fff}.tag.wet{background:#1f6feb;color:#fff}.tag.pole{background:var(--fg);color:#111}
+.pts{font:800 20px/1 var(--display)}
+.pts.zero{color:var(--mute);font-weight:700}
+.rowact{display:flex;gap:4px;justify-content:flex-end}
+.ib{background:none;border:1px solid var(--line-2);color:var(--mute);width:32px;height:30px;cursor:pointer;display:grid;place-items:center}
+.ib:hover{color:var(--fg);border-color:var(--fg)}
+.ib.del:hover{color:var(--bad);border-color:var(--bad)}
+.ib svg{width:15px;height:15px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-bottom:1px solid var(--line)}
+.filters select{width:auto;padding:7px 10px}
+.empty{padding:36px 16px;text-align:center;color:var(--mute)}
+.ro .owner-only{display:none!important}
+
+/* SEASON */
+.chartbox{padding:16px 12px 8px}
+.chart{display:block;width:100%;height:240px}
+.champ{width:72px;text-align:right;padding:6px 8px}
+.champ-ro{font:800 18px/1 var(--display)}
+.trophy{color:var(--gold);font:900 13px/1 var(--display);letter-spacing:1px;margin-left:6px}
+
+/* MODAL */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:grid;place-items:center;padding:16px}
+.modal .box{background:var(--panel);border:1px solid var(--line-2);border-top:4px solid var(--red);max-width:440px;width:100%;padding:20px}
+.modal h3{margin:0 0 8px;font:italic 900 24px/1.1 var(--display);text-transform:uppercase}
+.modal p{margin:0 0 16px;color:var(--mute)}
+textarea{width:100%;min-height:160px;background:var(--ink);border:1px solid var(--line-2);color:var(--fg);font:12px/1.4 ui-monospace,Menlo,monospace;padding:10px;resize:vertical}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:#111;padding:10px 18px;font:800 14px/1 var(--display);letter-spacing:1px;text-transform:uppercase;z-index:60}
+
+footer{border-top:1px solid var(--line);color:var(--mute);font-size:12px}
+footer .in{padding-block:18px}
+@media (prefers-reduced-motion:no-preference){.tabs button,.btn,.ib{transition:color .15s,background .15s,border-color .15s}}
 </style>
-</head>
-<body>
-<header>
-  <div class="wrap">
-    <h1>MOTO<span>GP</span> KARRIERE</h1>
-    <div class="rider" id="riderLine"></div>
+
+<nav class="nav">
+  <div class="in">
+    <div class="mark" aria-label="GP Karriere">
+      <svg viewBox="0 0 34 20" aria-hidden="true"><path d="M6 0h12l-6 20H0z" fill="#e4002b"/><path d="M20 0h14l-6 20H14z" fill="#f4f4f6"/></svg>
+      <span class="t"><b>GP</b> Karriere</span>
+    </div>
+    <div class="tabs" id="tabs" role="tablist">
+      <button class="on" data-tab="results" id="t-results">Ergebnisse</button>
+      <button data-tab="seasons" id="t-seasons">Saisons</button>
+      <button data-tab="tracks" id="t-tracks">Strecken</button>
+      <button data-tab="rider" id="t-rider">Fahrer</button>
+    </div>
+    <div class="sync" id="sync"><i></i><span>Verbinde…</span></div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="in">
+    <div class="bignum" id="heroNum">00</div>
+    <div class="who">
+      <div class="eyebrow" id="heroEyebrow">Fahrerprofil</div>
+      <h1 class="name" id="heroName"><span class="first">Dein</span>Name</h1>
+      <div class="facts" id="heroFacts"></div>
+    </div>
   </div>
 </header>
 
-<main class="wrap">
-  <div class="stats" id="stats"></div>
-
-  <div class="tabs" id="tabs">
-    <button data-tab="races" class="on">Rennen</button>
-    <button data-tab="seasons">Saisons</button>
-    <button data-tab="tracks">Strecken</button>
-    <button data-tab="profile">Profil &amp; Daten</button>
+<div class="demo" id="demo" hidden>
+  <div class="in">
+    <span>Beispielansicht: Das sind Musterdaten. Sobald du dein erstes Rennen speicherst, siehst du hier nur noch deine eigene Karriere.</span>
+    <button type="button" id="demoGo" class="owner-only">Erstes Rennen eintragen</button>
   </div>
+</div>
 
-  <!-- RENNEN -->
-  <section id="tab-races">
-    <div class="card">
-      <h2 id="formTitle">Rennen eintragen</h2>
-      <form id="raceForm">
+<main class="in" id="app">
+  <section class="sect" id="s-career">
+    <div>
+      <div class="h"><h2>Karriere</h2><span class="sub" id="careerSub"></span></div>
+      <div class="panel">
+        <div class="career" id="career"></div>
+        <div class="minor" id="minor"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ERGEBNISSE -->
+  <section class="sect" id="tab-results" style="margin-top:28px">
+    <div class="owner-only" id="formWrap">
+      <div class="h"><h2 id="formTitle">Rennen eintragen</h2><span class="sub">Punkte nach offiziellem System: Rennen 25–1, Sprint 12–1</span></div>
+      <form class="panel form" id="raceForm" autocomplete="off">
         <div class="grid">
-          <label>Saison<input name="season" type="number" min="1949" max="2100" required></label>
-          <label>Runde<input name="round" type="number" min="1" max="40"></label>
-          <label>Grand Prix / Strecke<input name="track" list="trackList" required placeholder="z.B. Mugello"></label>
-          <label>Klasse
-            <select name="cls"><option>MotoGP</option><option>Moto2</option><option>Moto3</option><option>MotoE</option></select>
-          </label>
-          <label>Team<input name="team" list="teamList" placeholder="Team"></label>
-          <label>Bike<input name="bike" list="bikeList" placeholder="z.B. Ducati"></label>
-          <label>Startplatz<input name="grid" type="number" min="1" max="40"></label>
-          <label>Sprint-Platz<input name="sprint" type="number" min="1" max="40" placeholder="leer = kein Sprint"></label>
-          <label>Rennen-Platz<input name="pos" type="number" min="1" max="40" placeholder="leer bei DNF"></label>
-          <label>Punkte (auto)<input name="points" type="number" min="0" step="0.5" placeholder="automatisch"></label>
+          <label class="f"><span>Saison</span><input id="f-season" name="season" type="number" min="1949" max="2100" required></label>
+          <label class="f"><span>Runde</span><input id="f-round" name="round" type="number" min="1" max="40"></label>
+          <label class="f w2"><span>Grand Prix</span><input id="f-track" name="track" list="trackList" required placeholder="z. B. Gran Premio d'Italia – Mugello"></label>
+          <label class="f"><span>Klasse</span><select id="f-cls" name="cls"><option>MotoGP</option><option>Moto2</option><option>Moto3</option><option>MotoE</option></select></label>
+          <label class="f"><span>Team</span><input id="f-team" name="team" list="teamList" placeholder="Teamname"></label>
+          <label class="f"><span>Hersteller</span><input id="f-bike" name="bike" list="bikeList" placeholder="z. B. Ducati"></label>
+          <label class="f"><span>Startplatz</span><input id="f-grid" name="grid" type="number" min="1" max="40"></label>
+          <label class="f"><span>Sprint</span><input id="f-sprint" name="sprint" type="number" min="1" max="40" placeholder="leer = kein Sprint"></label>
+          <label class="f"><span>Status</span><select id="f-status" name="status"><option value="OK">Gewertet</option><option value="DNF">DNF – Ausfall</option><option value="DNS">DNS – nicht gestartet</option><option value="DSQ">DSQ – disqualifiziert</option></select></label>
+          <label class="f"><span>Rennen Platz</span><input id="f-pos" name="pos" type="number" min="1" max="40"></label>
+          <label class="f"><span>Abstand</span><input id="f-gap" name="gap" placeholder="+1.234 / 41:12.880"></label>
+          <label class="f"><span>Punkte manuell</span><input id="f-points" name="points" type="number" min="0" step="0.5" placeholder="automatisch"></label>
         </div>
-        <div class="row">
-          <label class="chk"><input type="checkbox" name="dnf"> DNF / Sturz</label>
-          <label class="chk"><input type="checkbox" name="fl"> Schnellste Runde</label>
-          <label class="chk"><input type="checkbox" name="wet"> Regenrennen</label>
+        <div class="checks">
+          <label><input type="checkbox" id="f-fl" name="fl"> Schnellste Rennrunde</label>
+          <label><input type="checkbox" id="f-wet" name="wet"> Regenrennen</label>
         </div>
-        <div class="row">
-          <button type="submit" id="saveBtn">Speichern</button>
-          <button type="button" class="sec hidden" id="cancelEdit">Abbrechen</button>
-          <span class="note">Punkte werden nach offiziellem System berechnet (Rennen 25–1, Sprint 12–1), außer du trägst sie selbst ein.</span>
+        <div class="actions">
+          <button class="btn" type="submit" id="saveBtn">Speichern</button>
+          <button class="btn ghost" type="button" id="cancelEdit" hidden>Abbrechen</button>
+          <span class="ptspreview" id="ptsPreview"></span>
         </div>
       </form>
     </div>
 
-    <div class="card">
-      <h2>Alle Rennen</h2>
-      <div class="filters">
-        <select id="fSeason"><option value="">Alle Saisons</option></select>
-        <select id="fClass"><option value="">Alle Klassen</option></select>
+    <div>
+      <div class="h"><h2>Rennergebnisse</h2><span class="sub" id="resSub"></span></div>
+      <div class="panel">
+        <div class="filters">
+          <select id="fSeason" aria-label="Saison filtern"></select>
+          <select id="fClass" aria-label="Klasse filtern"></select>
+        </div>
+        <div class="tw"><table id="raceTable"></table></div>
       </div>
-      <div class="tw"><table id="raceTable"></table></div>
     </div>
   </section>
 
   <!-- SAISONS -->
-  <section id="tab-seasons" class="hidden">
-    <div class="card">
-      <h2>Punkte pro Saison</h2>
-      <svg class="chart" id="chart"></svg>
+  <section class="sect" id="tab-seasons" style="margin-top:28px" hidden>
+    <div>
+      <div class="h"><h2>Punkte pro Saison</h2><span class="sub">Goldene Balken = Weltmeister</span></div>
+      <div class="panel chartbox"><svg class="chart" id="chart" role="img" aria-label="Punkte pro Saison"></svg></div>
     </div>
-    <div class="card">
-      <h2>Saison-Übersicht</h2>
-      <div class="tw"><table id="seasonTable"></table></div>
-      <p class="note">Tipp: Den WM-Endstand kannst du direkt in der Tabelle eintragen – Platz 1 zählt als Titel.</p>
+    <div>
+      <div class="h"><h2>Saisonbilanz</h2><span class="sub owner-only">WM-Endplatz direkt in der Tabelle eintragen</span></div>
+      <div class="panel tw"><table id="seasonTable"></table></div>
     </div>
   </section>
 
   <!-- STRECKEN -->
-  <section id="tab-tracks" class="hidden">
-    <div class="card">
-      <h2>Bilanz pro Strecke</h2>
-      <div class="tw"><table id="trackTable"></table></div>
+  <section class="sect" id="tab-tracks" style="margin-top:28px" hidden>
+    <div>
+      <div class="h"><h2>Bilanz pro Grand Prix</h2><span class="sub">Sortiert nach Siegen, Podien, Punkten</span></div>
+      <div class="panel tw"><table id="trackTable"></table></div>
     </div>
   </section>
 
-  <!-- PROFIL -->
-  <section id="tab-profile" class="hidden">
-    <div class="card">
-      <h2>Fahrerprofil</h2>
-      <form id="profileForm">
+  <!-- FAHRER -->
+  <section class="sect" id="tab-rider" style="margin-top:28px" hidden>
+    <div class="owner-only">
+      <div class="h"><h2>Fahrerprofil</h2></div>
+      <form class="panel form" id="profileForm" autocomplete="off">
         <div class="grid">
-          <label>Name<input name="name" placeholder="Dein Name"></label>
-          <label>Startnummer<input name="number" placeholder="#"></label>
-          <label>Nation<input name="nation" placeholder="z.B. Deutschland"></label>
-          <label>Spitzname<input name="nick" placeholder="optional"></label>
+          <label class="f"><span>Vorname</span><input id="p-first" name="first"></label>
+          <label class="f"><span>Nachname</span><input id="p-last" name="last"></label>
+          <label class="f"><span>Startnummer</span><input id="p-number" name="number" maxlength="3"></label>
+          <label class="f"><span>Nation</span><input id="p-nation" name="nation" placeholder="z. B. Deutschland"></label>
+          <label class="f"><span>Geburtsdatum</span><input id="p-born" name="born" type="date"></label>
+          <label class="f"><span>Spitzname</span><input id="p-nick" name="nick"></label>
         </div>
-        <div class="row"><button type="submit">Profil speichern</button></div>
+        <div class="actions"><button class="btn" type="submit">Profil speichern</button></div>
       </form>
     </div>
-    <div class="card">
-      <h2>Daten sichern</h2>
-      <p class="muted">Alles wird lokal in deinem Browser gespeichert. Exportiere regelmäßig eine Sicherung.</p>
-      <div class="row">
-        <button type="button" id="exportBtn">Export (JSON)</button>
-        <button type="button" class="sec" id="csvBtn">Export (CSV)</button>
-        <button type="button" class="sec" id="importBtn">Import</button>
-        <input type="file" id="importFile" accept="application/json" class="hidden">
-        <button type="button" class="danger" id="resetBtn">Alles löschen</button>
+    <div class="owner-only">
+      <div class="h"><h2>Daten</h2><span class="sub" id="storeInfo"></span></div>
+      <div class="panel form">
+        <div class="actions" style="margin-top:0">
+          <button class="btn ghost" type="button" id="exportBtn">Export JSON</button>
+          <button class="btn ghost" type="button" id="csvBtn">Export CSV</button>
+          <button class="btn ghost" type="button" id="importBtn">Import JSON</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+          <button class="btn warn" type="button" id="resetBtn">Alle Rennen löschen</button>
+        </div>
       </div>
     </div>
+    <p class="hint ro-only" id="roNote" hidden>Du siehst diese Karriere im Lesemodus. Nur der Besitzer kann Rennen eintragen.</p>
   </section>
 </main>
+
+<footer><div class="in">Privater Karriere-Tracker. Inoffiziell, nicht verbunden mit der Motorrad-WM, Dorna Sports oder der FIM.</div></footer>
 
 <datalist id="trackList"></datalist>
 <datalist id="teamList"></datalist>
 <datalist id="bikeList"></datalist>
 
+<div class="modal" id="modal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <div id="mExtra"></div>
+    <div class="actions">
+      <button class="btn" type="button" id="mOk">OK</button>
+      <button class="btn ghost" type="button" id="mCancel">Abbrechen</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
 <script>
-const KEY = 'motogp-career-v1';
-const RACE_PTS = [25,20,16,13,11,10,9,8,7,6,5,4,3,2,1];
-const SPRINT_PTS = [12,9,7,6,5,4,3,2,1];
-const DEFAULT_TRACKS = ['Losail','Termas de Río Hondo','Austin (COTA)','Jerez','Le Mans','Silverstone','Aragón','Mugello','Assen','Sachsenring','Brünn','Spielberg','Barcelona','Misano','Balaton Park','Mandalika','Motegi','Phillip Island','Sepang','Buriram','Portimão','Valencia'];
+const RACE_PTS=[25,20,16,13,11,10,9,8,7,6,5,4,3,2,1];
+const SPRINT_PTS=[12,9,7,6,5,4,3,2,1];
+const LKEY='gp-career-v2';
+const TRACKS=['Grand Prix von Katar – Losail','Grand Prix von Thailand – Buriram','Grand Prix von Argentinien – Termas de Río Hondo','Grand Prix von Amerika – COTA','Grand Prix von Spanien – Jerez','Grand Prix von Frankreich – Le Mans','Grand Prix von Großbritannien – Silverstone','Grand Prix von Aragón – MotorLand','Grand Prix von Italien – Mugello','Dutch TT – Assen','Grand Prix von Deutschland – Sachsenring','Grand Prix von Tschechien – Brünn','Grand Prix von Österreich – Red Bull Ring','Grand Prix von Ungarn – Balaton Park','Grand Prix von Katalonien – Barcelona','Grand Prix von San Marino – Misano','Grand Prix von Japan – Motegi','Grand Prix von Indonesien – Mandalika','Grand Prix von Australien – Phillip Island','Grand Prix von Malaysia – Sepang','Grand Prix von Portugal – Portimão','Grand Prix von Valencia – Ricardo Tormo'];
+const MAKERS={ducati:'#d4001e',aprilia:'#41b6e6',ktm:'#ff6600',honda:'#c8102e',yamaha:'#1b4fd8',kalex:'#9aa0a6',boscoscuro:'#e23c3c',triumph:'#c2a26a','gas gas':'#e03a3e',gasgas:'#e03a3e',husqvarna:'#1d3c78',cfmoto:'#00a3e0',suzuki:'#2b6cff',forward:'#22c55e'};
+const DEMO={profile:{first:'Max',last:'Beispiel',number:'77',nation:'Deutschland',nick:'',born:''},seasons:{'2025_Moto2':{champ:4},'2026_MotoGP':{champ:''}},races:[
+ {season:2025,round:18,track:'Grand Prix von Japan – Motegi',cls:'Moto2',team:'Beispiel Racing',bike:'Kalex',grid:2,sprint:null,pos:1,status:'OK',gap:'38:41.552',fl:true},
+ {season:2025,round:19,track:'Grand Prix von Australien – Phillip Island',cls:'Moto2',team:'Beispiel Racing',bike:'Kalex',grid:5,sprint:null,pos:3,status:'OK',gap:'+2.104',wet:true},
+ {season:2026,round:1,track:'Grand Prix von Thailand – Buriram',cls:'MotoGP',team:'Beispiel Factory Team',bike:'Ducati',grid:9,sprint:7,pos:6,status:'OK',gap:'+8.310'},
+ {season:2026,round:2,track:'Grand Prix von Argentinien – Termas de Río Hondo',cls:'MotoGP',team:'Beispiel Factory Team',bike:'Ducati',grid:4,sprint:3,pos:null,status:'DNF',gap:''},
+ {season:2026,round:3,track:'Grand Prix von Amerika – COTA',cls:'MotoGP',team:'Beispiel Factory Team',bike:'Ducati',grid:1,sprint:1,pos:2,status:'OK',gap:'+0.412'},
+].map((r,i)=>({id:'demo'+i,...r}))};
 
-let data = load();
-let editId = null;
-let sort = {key:'date', dir:-1};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>v===''||v==null||isNaN(Number(v))?null:Number(v);
+const fmt=n=>Number.isInteger(n)?String(n):n.toFixed(1);
+const icon={edit:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 14h3l8-8-3-3-8 8z"/></svg>',del:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h10M6 4V2h4v2M4.5 4l.7 10h5.6l.7-10"/></svg>'};
 
-function load(){
-  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && Array.isArray(d.races)) return {profile:{}, seasons:{}, ...d}; }catch(e){}
-  return {profile:{}, races:[], seasons:{}};
+let state={profile:{},seasons:{},races:[]};
+let db=null, canWrite=true, mode='local';
+let editId=null, sort={key:'date',dir:-1}, tab='results';
+
+/* ---------- Speicher ---------- */
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LKEY));if(d&&Array.isArray(d.races))return{profile:{},seasons:{},...d};}catch(e){}return null;}
+function saveLocal(){if(mode!=='local')return;try{localStorage.setItem(LKEY,JSON.stringify(state));}catch(e){}}
+const clean=o=>Object.fromEntries(Object.entries(o).filter(([k,v])=>k!=='id'&&v!==undefined));
+async function putRace(r){
+  if(mode==='db'){await db.collection('races').doc(r.id).set(clean(r));}
+  else{const i=state.races.findIndex(x=>x.id===r.id);if(i>=0)state.races[i]=r;else state.races.push(r);saveLocal();render();}
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){ alert('Speichern im Browser nicht möglich.'); } }
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const num = v => v === '' || v == null ? null : Number(v);
-
-function calcPoints(r){
-  if(r.points != null) return r.points;
-  let p = 0;
-  if(!r.dnf && r.pos) p += RACE_PTS[r.pos-1] || 0;
-  if(r.sprint) p += SPRINT_PTS[r.sprint-1] || 0;
-  return p;
+async function removeRace(id){
+  if(mode==='db'){await db.collection('races').doc(id).delete();}
+  else{state.races=state.races.filter(r=>r.id!==id);saveLocal();render();}
 }
-function posCell(p, dnf){
-  if(dnf) return '<span class="dnf">DNF</span>';
-  if(!p) return '<span class="muted">–</span>';
-  return `<span class="pos ${p<=3?'p'+p:''}">${p}</span>`;
+async function putMeta(key,val){
+  if(mode==='db'){await db.doc('meta/'+key).set(val);}
+  else{state[key]=val;saveLocal();render();}
 }
+function setSync(kind,text){const el=$('#sync');el.className='sync '+kind;el.querySelector('span').textContent=text;}
 
-function aggregate(races){
-  const a = {starts:0,wins:0,podiums:0,poles:0,points:0,dnf:0,fl:0,top10:0,sprintWins:0,best:null,sumPos:0,nPos:0};
-  for(const r of races){
-    a.starts++;
-    a.points += calcPoints(r);
-    if(r.grid===1) a.poles++;
-    if(r.fl) a.fl++;
-    if(r.sprint===1) a.sprintWins++;
-    if(r.dnf){ a.dnf++; continue; }
-    if(r.pos){
-      if(r.pos===1) a.wins++;
-      if(r.pos<=3) a.podiums++;
-      if(r.pos<=10) a.top10++;
-      a.best = a.best==null ? r.pos : Math.min(a.best, r.pos);
-      a.sumPos += r.pos; a.nPos++;
-    }
+async function connect(){
+  const local=loadLocal(); if(local)state=local;
+  render();
+  if(!window.claude?.use){setSync('local','Nur in diesem Browser');$('#storeInfo').textContent='Gespeichert in diesem Browser.';return;}
+  const [d,u]=await Promise.all([window.claude.use('db').catch(()=>null),window.claude.use('user').catch(()=>null)]);
+  if(!d){setSync('local','Nur in diesem Browser');$('#storeInfo').textContent='Gespeichert in diesem Browser. Exportiere regelmäßig eine Sicherung.';return;}
+  db=d; mode='db'; state={profile:{},seasons:{},races:[]};
+  try{canWrite=u?await u.isOwner():false;}catch(e){canWrite=false;}
+  applyRole(); setSync('','Lade Daten…'); $('#storeInfo').textContent='Online gespeichert und auf jedem Gerät verfügbar.';
+  let got=0; const timer=setTimeout(()=>{if(!got)setSync('local','Keine Verbindung');},10000);
+  const ok=()=>{if(!got){got=1;clearTimeout(timer);}setSync('live','Gespeichert');};
+  const fail=e=>{clearTimeout(timer);setSync('local',e?.code==='not_granted'?'Kein Zugriff':'Verbindungsfehler');};
+  db.collection('races').onSnapshot(s=>{state.races=s.docs.map(x=>({id:x.id,...x.data()}));ok();render();},fail);
+  db.doc('meta/profile').onSnapshot(s=>{state.profile=s.exists?s.data():{};render();},fail);
+  db.doc('meta/seasons').onSnapshot(s=>{state.seasons=s.exists?(s.data().map||{}):{};render();},fail);
+}
+async function saveSeasons(map){ if(mode==='db') await db.doc('meta/seasons').set({map}); else {state.seasons=map;saveLocal();render();} }
+function applyRole(){document.body.classList.toggle('ro',!canWrite);$('#roNote').hidden=canWrite;}
+
+/* ---------- Berechnung ---------- */
+const isDemo=()=>state.races.length===0;
+const view=()=>isDemo()?DEMO:state;
+const status=r=>r.status||(r.dnf?'DNF':'OK');
+function points(r){
+  if(r.points!=null)return r.points;
+  let p=0; if(status(r)==='OK'&&r.pos)p+=RACE_PTS[r.pos-1]||0;
+  if(r.sprint&&status(r)!=='DSQ')p+=SPRINT_PTS[r.sprint-1]||0; return p;
+}
+function agg(rs){
+  const a={entries:rs.length,starts:0,wins:0,podiums:0,poles:0,pts:0,dnf:0,fl:0,top10:0,sprintW:0,sprintP:0,best:null,sum:0,n:0};
+  for(const r of rs){
+    const st=status(r); a.pts+=points(r);
+    if(st!=='DNS')a.starts++;
+    if(r.grid===1)a.poles++; if(r.fl)a.fl++;
+    if(r.sprint===1)a.sprintW++; if(r.sprint&&r.sprint<=3)a.sprintP++;
+    if(st==='DNF')a.dnf++;
+    if(st==='OK'&&r.pos){if(r.pos===1)a.wins++;if(r.pos<=3)a.podiums++;if(r.pos<=10)a.top10++;a.best=a.best==null?r.pos:Math.min(a.best,r.pos);a.sum+=r.pos;a.n++;}
   }
-  a.avg = a.nPos ? (a.sumPos/a.nPos).toFixed(1) : '–';
-  return a;
+  a.avg=a.n?(a.sum/a.n).toFixed(1):'–'; return a;
+}
+const color=b=>MAKERS[String(b||'').toLowerCase().trim()]||'var(--line-2)';
+const skey=(s,c)=>s+'_'+c;
+function posBox(p,st,small){
+  if(st&&st!=='OK')return `<span class="posb st${small?' sm':''}">${st}</span>`;
+  if(!p)return `<span class="posb none${small?' sm':''}">–</span>`;
+  return `<span class="posb${p<=3?' p'+p:''}${small?' sm':''}">${p}</span>`;
+}
+function groups(rs){
+  const g={}; for(const r of rs)(g[skey(r.season,r.cls)]||={season:r.season,cls:r.cls,races:[]}).races.push(r);
+  return Object.values(g).sort((a,b)=>b.season-a.season||a.cls.localeCompare(b.cls));
 }
 
-function renderHeader(){
-  const p = data.profile;
-  const parts = [];
-  if(p.number) parts.push('#'+esc(p.number));
-  parts.push(`<b>${esc(p.name || 'Unbekannter Fahrer')}</b>`);
-  if(p.nick) parts.push(`„${esc(p.nick)}“`);
-  if(p.nation) parts.push(esc(p.nation));
-  const seasons = [...new Set(data.races.map(r=>r.season))].sort();
-  if(seasons.length) parts.push(seasons.length>1 ? `${seasons[0]}–${seasons.at(-1)}` : seasons[0]);
-  $('#riderLine').innerHTML = parts.join(' · ');
+/* ---------- Render ---------- */
+function render(){
+  const v=view(); $('#demo').hidden=!isDemo();
+  renderHero(v); renderCareer(v); renderFilters(v); renderRaces(v); renderSeasons(v); renderTracks(v); fillProfileForm();
+}
+function renderHero(v){
+  const p=v.profile||{};
+  $('#heroNum').textContent=p.number||'00';
+  $('#heroName').innerHTML=`<span class="first">${esc(p.first||'Dein')}</span>${esc(p.last||'Name')}`;
+  const seasons=[...new Set(v.races.map(r=>r.season))].sort();
+  const last=[...v.races].sort((a,b)=>(b.season*100+(b.round||0))-(a.season*100+(a.round||0)))[0];
+  $('#heroEyebrow').textContent=last?`${last.cls} · Saison ${last.season}`:'Fahrerprofil';
+  const f=[];
+  if(p.nation)f.push(`<span>Nation <b>${esc(p.nation)}</b></span>`);
+  if(p.nick)f.push(`<span>Spitzname <b>${esc(p.nick)}</b></span>`);
+  if(p.born){const d=new Date(p.born);if(!isNaN(d)){const age=Math.floor((Date.now()-d)/31557600000);f.push(`<span>Alter <b>${age}</b></span>`);}}
+  if(last?.team)f.push(`<span class="chip"><i class="sw" style="background:${color(last.bike)}"></i><b>${esc(last.team)}</b>${last.bike?' · '+esc(last.bike):''}</span>`);
+  if(seasons.length)f.push(`<span>Saisons <b>${seasons.length>1?seasons[0]+'–'+seasons.at(-1):seasons[0]}</b></span>`);
+  $('#heroFacts').innerHTML=f.join('');
+}
+function renderCareer(v){
+  const a=agg(v.races); const titles=Object.values(v.seasons||{}).filter(s=>Number(s.champ)===1).length;
+  const big=[['Titel',titles,'title'],['Siege',a.wins,'win'],['Podien',a.podiums],['Poles',a.poles],['Starts',a.starts],['Punkte',fmt(a.pts)]];
+  $('#career').innerHTML=big.map(([l,x,c])=>`<div class="k ${c||''}"><div class="v">${x}</div><div class="l">${l}</div></div>`).join('');
+  const small=[['Sprint-Siege',a.sprintW],['Sprint-Podien',a.sprintP],['Schnellste Runden',a.fl],['Top 10',a.top10],['Ausfälle',a.dnf],['Ø Platz',a.avg]];
+  $('#minor').innerHTML=small.map(([l,x])=>`<div class="k"><span class="l">${l}</span><span class="v">${x}</span></div>`).join('');
+  const cls=[...new Set(v.races.map(r=>r.cls))];
+  $('#careerSub').textContent=a.entries?`${a.entries} Rennwochenenden · ${cls.join(', ')}`:'';
+}
+function renderFilters(v){
+  const fill=(sel,vals,label)=>{const cur=sel.value;sel.innerHTML=`<option value="">${label}</option>`+vals.map(x=>`<option${String(x)===cur?' selected':''}>${esc(x)}</option>`).join('');};
+  fill($('#fSeason'),[...new Set(v.races.map(r=>r.season))].sort((a,b)=>b-a),'Alle Saisons');
+  fill($('#fClass'),[...new Set(v.races.map(r=>r.cls))],'Alle Klassen');
+  const dl=(id,vals)=>$(id).innerHTML=[...new Set(vals.filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('');
+  dl('#trackList',[...state.races.map(r=>r.track),...TRACKS]);
+  dl('#teamList',state.races.map(r=>r.team));
+  dl('#bikeList',[...state.races.map(r=>r.bike),'Ducati','Aprilia','KTM','Honda','Yamaha','Kalex','Boscoscuro','Triumph','Gas Gas','Husqvarna','CFMoto']);
+}
+function renderRaces(v){
+  const fs=$('#fSeason').value,fc=$('#fClass').value;
+  const rows=v.races.filter(r=>(!fs||String(r.season)===fs)&&(!fc||r.cls===fc));
+  const val=(r,k)=>k==='date'?r.season*100+(r.round||0):k==='points'?points(r):k==='pos'?(status(r)!=='OK'?99:(r.pos||98)):k==='grid'||k==='sprint'?(r[k]||99):String(r[k]??'').toLowerCase();
+  rows.sort((x,y)=>{const a=val(x,sort.key),b=val(y,sort.key);return(a>b?1:a<b?-1:0)*sort.dir;});
+  const cols=[['pos','Pos','c'],['date','Saison'],['track','Grand Prix'],['team','Team'],['grid','Start','c'],['sprint','Sprint','c'],['gap','Zeit / Abstand','n'],['points','Pkt','n']];
+  const arrow=k=>sort.key===k?(sort.dir>0?' ▲':' ▼'):'';
+  const head=`<thead><tr>${cols.map(([k,l,c])=>`<th class="${c||''}" data-sort="${k}">${l}${arrow(k)}</th>`).join('')}${isDemo()?'':'<th class="owner-only"></th>'}</tr></thead>`;
+  $('#resSub').textContent=rows.length?`${rows.length} Einträge`:'';
+  if(!rows.length){$('#raceTable').innerHTML=head+`<tbody><tr><td colspan="9" class="empty">Keine Rennen für diesen Filter.</td></tr></tbody>`;return;}
+  $('#raceTable').innerHTML=head+'<tbody>'+rows.map(r=>{
+    const st=status(r),p=points(r);
+    return `<tr>
+    <td class="c">${posBox(r.pos,st)}</td>
+    <td><b>${r.season}</b>${r.round?`<div class="hint">Runde ${r.round}</div>`:''}</td>
+    <td><div class="gp"><i class="stripe" style="background:${color(r.bike)}"></i><div><div class="t">${esc(r.track)}${r.grid===1?'<span class="tag pole">Pole</span>':''}${r.fl?'<span class="tag fl">SR</span>':''}${r.wet?'<span class="tag wet">Regen</span>':''}</div><div class="s">${esc(r.cls)}</div></div></div></td>
+    <td>${esc(r.team||'–')}${r.bike?`<div class="hint">${esc(r.bike)}</div>`:''}</td>
+    <td class="c">${r.grid||'<span class="hint">–</span>'}</td>
+    <td class="c">${r.sprint?posBox(r.sprint,null,true):'<span class="hint">–</span>'}</td>
+    <td class="n">${esc(r.gap||'')||'<span class="hint">–</span>'}</td>
+    <td class="n"><span class="pts${p?'':' zero'}">${fmt(p)}</span></td>
+    ${isDemo()?'':`<td class="owner-only"><div class="rowact"><button class="ib" data-edit="${esc(r.id)}" aria-label="Bearbeiten">${icon.edit}</button><button class="ib del" data-del="${esc(r.id)}" aria-label="Löschen">${icon.del}</button></div></td>`}
+    </tr>`;}).join('')+'</tbody>';
+}
+function renderSeasons(v){
+  const gs=groups(v.races);
+  const head='<thead><tr><th>Saison</th><th>Klasse</th><th>Team</th><th class="n">Starts</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Ausf.</th><th class="n">Punkte</th><th class="n">WM</th></tr></thead>';
+  const editable=canWrite&&!isDemo();
+  $('#seasonTable').innerHTML=head+'<tbody>'+(gs.length?gs.map(g=>{
+    const a=agg(g.races),k=skey(g.season,g.cls),champ=(v.seasons||{})[k]?.champ??'';
+    const teams=[...new Set(g.races.map(r=>r.team).filter(Boolean))];
+    const bike=g.races.find(r=>r.bike)?.bike;
+    const wm=editable?`<input class="champ" id="champ-${esc(k)}" data-champ="${esc(k)}" type="number" min="1" value="${esc(champ)}" placeholder="–" aria-label="WM-Platz ${g.season}">`:`<span class="champ-ro">${champ?champ+'.':'–'}</span>`;
+    return `<tr><td><div class="gp"><i class="stripe" style="background:${color(bike)}"></i><span class="t">${g.season}</span></div></td><td>${esc(g.cls)}</td><td>${esc(teams.join(', ')||'–')}</td>
+    <td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="n">${a.dnf}</td>
+    <td class="n"><span class="pts">${fmt(a.pts)}</span></td><td class="n">${wm}${Number(champ)===1?'<span class="trophy">WELTMEISTER</span>':''}</td></tr>`;
+  }).join(''):'<tr><td colspan="10" class="empty">Noch keine Saison.</td></tr>')+'</tbody>';
+  drawChart(v,gs);
+}
+function drawChart(v,gs){
+  const svg=$('#chart'); const by={},champ={};
+  for(const g of gs){by[g.season]=(by[g.season]||0)+agg(g.races).pts; if(Number((v.seasons||{})[skey(g.season,g.cls)]?.champ)===1)champ[g.season]=1;}
+  const yrs=Object.keys(by).sort(); const W=Math.max(svg.clientWidth||700,300),H=240,L=40,R=12,T=24,B=30;
+  if(!yrs.length){svg.innerHTML='';return;}
+  const maxV=Math.max(...Object.values(by),1); const stepV=maxV>200?100:maxV>80?50:maxV>30?20:10; const top=Math.ceil(maxV/stepV)*stepV;
+  const y=x=>T+(H-T-B)*(1-x/top); const slot=(W-L-R)/yrs.length; const bw=Math.min(56,slot*.62);
+  let s='';
+  for(let t=0;t<=top;t+=stepV)s+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-dasharray="${t?'2 4':'0'}"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--mute)" font-family="Titillium Web,sans-serif">${t}</text>`;
+  yrs.forEach((yr,i)=>{const x=L+i*slot+(slot-bw)/2,h=H-B-y(by[yr]);const c=champ[yr]?'var(--gold)':'var(--red)';
+    s+=`<path d="M${x+6} ${y(by[yr])}h${bw-6}l-6 ${h}h${-(bw-6)}z" fill="${c}"/><text x="${x+bw/2}" y="${y(by[yr])-7}" text-anchor="middle" font-size="15" font-weight="800" font-style="italic" fill="var(--fg)" font-family="Saira Condensed,sans-serif">${fmt(by[yr])}</text><text x="${x+bw/2}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--mute)" font-family="Titillium Web,sans-serif">${yr}</text>`;});
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=s;
+}
+function renderTracks(v){
+  const g={}; for(const r of v.races)(g[r.track]||=[]).push(r);
+  const rows=Object.entries(g).map(([t,rs])=>[t,agg(rs),rs]).sort((a,b)=>b[1].wins-a[1].wins||b[1].podiums-a[1].podiums||b[1].pts-a[1].pts);
+  const head='<thead><tr><th>Grand Prix</th><th class="n">Starts</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="c">Bestes</th><th class="n">Ø Platz</th><th class="n">Ausf.</th><th class="n">Punkte</th></tr></thead>';
+  $('#trackTable').innerHTML=head+'<tbody>'+(rows.length?rows.map(([t,a,rs])=>`<tr><td><div class="gp"><i class="stripe" style="background:${a.wins?'var(--gold)':a.podiums?'var(--red)':'var(--line-2)'}"></i><span class="t">${esc(t)}</span></div></td><td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="c">${posBox(a.best,null,true)}</td><td class="n">${a.avg}</td><td class="n">${a.dnf}</td><td class="n"><span class="pts">${fmt(a.pts)}</span></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Noch keine Daten.</td></tr>')+'</tbody>';
 }
 
-function renderStats(){
-  const a = aggregate(data.races);
-  const titles = Object.values(data.seasons).filter(s=>Number(s.champ)===1).length;
-  const items = [
-    ['WM-Titel', titles, 'gold'],['Starts', a.starts],['Siege', a.wins, 'gold'],['Podien', a.podiums],
-    ['Poles', a.poles],['Punkte', fmt(a.points)],['Sprint-Siege', a.sprintWins],['Schnellste Runden', a.fl],
-    ['Top 10', a.top10],['DNFs', a.dnf],['Ø Platz', a.avg],
-    ['Siegquote', a.starts ? Math.round(a.wins/a.starts*100)+'%' : '–'],
-  ];
-  $('#stats').innerHTML = items.map(([l,v,c])=>`<div class="stat ${c||''}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+/* ---------- Dialog & Toast ---------- */
+function ask(title,text,{ok='OK',danger=false,extra=''}={}){
+  return new Promise(res=>{
+    $('#mTitle').textContent=title;$('#mText').textContent=text;$('#mExtra').innerHTML=extra;
+    $('#mOk').textContent=ok;$('#mOk').style.background=danger?'var(--bad)':'';$('#modal').hidden=false;$('#mOk').focus();
+    const done=v=>{$('#modal').hidden=true;$('#mOk').onclick=$('#mCancel').onclick=null;res(v);};
+    $('#mOk').onclick=()=>done(true);$('#mCancel').onclick=()=>done(false);
+  });
 }
-const fmt = n => Number.isInteger(n) ? n : n.toFixed(1);
+let tt; function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,2200);}
 
-function renderFilters(){
-  const fill = (sel, vals, label) => {
-    const cur = sel.value;
-    sel.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option ${String(v)===cur?'selected':''}>${esc(v)}</option>`).join('');
-  };
-  fill($('#fSeason'), [...new Set(data.races.map(r=>r.season))].sort((a,b)=>b-a), 'Alle Saisons');
-  fill($('#fClass'), [...new Set(data.races.map(r=>r.cls))], 'Alle Klassen');
-  const dl = (id, vals) => $(id).innerHTML = [...new Set(vals.filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('');
-  dl('#trackList', [...data.races.map(r=>r.track), ...DEFAULT_TRACKS]);
-  dl('#teamList', data.races.map(r=>r.team));
-  dl('#bikeList', [...data.races.map(r=>r.bike),'Ducati','Aprilia','KTM','Honda','Yamaha','Kalex','Boscoscuro','Husqvarna','Gas Gas','CFMoto']);
+/* ---------- Rennformular ---------- */
+const F=$('#raceForm');
+function formRace(){
+  const g=n=>F.elements[n];
+  const st=g('status').value;
+  return{id:editId||(Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+    season:Number(g('season').value),round:num(g('round').value),track:g('track').value.trim(),cls:g('cls').value,
+    team:g('team').value.trim(),bike:g('bike').value.trim(),grid:num(g('grid').value),sprint:num(g('sprint').value),
+    status:st,pos:st==='OK'?num(g('pos').value):null,gap:g('gap').value.trim(),points:num(g('points').value),
+    fl:g('fl').checked,wet:g('wet').checked};
 }
-
-function renderRaces(){
-  const fs = $('#fSeason').value, fc = $('#fClass').value;
-  let rows = data.races.filter(r => (!fs || String(r.season)===fs) && (!fc || r.cls===fc));
-  const val = (r,k) => k==='date' ? r.season*100+(r.round||0) : k==='points' ? calcPoints(r) : k==='pos' ? (r.dnf?99:(r.pos||98)) : (r[k] ?? '');
-  rows.sort((x,y)=>{ const a=val(x,sort.key), b=val(y,sort.key); return (a>b?1:a<b?-1:0)*sort.dir; });
-  const cols = [['date','Saison/Rd'],['track','Grand Prix'],['cls','Klasse'],['team','Team / Bike'],['grid','Start','n'],['sprint','Sprint','n'],['pos','Rennen','n'],['points','Pkt','n']];
-  const head = '<tr>'+cols.map(([k,l,c])=>`<th class="${c||''}" data-sort="${k}">${l}${sort.key===k?(sort.dir>0?' ▲':' ▼'):''}</th>`).join('')+'<th></th></tr>';
-  if(!rows.length){ $('#raceTable').innerHTML = head + '<tr><td colspan="9" class="empty">Noch keine Rennen eingetragen. Leg oben los!</td></tr>'; return; }
-  $('#raceTable').innerHTML = head + rows.map(r=>`<tr>
-    <td>${r.season}${r.round?' · R'+r.round:''}</td>
-    <td>${esc(r.track)}${r.wet?'<span class="tag">Regen</span>':''}${r.fl?'<span class="tag">FL</span>':''}</td>
-    <td>${esc(r.cls)}</td>
-    <td>${esc(r.team||'')}${r.bike?' <span class="muted">('+esc(r.bike)+')</span>':''}</td>
-    <td class="n">${r.grid ? (r.grid===1?'<b>P1</b>':r.grid) : '–'}</td>
-    <td class="n">${r.sprint ? posCell(r.sprint) : '<span class="muted">–</span>'}</td>
-    <td class="n">${posCell(r.pos, r.dnf)}</td>
-    <td class="n"><b>${fmt(calcPoints(r))}</b></td>
-    <td><button class="sec mini" data-edit="${r.id}">Bearbeiten</button> <button class="danger mini" data-del="${r.id}">✕</button></td>
-  </tr>`).join('');
-}
-
-function seasonGroups(){
-  const g = {};
-  for(const r of data.races){ const k = r.season+'|'+r.cls; (g[k] ||= {season:r.season, cls:r.cls, races:[]}).races.push(r); }
-  return Object.values(g).sort((a,b)=>b.season-a.season || a.cls.localeCompare(b.cls));
-}
-
-function renderSeasons(){
-  const groups = seasonGroups();
-  const head = '<tr><th>Saison</th><th>Klasse</th><th>Team</th><th class="n">Starts</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">DNF</th><th class="n">Punkte</th><th class="n">WM-Platz</th></tr>';
-  if(!groups.length){ $('#seasonTable').innerHTML = head+'<tr><td colspan="10" class="empty">Noch keine Daten.</td></tr>'; $('#chart').innerHTML=''; return; }
-  $('#seasonTable').innerHTML = head + groups.map(g=>{
-    const a = aggregate(g.races);
-    const teams = [...new Set(g.races.map(r=>r.team).filter(Boolean))].join(', ');
-    const key = g.season+'|'+g.cls;
-    const champ = data.seasons[key]?.champ ?? '';
-    return `<tr><td><b>${g.season}</b></td><td>${esc(g.cls)}</td><td>${esc(teams)||'–'}</td>
-      <td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="n">${a.dnf}</td>
-      <td class="n"><b>${fmt(a.points)}</b></td>
-      <td class="n"><input data-champ="${esc(key)}" type="number" min="1" value="${esc(champ)}" style="width:70px;text-align:right" placeholder="–">${Number(champ)===1?' 🏆':''}</td></tr>`;
-  }).join('');
-  drawChart(groups);
-}
-
-function drawChart(groups){
-  const svg = $('#chart');
-  const by = {};
-  for(const g of groups){ by[g.season] = (by[g.season]||0) + aggregate(g.races).points; }
-  const yrs = Object.keys(by).sort();
-  const W = svg.clientWidth || 600, H = 220, pad = 28;
-  const max = Math.max(...Object.values(by), 1);
-  const bw = Math.min(60, (W-pad*2)/yrs.length*0.7);
-  const step = (W-pad*2)/yrs.length;
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.innerHTML = yrs.map((y,i)=>{
-    const h = (by[y]/max)*(H-60), x = pad + i*step + (step-bw)/2, yy = H-28-h;
-    return `<rect x="${x}" y="${yy}" width="${bw}" height="${h}" rx="4" fill="var(--accent)"/>
-      <text x="${x+bw/2}" y="${yy-6}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">${fmt(by[y])}</text>
-      <text x="${x+bw/2}" y="${H-10}" text-anchor="middle" font-size="12" fill="var(--muted)">${y}</text>`;
-  }).join('') + `<line x1="${pad}" x2="${W-pad}" y1="${H-28}" y2="${H-28}" stroke="var(--line)"/>`;
-}
-
-function renderTracks(){
-  const g = {};
-  for(const r of data.races) (g[r.track] ||= []).push(r);
-  const rows = Object.entries(g).map(([t,rs])=>[t, aggregate(rs)]).sort((a,b)=>b[1].wins-a[1].wins || b[1].podiums-a[1].podiums || b[1].points-a[1].points);
-  const head = '<tr><th>Strecke</th><th class="n">Starts</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Bestes</th><th class="n">Ø Platz</th><th class="n">DNF</th><th class="n">Punkte</th></tr>';
-  $('#trackTable').innerHTML = head + (rows.length ? rows.map(([t,a])=>`<tr><td>${esc(t)}</td><td class="n">${a.starts}</td><td class="n">${a.wins}</td><td class="n">${a.podiums}</td><td class="n">${a.poles}</td><td class="n">${a.best?posCell(a.best):'–'}</td><td class="n">${a.avg}</td><td class="n">${a.dnf}</td><td class="n"><b>${fmt(a.points)}</b></td></tr>`).join('') : '<tr><td colspan="9" class="empty">Noch keine Daten.</td></tr>');
-}
-
-function renderAll(){ renderHeader(); renderStats(); renderFilters(); renderRaces(); renderSeasons(); renderTracks(); }
-
-// ---- Formular ----
-const form = $('#raceForm');
+function preview(){const r=formRace();$('#ptsPreview').textContent=`= ${fmt(points(r))} Punkte`;F.elements.pos.disabled=r.status!=='OK';}
 function resetForm(){
-  const keep = {season: form.season.value, cls: form.cls.value, team: form.team.value, bike: form.bike.value};
-  form.reset();
-  form.season.value = keep.season || new Date().getFullYear();
-  form.cls.value = keep.cls || 'MotoGP'; form.team.value = keep.team; form.bike.value = keep.bike;
-  const last = data.races.filter(r=>String(r.season)===form.season.value).reduce((m,r)=>Math.max(m,r.round||0),0);
-  form.round.value = last+1;
-  editId = null; $('#formTitle').textContent='Rennen eintragen'; $('#saveBtn').textContent='Speichern'; $('#cancelEdit').classList.add('hidden');
+  const keep={season:F.elements.season.value,cls:F.elements.cls.value,team:F.elements.team.value,bike:F.elements.bike.value};
+  F.reset(); F.elements.season.value=keep.season||new Date().getFullYear(); F.elements.cls.value=keep.cls||'MotoGP';
+  F.elements.team.value=keep.team; F.elements.bike.value=keep.bike;
+  const last=state.races.filter(r=>String(r.season)===String(F.elements.season.value)).reduce((m,r)=>Math.max(m,r.round||0),0);
+  F.elements.round.value=last+1;
+  editId=null;$('#formTitle').textContent='Rennen eintragen';$('#saveBtn').textContent='Speichern';$('#cancelEdit').hidden=true;preview();
 }
-form.addEventListener('submit', e=>{
-  e.preventDefault();
-  const f = form;
-  const r = {
-    id: editId || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
-    season: Number(f.season.value), round: num(f.round.value), track: f.track.value.trim(), cls: f.cls.value,
-    team: f.team.value.trim(), bike: f.bike.value.trim(), grid: num(f.grid.value), sprint: num(f.sprint.value),
-    pos: f.dnf.checked ? null : num(f.pos.value), points: num(f.points.value),
-    dnf: f.dnf.checked, fl: f.fl.checked, wet: f.wet.checked,
-  };
-  if(!r.dnf && !r.pos && !confirm('Kein Platz und kein DNF angegeben. Trotzdem speichern?')) return;
-  if(editId) data.races = data.races.map(x=>x.id===editId?r:x); else data.races.push(r);
-  save(); resetForm(); renderAll();
+F.addEventListener('input',preview);
+F.addEventListener('submit',async e=>{
+  e.preventDefault(); const r=formRace();
+  if(r.status==='OK'&&!r.pos&&!(await ask('Kein Platz angegeben','Für das Rennen ist weder ein Platz noch ein Ausfall eingetragen. Trotzdem speichern?',{ok:'Speichern'})))return;
+  try{await putRace(r);toast(editId?'Änderung gespeichert':'Rennen gespeichert');resetForm();}catch(err){toast('Speichern fehlgeschlagen');}
 });
-$('#cancelEdit').onclick = resetForm;
-form.dnf.addEventListener('change', ()=>{ form.pos.disabled = form.dnf.checked; });
+$('#cancelEdit').onclick=resetForm;
+$('#demoGo').onclick=()=>{switchTab('results');F.scrollIntoView({behavior:'smooth',block:'start'});F.elements.track.focus({preventScroll:true});};
 
-$('#raceTable').addEventListener('click', e=>{
-  const th = e.target.closest('th[data-sort]');
-  if(th){ const k=th.dataset.sort; sort = {key:k, dir: sort.key===k ? -sort.dir : (k==='date'||k==='points'?-1:1)}; renderRaces(); return; }
-  const ed = e.target.dataset.edit, del = e.target.dataset.del;
-  if(del && confirm('Dieses Rennen löschen?')){ data.races = data.races.filter(r=>r.id!==del); save(); renderAll(); }
-  if(ed){
-    const r = data.races.find(x=>x.id===ed); editId = ed;
-    for(const k of ['season','round','track','cls','team','bike','grid','sprint','pos','points']) form[k].value = r[k] ?? '';
-    for(const k of ['dnf','fl','wet']) form[k].checked = !!r[k];
-    form.pos.disabled = r.dnf;
-    $('#formTitle').textContent='Rennen bearbeiten'; $('#saveBtn').textContent='Änderungen speichern'; $('#cancelEdit').classList.remove('hidden');
-    form.scrollIntoView({behavior:'smooth'});
-  }
+$('#raceTable').addEventListener('click',async e=>{
+  const th=e.target.closest('th[data-sort]');
+  if(th){const k=th.dataset.sort;sort={key:k,dir:sort.key===k?-sort.dir:(k==='date'||k==='points'?-1:1)};renderRaces(view());return;}
+  const b=e.target.closest('button'); if(!b)return;
+  if(b.dataset.del){const r=state.races.find(x=>x.id===b.dataset.del);
+    if(await ask('Rennen löschen?',`${r.season} · ${r.track} wird endgültig entfernt.`,{ok:'Löschen',danger:true})){try{await removeRace(r.id);toast('Rennen gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}}}
+  if(b.dataset.edit){const r=state.races.find(x=>x.id===b.dataset.edit); editId=r.id;
+    for(const k of ['season','round','track','cls','team','bike','grid','sprint','pos','gap','points'])F.elements[k].value=r[k]??'';
+    F.elements.status.value=status(r);F.elements.fl.checked=!!r.fl;F.elements.wet.checked=!!r.wet;
+    $('#formTitle').textContent='Rennen bearbeiten';$('#saveBtn').textContent='Änderung speichern';$('#cancelEdit').hidden=false;preview();
+    F.scrollIntoView({behavior:'smooth',block:'start'});}
 });
-$('#fSeason').onchange = $('#fClass').onchange = renderRaces;
-
-$('#seasonTable').addEventListener('change', e=>{
-  const k = e.target.dataset.champ; if(!k) return;
-  data.seasons[k] = {...data.seasons[k], champ: num(e.target.value)};
-  save(); renderAll();
+$('#fSeason').onchange=$('#fClass').onchange=()=>renderRaces(view());
+$('#seasonTable').addEventListener('change',async e=>{
+  const k=e.target.dataset.champ;if(!k)return;
+  const map={...state.seasons,[k]:{...(state.seasons[k]||{}),champ:num(e.target.value)??''}};
+  try{await saveSeasons(map);toast(Number(e.target.value)===1?'Weltmeister!':'WM-Platz gespeichert');}catch(err){toast('Speichern fehlgeschlagen');}
 });
 
-// ---- Tabs ----
-$('#tabs').addEventListener('click', e=>{
-  const t = e.target.dataset.tab; if(!t) return;
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
-  document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('hidden', s.id!=='tab-'+t));
-  if(t==='seasons') renderSeasons();
-});
-
-// ---- Profil ----
-const pf = $('#profileForm');
-for(const k of ['name','number','nation','nick']) pf[k].value = data.profile[k] || '';
-pf.addEventListener('submit', e=>{
-  e.preventDefault();
-  for(const k of ['name','number','nation','nick']) data.profile[k] = pf[k].value.trim();
-  save(); renderHeader();
-});
-
-// ---- Export / Import ----
-function download(name, text, type){
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text],{type})); a.download = name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+/* ---------- Tabs ---------- */
+function switchTab(t){
+  tab=t; document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  for(const s of ['results','seasons','tracks','rider'])$('#tab-'+s).hidden=s!==t;
+  if(t==='seasons')drawChart(view(),groups(view().races));
+  try{localStorage.setItem(LKEY+'-tab',t);}catch(e){}
 }
-$('#exportBtn').onclick = ()=> download('motogp-karriere.json', JSON.stringify(data,null,2), 'application/json');
-$('#csvBtn').onclick = ()=>{
-  const cols = ['season','round','track','cls','team','bike','grid','sprint','pos','dnf','fl','wet'];
-  const lines = [[...cols,'points'].join(';'), ...data.races.map(r=>[...cols.map(c=>String(r[c]??'').replace(/;/g,',')), calcPoints(r)].join(';'))];
-  download('motogp-karriere.csv', lines.join('\n'), 'text/csv');
+$('#tabs').addEventListener('click',e=>{const t=e.target.closest('button')?.dataset.tab;if(t)switchTab(t);});
+
+/* ---------- Profil ---------- */
+const P=$('#profileForm'); const PF=['first','last','number','nation','born','nick']; let profDirty=false;
+function fillProfileForm(){if(profDirty)return;for(const k of PF)P.elements[k].value=state.profile?.[k]||'';}
+P.addEventListener('input',()=>profDirty=true);
+P.addEventListener('submit',async e=>{e.preventDefault();const p={};for(const k of PF)p[k]=P.elements[k].value.trim();
+  try{await putMeta('profile',p);profDirty=false;toast('Profil gespeichert');if(mode==='local')render();}catch(err){toast('Speichern fehlgeschlagen');}});
+
+/* ---------- Export / Import ---------- */
+function exportData(){return{profile:state.profile,seasons:state.seasons,races:state.races};}
+async function offerFile(name,text,type){
+  let dl=null; try{dl=await window.claude?.use?.('downloads');}catch(e){}
+  if(dl){try{await dl.save({filename:name,data:new Blob([text],{type})});return;}catch(e){if(e?.code==='declined')return;}}
+  await ask('Daten kopieren','Markiere den Text und speichere ihn als Datei.',{ok:'Kopieren',extra:`<textarea id="exportText" readonly>${esc(text)}</textarea>`}).then(async go=>{
+    if(!go)return; try{await navigator.clipboard.writeText(text);toast('Kopiert');}catch(e){toast('Bitte manuell kopieren');}
+  });
+}
+$('#exportBtn').onclick=()=>offerFile('gp-karriere.json',JSON.stringify(exportData(),null,2),'application/json');
+$('#csvBtn').onclick=()=>{
+  const cols=['season','round','track','cls','team','bike','grid','sprint','status','pos','gap','fl','wet'];
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const lines=[[...cols,'points'].join(';'),...state.races.map(r=>[...cols.map(c=>q(c==='status'?status(r):r[c])),points(r)].join(';'))];
+  offerFile('gp-karriere.csv',lines.join('\n'),'text/csv');
 };
-$('#importBtn').onclick = ()=> $('#importFile').click();
-$('#importFile').onchange = async e=>{
-  const file = e.target.files[0]; if(!file) return;
+$('#importBtn').onclick=()=>$('#importFile').click();
+$('#importFile').onchange=async e=>{
+  const file=e.target.files[0]; e.target.value=''; if(!file)return;
+  let d; try{d=JSON.parse(await file.text());if(!Array.isArray(d.races))throw 0;}catch(err){await ask('Datei ungültig','Die Datei ist keine Karriere-Sicherung im JSON-Format.',{ok:'OK'});return;}
+  if(!(await ask('Import starten?',`${d.races.length} Rennen werden hinzugefügt. Rennen mit gleicher ID werden überschrieben.`,{ok:'Importieren'})))return;
   try{
-    const d = JSON.parse(await file.text());
-    if(!Array.isArray(d.races)) throw 0;
-    if(!confirm(`${d.races.length} Rennen importieren? Aktuelle Daten werden ersetzt.`)) return;
-    data = {profile:{}, seasons:{}, ...d}; save();
-    for(const k of ['name','number','nation','nick']) pf[k].value = data.profile[k] || '';
-    renderAll();
-  }catch(err){ alert('Ungültige Datei.'); }
-  e.target.value = '';
+    for(const r of d.races)await putRace({...r,id:String(r.id||(Date.now().toString(36)+Math.random().toString(36).slice(2,6)))});
+    if(d.profile)await putMeta('profile',d.profile); if(d.seasons)await saveSeasons({...state.seasons,...d.seasons});
+    profDirty=false; toast('Import fertig');
+  }catch(err){toast('Import teilweise fehlgeschlagen');}
 };
-$('#resetBtn').onclick = ()=>{
-  if(confirm('Wirklich ALLE Daten löschen? Das kann nicht rückgängig gemacht werden.')){ data = {profile:{}, races:[], seasons:{}}; save(); pf.reset(); renderAll(); resetForm(); }
+$('#resetBtn').onclick=async()=>{
+  if(!(await ask('Alle Rennen löschen?',`${state.races.length} Rennen werden endgültig gelöscht. Exportiere vorher eine Sicherung.`,{ok:'Alles löschen',danger:true})))return;
+  try{for(const r of [...state.races])await removeRace(r.id);await saveSeasons({});toast('Alle Rennen gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}
 };
-window.addEventListener('resize', ()=>{ if(!$('#tab-seasons').classList.contains('hidden')) drawChart(seasonGroups()); });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)$('#mCancel').click();});
+window.addEventListener('resize',()=>{if(tab==='seasons')drawChart(view(),groups(view().races));});
 
-resetForm(); renderAll();
+/* ---------- Start ---------- */
+resetForm();
+try{const t=localStorage.getItem(LKEY+'-tab');if(t&&$('#tab-'+t))switchTab(t);}catch(e){}
+connect();
 </script>
-</body>
-</html>
