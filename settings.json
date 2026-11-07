@@ -1,0 +1,8 @@
+{
+  "port": 8080,
+  "verbosity": 2,
+  "voice": null,
+  "rate": 1,
+  "volume": 100,
+  "speech": true
+}

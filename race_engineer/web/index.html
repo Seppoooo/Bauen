@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Race Engineer</title>
+<style>
+  :root {
+    --bg: #0d0f12; --panel: #161a20; --line: #262c35; --text: #e8ecf1; --muted: #8a94a3;
+    --good: #2fbf71; --warn: #f2b134; --bad: #ef4b4b; --cold: #4aa3ff; --accent: #ff6a1a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+           padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .02em; }
+  header h1 span { color: var(--accent); }
+  .pill { padding: 3px 10px; border-radius: 999px; font-size: 13px; background: var(--line); }
+  .pill.on { background: rgba(47,191,113,.18); color: var(--good); }
+  .pill.off { background: rgba(239,75,75,.15); color: var(--bad); }
+  #session { color: var(--muted); font-size: 14px; }
+  .controls { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+           padding: 8px 14px; font-weight: 600; cursor: pointer; font-size: 14px; }
+  button.ghost { background: var(--line); color: var(--text); }
+  label.chk { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+  #flag { display: none; padding: 12px 16px; font-weight: 800; font-size: 20px; text-align: center;
+          letter-spacing: .05em; }
+  #flag.yellow { display: block; background: #f5d000; color: #111; }
+  #flag.blue { display: block; background: #1e6cff; color: #fff; }
+  #flag.black { display: block; background: #000; color: #fff; border-bottom: 2px solid #fff; }
+  #flag.white { display: block; background: #f4f4f4; color: #111; }
+  #flag.checkered { display: block; color: #111;
+    background: repeating-conic-gradient(#fff 0 25%, #ddd 0 50%) 0 0 / 24px 24px; }
+  #flag.pit { display: block; background: var(--accent); color: #fff; }
+  main { display: grid; gap: 12px; padding: 12px 16px 24px;
+         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+             color: var(--muted); font-weight: 600; }
+  .big { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .big div { min-width: 0; }
+  .lbl { color: var(--muted); font-size: 12px; }
+  .val { font-size: clamp(22px, 2.4vw, 30px); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+         overflow: hidden; text-overflow: ellipsis; }
+  .val.sm { font-size: clamp(18px, 1.8vw, 22px); }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0;
+         border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .row:last-child { border-bottom: 0; }
+  .row b { font-weight: 600; }
+  .neg { color: var(--good); } .pos { color: var(--bad); }
+  .gap { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+  .gap .name { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .car { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tire { border-radius: 10px; padding: 10px; background: var(--line); border-left: 6px solid var(--muted); }
+  .tire.opt { border-color: var(--good); } .tire.hot { border-color: var(--bad); }
+  .tire.cold { border-color: var(--cold); } .tire.warm { border-color: var(--warn); }
+  .tire .t { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tire .sub { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .bar i { display: block; height: 100%; background: var(--good); }
+  #log { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; }
+  #log li { padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; background: var(--line);
+            border-left: 4px solid var(--muted); }
+  #log li.p0 { border-color: var(--bad); } #log li.p1 { border-color: var(--warn); }
+  #log li.p2 { border-color: var(--accent); }
+  #log time { color: var(--muted); font-size: 12px; margin-right: 8px; font-variant-numeric: tabular-nums; }
+  .wide { grid-column: 1 / -1; }
+  @media (min-width: 1000px) { .wide2 { grid-column: span 2; } }
+  @media (max-width: 420px) { main { grid-template-columns: 1fr; } .val { font-size: 24px; } .val.sm { font-size: 18px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Race <span>Engineer</span></h1>
+  <span id="conn" class="pill off">Keine Verbindung</span>
+  <span id="session"></span>
+  <div class="controls">
+    <label class="chk"><input type="checkbox" id="browserVoice"> Im Browser vorlesen</label>
+    <button class="ghost" id="muteBtn">PC-Stimme: an</button>
+    <button id="statusBtn">Status abfragen</button>
+  </div>
+</header>
+<div id="flag"></div>
+<main>
+  <section class="card">
+    <h2>Rennen</h2>
+    <div class="big">
+      <div><div class="lbl">Position</div><div class="val" id="pos">–</div></div>
+      <div><div class="lbl">Runde</div><div class="val" id="lap">–</div></div>
+      <div><div class="lbl">Restzeit</div><div class="val sm" id="remain">–</div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Zeiten</h2>
+    <div class="big">
+      <div><div class="lbl">Aktuell</div><div class="val sm" id="cur">–</div></div>
+      <div><div class="lbl">Letzte</div><div class="val sm" id="last">–</div></div>
+      <div><div class="lbl">Beste</div><div class="val sm" id="best">–</div></div>
+    </div>
+    <div class="row" style="margin-top:8px"><span>Delta zur Bestzeit</span><b id="delta">–</b></div>
+  </section>
+
+  <section class="card">
+    <h2>Abstände</h2>
+    <div class="gap">
+      <div><div class="lbl">Vorne</div><div class="name" id="nameAhead">–</div></div>
+      <div class="val sm" id="gapAhead">–</div>
+      <div><div class="lbl">Hinten</div><div class="name" id="nameBehind">–</div></div>
+      <div class="val sm" id="gapBehind">–</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Sprit</h2>
+    <div class="row"><span>Im Tank</span><b id="fuel">–</b></div>
+    <div class="row"><span>Verbrauch / Runde</span><b id="fuelPer">–</b></div>
+    <div class="row"><span>Reicht für</span><b id="fuelLaps">–</b></div>
+    <div class="row"><span>Rennrunden übrig</span><b id="raceLaps">–</b></div>
+    <div class="row"><span>Nachtanken bis Ziel</span><b id="fuelAdd">–</b></div>
+  </section>
+
+  <section class="card">
+    <h2>Reifen &amp; Bremsen</h2>
+    <div class="car" id="tires"></div>
+  </section>
+
+  <section class="card">
+    <h2>Auto</h2>
+    <div class="row"><span>Speed</span><b id="speed">–</b></div>
+    <div class="row"><span>Gang</span><b id="gear">–</b></div>
+    <div id="damage"></div>
+  </section>
+
+  <section class="card wide">
+    <h2>Funk</h2>
+    <ul id="log"></ul>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const TIRES = ["VL", "VR", "HL", "HR"];
+
+function fmtLap(t) {
+  if (t == null || t <= 0) return "–";
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return m ? `${m}:${s.toFixed(3).padStart(6, "0")}` : s.toFixed(3);
+}
+function fmtGap(g) { return g == null || g <= 0 ? "–" : g.toFixed(1) + " s"; }
+function fmtTime(t) {
+  if (t == null || t < 0) return "–";
+  const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = Math.floor(t % 60);
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
+}
+const n = (v, d = 1, unit = "") => v == null || v < 0 ? "–" : v.toFixed(d) + unit;
+
+for (let i = 0; i < 4; i++) {
+  $("tires").insertAdjacentHTML("beforeend",
+    `<div class="tire" id="t${i}"><div class="lbl">${TIRES[i]}</div>
+     <div class="t" id="tt${i}">–</div>
+     <div class="sub" id="tw${i}">Abnutzung –</div>
+     <div class="bar"><i id="tb${i}" style="width:0"></i></div>
+     <div class="sub" id="tp${i}">–</div><div class="sub" id="tbk${i}">–</div></div>`);
+}
+
+function render(st) {
+  const s = st.snapshot, g = st.strategy;
+  const conn = $("conn");
+  if (!s.connected) { conn.textContent = "Warte auf " + st.source + " …"; conn.className = "pill off"; }
+  else if (!s.active) { conn.textContent = st.source + ": im Menü"; conn.className = "pill"; }
+  else { conn.textContent = st.source + " verbunden"; conn.className = "pill on"; }
+
+  const names = {practice: "Training", qualify: "Qualifying", race: "Rennen", warmup: "Warm-up"};
+  $("session").textContent = [names[s.session_type], s.track, s.car].filter(Boolean).join(" · ");
+
+  $("pos").textContent = s.position > 0 ? `P${s.position}/${s.num_cars}` : "–";
+  const lapNo = s.completed_laps >= 0 ? s.completed_laps + 1 : null;
+  $("lap").textContent = lapNo ? (s.total_laps > 0 ? `${Math.min(lapNo, s.total_laps)}/${s.total_laps}` : lapNo) : "–";
+  $("remain").textContent = fmtTime(s.session_time_remaining);
+
+  $("cur").textContent = fmtLap(s.lap_time_current);
+  $("last").textContent = fmtLap(s.last_lap);
+  $("best").textContent = fmtLap(s.best_lap);
+  const d = $("delta");
+  if (s.delta_best > -100 && s.best_lap > 0) {
+    d.textContent = (s.delta_best > 0 ? "+" : "") + s.delta_best.toFixed(2);
+    d.className = s.delta_best > 0 ? "pos" : "neg";
+  } else { d.textContent = "–"; d.className = ""; }
+
+  $("gapAhead").textContent = fmtGap(s.gap_ahead);
+  $("gapBehind").textContent = fmtGap(s.gap_behind);
+  $("nameAhead").textContent = s.name_ahead || "–";
+  $("nameBehind").textContent = s.name_behind || "–";
+
+  $("fuel").textContent = n(s.fuel_left, 1, " l");
+  $("fuelPer").textContent = n(g.fuel_per_lap, 2, " l");
+  $("fuelLaps").textContent = n(g.fuel_laps_left, 1, " Rd");
+  $("raceLaps").textContent = n(g.race_laps_left, 1, " Rd");
+  const add = $("fuelAdd");
+  add.textContent = g.fuel_to_add == null ? "–" : g.fuel_to_add < 0.5 ? "reicht ✓" : g.fuel_to_add.toFixed(1) + " l";
+  add.className = g.fuel_to_add == null ? "" : g.fuel_to_add < 0.5 ? "neg" : "pos";
+
+  for (let i = 0; i < 4; i++) {
+    const t = s.tire_temp[i], cold = s.tire_temp_cold[i], opt = s.tire_temp_optimal[i], hot = s.tire_temp_hot[i];
+    let cls = "tire";
+    if (t > 0 && hot > 0) {
+      if (t > hot) cls += " hot";
+      else if (t < cold) cls += " cold";
+      else if (Math.abs(t - opt) <= (hot - cold) * 0.2) cls += " opt";
+      else cls += " warm";
+    }
+    $("t" + i).className = cls;
+    $("tt" + i).textContent = t > 0 ? Math.round(t) + "°" : "–";
+    const w = s.tire_wear[i];
+    $("tw" + i).textContent = w >= 0 ? `Gummi ${Math.round(w * 100)} %` : "Abnutzung –";
+    const bar = $("tb" + i);
+    bar.style.width = (w >= 0 ? w * 100 : 0) + "%";
+    bar.style.background = w < 0.3 ? "var(--bad)" : w < 0.5 ? "var(--warn)" : "var(--good)";
+    const p = s.tire_pressure[i], b = s.brake_temp[i];
+    $("tp" + i).textContent = "Druck " + (p > 0 ? (p / 100).toFixed(2) + " bar" : "–");
+    $("tbk" + i).textContent = "Bremse " + (b > 0 ? Math.round(b) + "°" : "–");
+  }
+
+  $("speed").textContent = Math.round(s.speed_kmh) + " km/h";
+  $("gear").textContent = s.gear === -1 ? "R" : s.gear === 0 ? "N" : s.gear > 0 ? s.gear : "–";
+  const dmg = [["Motor", s.damage_engine], ["Getriebe", s.damage_transmission],
+               ["Aero", s.damage_aero], ["Fahrwerk", s.damage_suspension]];
+  $("damage").innerHTML = dmg.map(([k, v]) => v < 0 ? "" :
+    `<div class="row"><span>${k}</span><b style="color:${v < .4 ? "var(--bad)" : v < .95 ? "var(--warn)" : "var(--good)"}">${Math.round(v * 100)} %</b></div>`).join("");
+
+  const flag = $("flag");
+  let f = "", txt = "";
+  if (s.flag_black) { f = "black"; txt = "SCHWARZE FLAGGE"; }
+  else if (s.flag_checkered) { f = "checkered"; txt = "ZIELFLAGGE"; }
+  else if (s.flag_yellow) { f = "yellow"; txt = "GELB" + (s.yellow_sector > 0 ? " – SEKTOR " + s.yellow_sector : ""); }
+  else if (s.flag_blue) { f = "blue"; txt = "BLAUE FLAGGE"; }
+  else if (s.in_pitlane && !s.pit_limiter) { f = "pit"; txt = "PIT LIMITER!"; }
+  else if (s.flag_white) { f = "white"; txt = "LETZTE RUNDE"; }
+  flag.className = f; flag.textContent = txt;
+}
+
+function addCallout(c, speak) {
+  const li = document.createElement("li");
+  li.className = "p" + c.priority;
+  const t = new Date(c.time * 1000).toLocaleTimeString("de-DE");
+  li.innerHTML = `<time>${t}</time>`;
+  li.appendChild(document.createTextNode(c.text));
+  $("log").prepend(li);
+  while ($("log").children.length > 60) $("log").lastChild.remove();
+  if (speak && $("browserVoice").checked && "speechSynthesis" in window) {
+    const u = new SpeechSynthesisUtterance(c.text);
+    u.lang = "de-DE";
+    if (c.priority === 0) speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+}
+
+try { $("browserVoice").checked = localStorage.getItem("browserVoice") === "1"; } catch (e) {}
+$("browserVoice").onchange = e => { try { localStorage.setItem("browserVoice", e.target.checked ? "1" : "0"); } catch (_) {} };
+$("statusBtn").onclick = () => fetch("/api/status", {method: "POST"});
+$("muteBtn").onclick = () => fetch("/api/toggle_voice", {method: "POST"});
+
+let historyDone = false;
+function connect() {
+  const es = new EventSource("/events");
+  es.addEventListener("callout", e => addCallout(JSON.parse(e.data), historyDone));
+  es.addEventListener("state", e => {
+    historyDone = true;
+    const st = JSON.parse(e.data);
+    $("muteBtn").textContent = st.voice_on ? "PC-Stimme: an" : "PC-Stimme: aus";
+    render(st);
+  });
+  es.onerror = () => { $("conn").textContent = "Engineer-Programm nicht erreichbar"; $("conn").className = "pill off"; };
+}
+connect();
+</script>
+</body>
+</html>

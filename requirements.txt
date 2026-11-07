@@ -1,0 +1,4 @@
+# Sprachausgabe über die Windows-Stimmen (SAPI)
+pywin32; sys_platform == "win32"
+# Fallback-Sprachausgabe (z.B. Linux/macOS für den Demo-Modus)
+pyttsx3; sys_platform != "win32"
