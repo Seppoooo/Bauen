@@ -6,8 +6,8 @@
 <style>
 /* Layout: Live-Timing-Look. Sticky Nav mit Karriere-Wahl, Fahrer-Hero, Zeitentafel-Tabellen, Team-Karten. Bewusst nur dunkel. */
 :root{
-  --ink:#0a0a0d; --panel:#141419; --panel-2:#1c1c23; --panel-3:#24242d; --line:#2a2a33; --line-2:#3a3a45;
-  --fg:#f4f4f6; --mute:#9a9aa8; --red:#e4002b;
+  --ink:#050505; --panel:#111111; --panel-2:#191919; --panel-3:#232323; --line:#262626; --line-2:#383838;
+  --fg:#ffffff; --mute:#a6a6a6; --red:#ff0a14; --red-deep:#8a0008;
   --gold:#f2c230; --silver:#c9ccd3; --bronze:#cf8a55; --ok:#33c46b; --bad:#ff4d5e; --fl:#8b5cf6; --wet:#3b82f6;
   --display:"Saira Condensed","Arial Narrow",Impact,sans-serif;
   --body:"Titillium Web",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -25,16 +25,17 @@ button,input,select{font:inherit;color:inherit}
 .mute{color:var(--mute)}
 
 /* NAV */
-.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(10,10,13,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(5,5,5,.96);backdrop-filter:blur(8px);border-bottom:3px solid var(--red)}
 .nav .in{display:flex;align-items:center;gap:18px;min-height:58px}
 .mark{display:flex;align-items:center;gap:8px;font:italic 900 22px/1 var(--display);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
 .mark svg{width:34px;height:20px;flex:none}
 .mark b{color:var(--red)}
+.mark svg path:first-child{fill:var(--red)}
 .tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{background:none;border:0;padding:19px 11px 17px;font:700 15px/1 var(--display);letter-spacing:1px;text-transform:uppercase;color:var(--mute);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
 .tabs button:hover{color:var(--fg)}
-.tabs button.on{color:var(--fg);border-bottom-color:var(--red)}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--red);background:linear-gradient(0deg,rgba(255,10,20,.16),transparent 70%)}
 .cswitch{display:flex;align-items:center;gap:8px;min-width:0}
 .cswitch select{background:var(--panel-2);border:1px solid var(--line-2);padding:7px 10px;font:700 14px/1 var(--display);letter-spacing:.8px;text-transform:uppercase;max-width:190px}
 .sync{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
@@ -43,8 +44,8 @@ button,input,select{font:inherit;color:inherit}
 @media (max-width:760px){.nav .in{flex-wrap:wrap;gap:0 12px;padding-top:8px}.mark{order:1}.cswitch{order:2;margin-left:auto}.tabs{order:3;flex-basis:100%}.tabs button{padding:12px 10px 11px}.mark .t{display:none}}
 
 /* HERO */
-.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#121217 0%,var(--ink) 100%)}
-.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 140% at 100% 0%,var(--hc,#e4002b) 0%,transparent 60%);opacity:.5}
+.hero{position:relative;overflow:hidden;border-bottom:3px solid var(--red);background:linear-gradient(108deg,var(--ink) 0%,var(--ink) 34%,var(--red-deep) 68%,var(--red) 100%)}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(90% 120% at 0% 100%,var(--hc,#ff0a14) 0%,transparent 55%);opacity:.28}
 .hero::after{content:"";position:absolute;right:0;top:0;bottom:0;width:min(46%,520px);opacity:.07;background:repeating-conic-gradient(#fff 0 25%,transparent 0 50%) 0 0/28px 28px;-webkit-mask:linear-gradient(90deg,transparent,#000 70%);mask:linear-gradient(90deg,transparent,#000 70%)}
 .hero .in{position:relative;z-index:1;display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:end;padding-block:32px 28px}
 .bignum{font:italic 900 clamp(96px,15vw,180px)/.8 var(--display);color:transparent;-webkit-text-stroke:2px var(--hc,var(--red));letter-spacing:-4px;padding-right:10px;min-width:1ch}
@@ -105,7 +106,7 @@ input.dup{border-color:var(--bad);background:rgba(255,77,94,.12)}
 .checks input,input[type=radio]{width:18px;height:18px;accent-color:var(--red);padding:0}
 .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
 .btn{background:var(--red);border:0;color:#fff;padding:11px 20px;font:800 15px/1 var(--display);letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);white-space:nowrap}
-.btn:hover{background:#ff1745}
+.btn:hover{background:#ff3b42}
 .btn.ghost{background:var(--panel-3);color:var(--fg)}
 .btn.ghost:hover{background:var(--line-2)}
 .btn.sm{padding:8px 14px;font-size:13px}
@@ -255,7 +256,7 @@ tr.me td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
 .flag{font-size:15px;line-height:1;margin-right:4px}
 /* HERO LIVERY */
 .livery{position:absolute;right:-40px;top:0;bottom:0;width:min(40%,420px);display:flex;gap:18px;justify-content:flex-end;pointer-events:none;z-index:0}
-.livery i{width:38px;height:100%;background:var(--hc,#e4002b);transform:skewX(-18deg);opacity:.18}
+.livery i{width:38px;height:100%;background:#fff;transform:skewX(-18deg);opacity:.08}
 .livery i:nth-child(2){opacity:.32;width:22px}.livery i:nth-child(3){opacity:.55;width:10px}
 @media (max-width:640px){.livery{width:50%;gap:10px}.livery i{width:20px}}
 td.tc{box-shadow:inset 4px 0 0 var(--tcol,transparent)}
@@ -648,7 +649,7 @@ function renderCareerSel(){
 }
 function renderHero(){
   const c=career(), me=rider(playerId()), focus=(tab==='riders'&&detailRider)?rider(detailRider):me;
-  const hc=focus?riderColor(focus):'#e4002b'; $('#hero').style.setProperty('--hc',hc);
+  const hc=focus?riderColor(focus):'#ff0a14'; $('#hero').style.setProperty('--hc',hc);
   const cta=$('#heroCta'); cta.innerHTML='';
   if(!c){
     $('#heroNum').textContent='00'; $('#heroEyebrow').textContent=loaded?'Willkommen':'Lade…';
@@ -1020,7 +1021,7 @@ async function editTeam(t){
   const ok=await ask(isNew?'Team hinzufügen':'Team bearbeiten','',{ok:'Speichern',extra:`<div class="mgrid">
     <label class="f w2"><span>Teamname</span><input id="m-tname" value="${esc(t.name||'')}"></label>
     <label class="f"><span>Hersteller</span><input id="m-tbike" list="bikeList" value="${esc(t.bike||'')}"></label>
-    <label class="f"><span>Teamfarbe</span><input id="m-tcol" type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(t.color||'')?t.color:'#e4002b')}"></label>
+    <label class="f"><span>Teamfarbe</span><input id="m-tcol" type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(t.color||'')?t.color:'#ff0a14')}"></label>
     <label class="f"><span>Reihenfolge</span><input id="m-tord" type="number" min="1" value="${esc(t.order??'')}"></label></div>`});
   if(!ok)return;
   const n={...t,name:$('#m-tname').value.trim(),bike:$('#m-tbike').value.trim(),color:$('#m-tcol').value,order:num($('#m-tord').value)};
