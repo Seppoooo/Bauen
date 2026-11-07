@@ -72,6 +72,40 @@ def _f(v, scale=1.0):
     return float(v) * scale if v >= 0 else -1.0
 
 
+def _standings(d: R3EShared, my_position: int) -> list[dict]:
+    """Field in place order with each car's gap to the player.
+
+    Gaps are built by chaining each car's time_delta_front, so they are only as
+    good as the game's own interval data (cars a lap down have no interval).
+    """
+    n = max(0, min(d.num_cars, len(d.all_drivers_data_1)))
+    rows = []
+    for i in range(n):
+        dd = d.all_drivers_data_1[i]
+        if dd.place <= 0:
+            continue
+        last = dd.sector_time_previous_self[2]     # sector times are cumulative
+        rows.append({"pos": dd.place, "name": decode_name(dd.driver_info.name),
+                     "interval": dd.time_delta_front if dd.time_delta_front >= 0 else None,
+                     "laps": dd.completed_laps, "pit": dd.in_pitlane == 1,
+                     "last": last if last > 0 else -1.0, "me": dd.place == my_position})
+    rows.sort(key=lambda r: r["pos"])
+    me = next((i for i, r in enumerate(rows) if r["me"]), None)
+    for i, r in enumerate(rows):
+        r["gap"] = None
+        if me is None:
+            continue
+        lo, hi, sign = (i + 1, me + 1, -1.0) if i < me else (me + 1, i + 1, 1.0)
+        chain = [rows[k]["interval"] for k in range(lo, hi)]
+        if i == me:
+            r["gap"] = 0.0
+        elif all(c is not None for c in chain):
+            r["gap"] = sign * sum(chain)
+    for r in rows:
+        r.pop("interval")
+    return rows
+
+
 def convert(d: R3EShared) -> M.Snapshot:
     """Translate the raw R3E struct into a game-independent Snapshot."""
     s = M.Snapshot(connected=True)
@@ -105,18 +139,21 @@ def convert(d: R3EShared) -> M.Snapshot:
 
     s.gap_ahead = _f(d.time_delta_front)
     s.gap_behind = _f(d.time_delta_behind)
-    # all_drivers_data_1 is sorted by place
-    n = min(s.num_cars, len(d.all_drivers_data_1))
-    for i in range(n):
-        place = d.all_drivers_data_1[i].place
-        if place == s.position - 1:
-            s.name_ahead = decode_name(d.all_drivers_data_1[i].driver_info.name)
-        elif place == s.position + 1:
-            s.name_behind = decode_name(d.all_drivers_data_1[i].driver_info.name)
+    s.standings = _standings(d, s.position)
+    for row in s.standings:
+        if row["pos"] == s.position - 1:
+            s.name_ahead = row["name"]
+        elif row["pos"] == s.position + 1:
+            s.name_behind = row["name"]
 
     s.speed_kmh = max(0.0, d.car_speed * 3.6)
     s.gear = d.gear
-    s.rpm = d.engine_rps * 60 / (2 * 3.141592653589793) if d.engine_rps > 0 else 0.0
+    to_rpm = 60 / (2 * 3.141592653589793)
+    s.rpm = d.engine_rps * to_rpm if d.engine_rps > 0 else 0.0
+    s.rpm_max = d.max_engine_rps * to_rpm if d.max_engine_rps > 0 else -1.0
+    s.rpm_shift = d.upshift_rps * to_rpm if d.upshift_rps > 0 else -1.0
+    s.throttle = d.throttle if d.throttle >= 0 else -1.0
+    s.brake = d.brake if d.brake >= 0 else -1.0
 
     s.fuel_left = _f(d.fuel_left)
     s.fuel_capacity = _f(d.fuel_capacity)
@@ -126,6 +163,7 @@ def convert(d: R3EShared) -> M.Snapshot:
         t = d.tire_temp[i]
         temps = [x for x in t.current_temp if x > -1]
         s.tire_temp[i] = sum(temps) / len(temps) if temps else -1.0
+        s.tire_temp_zones[i] = [float(x) if x > -1 else -1.0 for x in t.current_temp]
         s.tire_temp_cold[i] = t.cold_temp
         s.tire_temp_optimal[i] = t.optimal_temp
         s.tire_temp_hot[i] = t.hot_temp

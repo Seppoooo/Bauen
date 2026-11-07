@@ -104,8 +104,8 @@ def main():
 
             while pending_commands:
                 cmd = pending_commands.pop(0)
-                if cmd == "status":
-                    for callout in engineer.status_report():
+                if cmd in ("status", "fuel", "gaps", "tires"):
+                    for callout in engineer.report(cmd):
                         emit(callout)
                 elif cmd == "toggle_voice":
                     voice_on["value"] = not voice_on["value"] and speaker.enabled

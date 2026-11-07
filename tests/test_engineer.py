@@ -114,6 +114,22 @@ class EngineerRulesTest(unittest.TestCase):
         self.assertEqual(r.feed(race_snap(2, damage_engine=0.3)), [])
 
 
+class ReportTest(unittest.TestCase):
+    def test_reports_and_lap_history(self):
+        src = DemoSource()
+        r = Runner()
+        while src.completed < 4:
+            src.step(0.05)
+            r.feed(src.snapshot())
+        laps = r.eng.strategy()["laps"]
+        self.assertEqual([l["lap"] for l in laps], [1, 2, 3, 4])
+        self.assertTrue(all(l["fuel"] for l in laps[1:]))
+        fuel = r.eng.report("fuel")[0].text
+        self.assertIn("Liter im Tank", fuel)
+        self.assertIn("P", r.eng.report("gaps")[0].text)
+        self.assertIn("Prozent", r.eng.report("tires")[0].text)
+
+
 class FuelTrackerTest(unittest.TestCase):
     def test_pit_laps_ignored(self):
         f = FuelTracker()

@@ -122,6 +122,7 @@ class Engineer:
         self._fuel_level = 0
         self._pending_lap = None
         self._best_lap_seen = -1.0
+        self.laps: list[dict] = []          # history for the dashboard
         self.last_snapshot: Snapshot | None = None
 
     def _ready(self, key: str, seconds: float, now: float) -> bool:
@@ -148,7 +149,7 @@ class Engineer:
         s = self.last_snapshot
         per = self.fuel.per_lap
         out = {"fuel_per_lap": per, "fuel_laps_left": None, "race_laps_left": None,
-               "fuel_to_add": None, "avg_lap": self.fuel.avg_lap}
+               "fuel_to_add": None, "avg_lap": self.fuel.avg_lap, "laps": self.laps[-60:]}
         if s is None:
             return out
         out["fuel_laps_left"] = self.fuel.laps_left(s.fuel_left)
@@ -196,6 +197,54 @@ class Engineer:
         self._battles(s, now, say)
         out.sort(key=lambda c: c.priority)
         return out
+
+    def report(self, kind: str) -> list[Callout]:
+        """Answer a question from the driver: status, fuel, gaps or tires."""
+        s = self.last_snapshot
+        if kind == "status" or s is None:
+            return self.status_report()
+        if kind == "fuel":
+            strat = self.strategy()
+            if not s.fuel_use_active:
+                text = "Spritverbrauch ist in dieser Session aus."
+            elif self.fuel.per_lap is None:
+                text = f"Im Tank sind {num(s.fuel_left)} Liter. Für den Verbrauch brauche ich noch eine volle Runde."
+            else:
+                text = (f"{num(s.fuel_left)} Liter im Tank, Verbrauch {num(self.fuel.per_lap)} pro Runde, "
+                        f"das reicht für {self._laps_word(strat['fuel_laps_left'])}.")
+                if strat["fuel_to_add"] is not None:
+                    text += (f" Bis ins Ziel fehlen {num(strat['fuel_to_add'], 0)} Liter."
+                             if strat["fuel_to_add"] > 0.5 else " Reicht bis ins Ziel.")
+            return [Callout(text, HIGH, "status")]
+        if kind == "gaps":
+            parts = [f"P{s.position} von {s.num_cars}."] if s.position > 0 else []
+            if s.gap_ahead > 0:
+                parts.append(f"Vorne {gap_text(s.gap_ahead)}" + (f" auf {s.name_ahead}." if s.name_ahead else "."))
+            if s.gap_behind > 0:
+                parts.append(f"Hinten {gap_text(s.gap_behind)}" + (f" zu {s.name_behind}." if s.name_behind else "."))
+            if len(self.laps) >= 2 and self.laps[-1]["gap_ahead"] and self.laps[-2]["gap_ahead"]:
+                diff = self.laps[-2]["gap_ahead"] - self.laps[-1]["gap_ahead"]
+                if abs(diff) >= 0.1:
+                    parts.append(f"Letzte Runde {'aufgeholt' if diff > 0 else 'verloren'}: {gap_text(abs(diff))}.")
+            return [Callout(" ".join(parts) or "Keine Abstände verfügbar.", HIGH, "status")]
+        if kind == "tires":
+            parts = []
+            temps = [t for t in s.tire_temp if t > 0]
+            if temps:
+                hot = [i for i in range(4) if s.tire_temp_hot[i] > 0 and s.tire_temp[i] > s.tire_temp_hot[i]]
+                cold = [i for i in range(4) if 0 < s.tire_temp[i] < s.tire_temp_cold[i]]
+                if hot:
+                    parts.append(f"{cap(tires_text(hot))} sind zu heiß.")
+                if cold:
+                    parts.append(f"{cap(tires_text(cold))} sind zu kalt.")
+                if not hot and not cold:
+                    parts.append("Reifentemperaturen sind im Fenster.")
+            wear = [w for w in s.tire_wear if w >= 0]
+            if wear:
+                worst = min(range(4), key=lambda i: s.tire_wear[i] if s.tire_wear[i] >= 0 else 9)
+                parts.append(f"Am meisten abgefahren: {M.TIRE_NAMES[worst]} mit {round(s.tire_wear[worst] * 100)} Prozent.")
+            return [Callout(" ".join(parts) or "Keine Reifendaten.", HIGH, "status")]
+        return []
 
     def status_report(self) -> list[Callout]:
         s = self.last_snapshot
@@ -320,7 +369,14 @@ class Engineer:
 
     def _lap_completed(self, s, p, now, say):
         valid = s.last_lap_valid
+        used = (self.fuel.lap_start_fuel - s.fuel_left
+                if self.fuel.lap_start_fuel is not None and not self.fuel.lap_tainted else None)
         self.fuel.on_lap(s.fuel_left, s.last_lap, valid)
+        self.laps.append({"lap": s.completed_laps, "time": round(s.last_lap, 3), "valid": valid,
+                          "fuel": round(used, 2) if used is not None and used > 0 else None,
+                          "pos": s.position,
+                          "gap_ahead": round(s.gap_ahead, 2) if s.gap_ahead > 0 else None,
+                          "gap_behind": round(s.gap_behind, 2) if s.gap_behind > 0 else None})
         lap = s.last_lap
         is_race = s.session_type == M.RACE
         new_pb = valid and lap > 0 and s.best_lap > 0 and abs(s.best_lap - lap) < 0.001 \

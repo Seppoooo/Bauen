@@ -52,12 +52,18 @@ class Snapshot:
     speed_kmh: float = 0.0
     gear: int = 0
     rpm: float = 0.0
+    rpm_max: float = -1.0
+    rpm_shift: float = -1.0
+    throttle: float = -1.0       # 0..1
+    brake: float = -1.0          # 0..1
 
     fuel_left: float = -1.0
     fuel_capacity: float = -1.0
     fuel_use_active: bool = True
 
     tire_temp: list = field(default_factory=lambda: [-1.0] * 4)      # avg tread temp
+    # left / centre / right tread temperature per tire
+    tire_temp_zones: list = field(default_factory=lambda: [[-1.0] * 3 for _ in range(4)])
     tire_temp_cold: list = field(default_factory=lambda: [-1.0] * 4)
     tire_temp_optimal: list = field(default_factory=lambda: [-1.0] * 4)
     tire_temp_hot: list = field(default_factory=lambda: [-1.0] * 4)
@@ -90,6 +96,10 @@ class Snapshot:
     pit_limiter: bool = False
     pit_speed_limit_kmh: float = -1.0
     pit_window_status: int = -1       # 0 disabled, 1 closed, 2 open, 3 stopped, 4 completed
+
+    # Whole field in race order: {"pos", "name", "gap" (s to player, <0 = ahead),
+    # "laps", "pit", "last", "me"}
+    standings: list = field(default_factory=list)
 
     timestamp: float = field(default_factory=time.monotonic)
 

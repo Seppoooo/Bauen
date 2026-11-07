@@ -28,6 +28,7 @@ class DashboardTest(unittest.TestCase):
 
     def test_index_and_command(self):
         html = urllib.request.urlopen(self.base + "/").read().decode()
+        self.assertTrue(html.startswith("<!doctype html>"))
         self.assertIn("Race", html)
         got = []
         self.hub.on_command = got.append

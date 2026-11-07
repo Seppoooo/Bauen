@@ -9,6 +9,10 @@ import socket
 import threading
 
 WEB_DIR = Path(__file__).parent / "web"
+# index.html is written as a page fragment (title, style, markup); the server
+# supplies the document skeleton around it.
+PAGE_HEAD = (b'<!doctype html>\n<html lang="de"><meta charset="utf-8">\n'
+             b'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n')
 
 
 class Hub:
@@ -61,6 +65,8 @@ def _make_handler(hub: Hub):
         def do_GET(self):
             if self.path in ("/", "/index.html"):
                 body = (WEB_DIR / "index.html").read_bytes()
+                if not body.lstrip().lower().startswith(b"<!doctype"):
+                    body = PAGE_HEAD + body
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))

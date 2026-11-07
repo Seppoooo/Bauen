@@ -80,6 +80,15 @@ class ConvertTest(unittest.TestCase):
         self.assertEqual(s.yellow_sector, 3)
         self.assertEqual(s.total_laps, -1)
 
+    def test_standings_gaps(self):
+        d = self.make()
+        for i, interval in enumerate([-1.0, 1.5, 2.0]):     # leader has no car in front
+            d.all_drivers_data_1[i].time_delta_front = interval
+        rows = convert(d).standings
+        self.assertEqual([r["pos"] for r in rows], [1, 2, 3])
+        self.assertEqual([r["gap"] for r in rows], [-1.5, 0.0, 2.0])
+        self.assertTrue(rows[1]["me"])
+
     def test_menu_is_inactive(self):
         d = self.make()
         d.game_in_menus = 1

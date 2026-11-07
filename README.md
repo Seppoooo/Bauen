@@ -35,9 +35,14 @@ Veraltete Ansagen werden verworfen (du hörst nichts mehr über eine gelbe Flagg
 
 ### Im Dashboard
 
-- **Status abfragen** – der Engineer fasst die Lage zusammen (Position, Abstände, Sprit, Reifen). Tipp: Auf dem Handy als Button neben dem Lenkrad.
-- **Im Browser vorlesen** – die Ansagen kommen zusätzlich aus dem Handy/Tablet (z.B. wenn dein Headset am Handy hängt).
-- **PC-Stimme an/aus** – Sprachausgabe am PC stummschalten.
+- **Funk-Zeile** oben: die letzte Ansage groß zum Mitlesen, darunter Flaggen als farbiges Band (Gelb, Blau, Schwarz, Zielflagge, „Pit Limiter!“).
+- **Rennlage**: Position (mit Plätzen seit dem Start), Runde mit Fortschritt, Live-Delta zur Bestzeit als Balken, Abstände nach vorne/hinten mit Trend der letzten Runde.
+- **Reifen & Bremsen**: Auto von oben, jeder Reifen in drei Zonen (außen/Mitte/innen) nach Temperatur eingefärbt, Gummi-Rest, Druck, Bremstemperatur.
+- **Sprit-Strategie**: „Reicht bis ins Ziel“ oder „Es fehlen X Liter“, Reichweite und Restrunden direkt nebeneinander.
+- **Fahrzeug**: Gang, Speed, Schaltblitz, Gas/Bremse, Schaden.
+- **Rundenzeiten- und Abstands-Grafik** (mit Tabelle), **Klassement** mit Abstand zu dir, **Funkprotokoll** mit Filtern.
+- **Frag ihn: Lage / Sprit / Abstände / Reifen** – der Engineer antwortet per Funk.
+- **Hier vorlesen** (Ansagen kommen aus Handy/Tablet), **PC-Stimme** an/aus, **Display wach** (Handy-Bildschirm bleibt an), **Vollbild**.
 
 ## Einstellungen
 
@@ -69,6 +74,7 @@ RaceRoom ──($R3E Shared Memory)──▶ games/r3e.py ──▶ Snapshot ─
 - `race_engineer/games/r3e_struct.py` – exakte Abbildung der offiziellen RaceRoom-Schnittstelle ([sector3studios/r3e-api](https://github.com/sector3studios/r3e-api), Version 3.6); Größe und Feld-Offsets werden in den Tests gegen den C-Header geprüft.
 - `race_engineer/engineer.py` – die Regeln: was wann gesagt wird, Sprit-Rechnung, Cooldowns.
 - `race_engineer/games/demo.py` – Rennsimulation zum Testen.
+- `race_engineer/web/index.html` – das Dashboard. Liegt eine `demo-replay.json` daneben (erzeugt mit `python tools/record_demo.py`), spielt es dieses aufgezeichnete Rennen ab statt live zu verbinden – so funktioniert die Online-Vorschau.
 - Das Datenmodell (`model.py`) ist spielunabhängig – weitere Spiele lassen sich als neue Quelle in `games/` ergänzen.
 
 Tests ausführen: `python -m unittest discover -s tests -t .`

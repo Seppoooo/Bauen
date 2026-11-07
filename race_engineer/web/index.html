@@ -1,281 +1,990 @@
-<!doctype html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Race Engineer</title>
+<title>RaceRoom Race Engineer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  :root {
-    --bg: #0d0f12; --panel: #161a20; --line: #262c35; --text: #e8ecf1; --muted: #8a94a3;
-    --good: #2fbf71; --warn: #f2b134; --bad: #ef4b4b; --cold: #4aa3ff; --accent: #ff6a1a;
+/* Layout: pit-wall monitor. Sticky header with the engineer's last radio call,
+   a command strip (position, lap, delta, gaps), then instrument panels on a
+   12-column grid that collapses to one column on a phone. */
+:root {
+  --bg: #0b0f13;
+  --panel: #121920;
+  --panel-2: #19222b;
+  --line: #24303b;
+  --ink: #e7edf2;
+  --ink-2: #aab6c1;
+  --muted: #7b8996;
+  --accent: #ff6b1a;
+  --accent-soft: rgba(255, 107, 26, .14);
+  --on-accent: #ffffff;
+  --good: #2fbf71;
+  --warn: #f5b81c;
+  --bad: #ef4b4b;
+  --cold: #4aa3ff;
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --flag-yellow: #ffd400;
+  --flag-blue: #1f6bff;
+  --flag-ink: #0b0f13;
+  --checker-a: #f4f6f8;
+  --checker-b: #c9d0d6;
+
+  --font-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif-condensed, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius: 10px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #e9eef2; --panel: #ffffff; --panel-2: #f2f5f8; --line: #d5dde4;
+    --ink: #0d1318; --ink-2: #3a4652; --muted: #5f6c78;
+    --accent: #d9530b; --accent-soft: rgba(217, 83, 11, .12); --on-accent: #ffffff;
+    --good: #0a8f4a; --warn: #a86f00; --bad: #c93434; --cold: #1f6fd6;
+    --series-1: #2a78d6; --series-2: #1baf7a;
+    --flag-yellow: #ffd400; --flag-blue: #1f5fe0; --flag-ink: #0b0f13;
+    --checker-a: #ffffff; --checker-b: #cfd6dc;
+    color-scheme: light;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-         font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
-           padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  header h1 { font-size: 17px; margin: 0; letter-spacing: .02em; }
-  header h1 span { color: var(--accent); }
-  .pill { padding: 3px 10px; border-radius: 999px; font-size: 13px; background: var(--line); }
-  .pill.on { background: rgba(47,191,113,.18); color: var(--good); }
-  .pill.off { background: rgba(239,75,75,.15); color: var(--bad); }
-  #session { color: var(--muted); font-size: 14px; }
-  .controls { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  button { background: var(--accent); color: #fff; border: 0; border-radius: 8px;
-           padding: 8px 14px; font-weight: 600; cursor: pointer; font-size: 14px; }
-  button.ghost { background: var(--line); color: var(--text); }
-  label.chk { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
-  #flag { display: none; padding: 12px 16px; font-weight: 800; font-size: 20px; text-align: center;
-          letter-spacing: .05em; }
-  #flag.yellow { display: block; background: #f5d000; color: #111; }
-  #flag.blue { display: block; background: #1e6cff; color: #fff; }
-  #flag.black { display: block; background: #000; color: #fff; border-bottom: 2px solid #fff; }
-  #flag.white { display: block; background: #f4f4f4; color: #111; }
-  #flag.checkered { display: block; color: #111;
-    background: repeating-conic-gradient(#fff 0 25%, #ddd 0 50%) 0 0 / 24px 24px; }
-  #flag.pit { display: block; background: var(--accent); color: #fff; }
-  main { display: grid; gap: 12px; padding: 12px 16px 24px;
-         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
-  .card h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
-             color: var(--muted); font-weight: 600; }
-  .big { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .big div { min-width: 0; }
-  .lbl { color: var(--muted); font-size: 12px; }
-  .val { font-size: clamp(22px, 2.4vw, 30px); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
-         overflow: hidden; text-overflow: ellipsis; }
-  .val.sm { font-size: clamp(18px, 1.8vw, 22px); }
-  .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0;
-         border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-  .row:last-child { border-bottom: 0; }
-  .row b { font-weight: 600; }
-  .neg { color: var(--good); } .pos { color: var(--bad); }
-  .gap { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
-  .gap .name { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .car { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .tire { border-radius: 10px; padding: 10px; background: var(--line); border-left: 6px solid var(--muted); }
-  .tire.opt { border-color: var(--good); } .tire.hot { border-color: var(--bad); }
-  .tire.cold { border-color: var(--cold); } .tire.warm { border-color: var(--warn); }
-  .tire .t { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .tire .sub { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 4px; }
-  .bar i { display: block; height: 100%; background: var(--good); }
-  #log { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; }
-  #log li { padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; background: var(--line);
-            border-left: 4px solid var(--muted); }
-  #log li.p0 { border-color: var(--bad); } #log li.p1 { border-color: var(--warn); }
-  #log li.p2 { border-color: var(--accent); }
-  #log time { color: var(--muted); font-size: 12px; margin-right: 8px; font-variant-numeric: tabular-nums; }
-  .wide { grid-column: 1 / -1; }
-  @media (min-width: 1000px) { .wide2 { grid-column: span 2; } }
-  @media (max-width: 420px) { main { grid-template-columns: 1fr; } .val { font-size: 24px; } .val.sm { font-size: 18px; } }
+}
+:root[data-theme="light"] {
+  --bg: #e9eef2; --panel: #ffffff; --panel-2: #f2f5f8; --line: #d5dde4;
+  --ink: #0d1318; --ink-2: #3a4652; --muted: #5f6c78;
+  --accent: #d9530b; --accent-soft: rgba(217, 83, 11, .12); --on-accent: #ffffff;
+  --good: #0a8f4a; --warn: #a86f00; --bad: #c93434; --cold: #1f6fd6;
+  --series-1: #2a78d6; --series-2: #1baf7a;
+  --flag-yellow: #ffd400; --flag-blue: #1f5fe0; --flag-ink: #0b0f13;
+  --checker-a: #ffffff; --checker-b: #cfd6dc;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+body { margin: 0; color: var(--ink); font: 15px/1.4 var(--font-body); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- header ---------- */
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel);
+  border-bottom: 1px solid var(--line); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-block: 10px; }
+.brand { font: 800 20px/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.brand svg { flex: none; }
+.brand b { color: var(--accent); font-weight: 800; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 500; background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line); white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.chip.on { color: var(--good); } .chip.on::before { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent); }
+.chip.off { color: var(--bad); } .chip.off::before { background: var(--bad); }
+.chip.demo { color: var(--accent); } .chip.demo::before { background: var(--accent); }
+.meta { color: var(--ink-2); font-size: 13.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 200px; }
+.clock { text-align: right; line-height: 1; }
+.clock .lbl { display: block; margin-bottom: 2px; }
+.clock .num { font-size: 26px; font-weight: 700; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-block: 0 10px; }
+.ask { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ask > span { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 2px; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 7px 12px;
+  font-weight: 600; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; line-height: 1.1; }
+.btn:hover { border-color: var(--ink-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.spacer { flex: 1; }
+.toggles { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- replay bar ---------- */
+.replay { display: flex; align-items: center; gap: 10px; padding-block: 8px; border-top: 1px dashed var(--line); flex-wrap: wrap; }
+.replay input[type=range] { flex: 1 1 160px; accent-color: var(--accent); min-width: 0; }
+.replay .note { color: var(--muted); font-size: 12.5px; }
+.replay select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+
+/* ---------- radio ticker ---------- */
+.radio { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding-block: 12px;
+  border-bottom: 1px solid var(--line); background: var(--bg); }
+.radio .eq { display: flex; gap: 3px; align-items: flex-end; height: 22px; width: 26px; }
+.radio .eq i { width: 4px; height: 6px; border-radius: 2px; background: var(--muted); }
+.radio.live .eq i { background: var(--accent); animation: eq 0.9s ease-in-out infinite; }
+.radio.live .eq i:nth-child(2) { animation-delay: .15s; } .radio.live .eq i:nth-child(3) { animation-delay: .3s; } .radio.live .eq i:nth-child(4) { animation-delay: .45s; }
+@keyframes eq { 0%, 100% { height: 5px; } 50% { height: 22px; } }
+.radio .msg { font: 600 clamp(18px, 2.4vw, 26px)/1.2 var(--font-display); letter-spacing: .01em; min-width: 0; text-wrap: balance; }
+.radio .msg.p0 { color: var(--bad); }
+.radio time { color: var(--muted); font: 12.5px var(--font-mono); white-space: nowrap; }
+
+/* ---------- flag band ---------- */
+#flag { font: 800 22px/1 var(--font-display); letter-spacing: .14em; text-transform: uppercase; text-align: center; padding-block: 12px; }
+#flag.yellow { background: var(--flag-yellow); color: var(--flag-ink); animation: pulse 1.2s ease-in-out infinite; }
+#flag.blue { background: var(--flag-blue); color: #ffffff; }
+#flag.black { background: #000000; color: #ffffff; box-shadow: inset 0 -3px 0 #ffffff; }
+#flag.white { background: var(--checker-a); color: var(--flag-ink); }
+#flag.checkered { color: var(--flag-ink); background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 28px 28px; }
+#flag.pit { background: var(--bad); color: #ffffff; animation: pulse .6s ease-in-out infinite; }
+@keyframes pulse { 50% { filter: brightness(.82); } }
+
+/* ---------- command strip ---------- */
+main { display: grid; gap: 12px; padding-block: 14px 28px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.strip { grid-column: 1 / -1; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  grid-template-columns: 1fr 1.1fr 1.3fr 1.2fr 1.2fr; }
+.tile { background: var(--panel); padding: 12px 14px 14px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.lbl { font-size: 11.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+.hero { font-size: clamp(38px, 4.4vw, 58px); font-weight: 700; line-height: .95; white-space: nowrap; }
+.hero small { font-size: .45em; color: var(--muted); font-weight: 600; margin-left: 2px; }
+.sub { color: var(--ink-2); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trend { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 13px; }
+.trend.good { color: var(--good); } .trend.bad { color: var(--bad); } .trend.flat { color: var(--muted); }
+.progress { height: 6px; border-radius: 3px; background: var(--panel-2); overflow: hidden; margin-top: 4px; }
+.progress i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.deltabar { position: relative; height: 10px; border-radius: 5px; background: var(--panel-2); margin-top: 6px; overflow: hidden; }
+.deltabar::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--ink-2); }
+.deltabar i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+.deltascale { display: flex; justify-content: space-between; color: var(--muted); font: 11px var(--font-mono); }
+.good-t { color: var(--good); } .bad-t { color: var(--bad); } .warn-t { color: var(--warn); }
+
+/* ---------- panels ---------- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.panel h2 { margin: 0; font: 700 15px/1 var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2);
+  display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.panel h2 .h-extra { font: 500 12.5px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } .span-7 { grid-column: span 7; } .span-12 { grid-column: 1 / -1; }
+
+/* tires */
+.tires { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; gap: 10px 12px; align-items: center; }
+.tires .car { grid-column: 2; grid-row: 1 / span 2; width: 112px; height: auto; max-width: 100%; }
+.tinfo { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tinfo.r { text-align: right; align-items: flex-end; }
+.tinfo .t { font-size: 30px; font-weight: 700; line-height: 1; }
+.tinfo .z { font: 12px var(--font-mono); color: var(--muted); }
+.wear { width: 100%; max-width: 120px; height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+.wear i { display: block; height: 100%; border-radius: 3px; }
+.tinfo .d { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.scale { display: grid; gap: 4px; }
+.scale .ramp { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--cold) 0%, var(--good) 45%, var(--good) 55%, var(--warn) 78%, var(--bad) 100%); }
+.scale .ticks { display: flex; justify-content: space-between; font: 11px var(--font-mono); color: var(--muted); }
+
+/* fuel */
+.fuelhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.fuelhead .hero { font-size: clamp(34px, 3.6vw, 46px); }
+.verdict { padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 14px; border: 1px solid currentColor; display: inline-flex; gap: 6px; align-items: center; }
+.verdict.good { color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); }
+.verdict.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.verdict.wait { color: var(--muted); }
+.compare { display: grid; gap: 8px; }
+.compare .row2 { display: grid; grid-template-columns: 9.5em 1fr 4.2em; gap: 10px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.compare .track { height: 12px; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+.compare .track i { display: block; height: 100%; border-radius: 6px; }
+.compare b { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 0; }
+.kv > * { padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.kv > :nth-last-child(-n+2) { border-bottom: 0; }
+.kv b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.kv span { color: var(--ink-2); }
+
+/* car */
+.cockpit { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+.gear { font-size: 74px; font-weight: 800; line-height: .85; width: 1.1em; text-align: center; }
+.speed .hero { font-size: 38px; }
+.lights { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin-top: 6px; }
+.lights i { height: 10px; border-radius: 2px; background: var(--panel-2); }
+.lights i.g { background: var(--good); } .lights i.y { background: var(--warn); } .lights i.r { background: var(--bad); }
+.lights.flash i { animation: flash .18s steps(1) infinite; }
+@keyframes flash { 50% { background: var(--cold); } }
+.pedals { display: flex; gap: 6px; height: 72px; }
+.pedals div { width: 16px; background: var(--panel-2); border-radius: 4px; position: relative; overflow: hidden; }
+.pedals i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 4px; }
+.pedals .thr i { background: var(--good); } .pedals .brk i { background: var(--bad); }
+.dmg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.dmg div { background: var(--panel-2); border-radius: 8px; padding: 8px; display: grid; gap: 4px; min-width: 0; }
+.dmg span { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dmg b { font: 700 20px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+
+/* charts */
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font: 11px var(--font-mono); fill: var(--muted); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.tip { position: absolute; pointer-events: none; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font-size: 12.5px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.25); transform: translate(-50%, -100%); z-index: 2; }
+.tip b { font-family: var(--font-display); font-size: 15px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 16px; height: 0; border-top: 2px solid; }
+.empty { color: var(--muted); font-size: 13.5px; padding: 18px 0; text-align: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 4px 10px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); font-weight: 600; }
+
+/* tables */
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; padding: 0 8px 6px; border-bottom: 1px solid var(--line); }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.r, th.r { text-align: right; }
+tr.me td { background: var(--accent-soft); font-weight: 600; }
+tr.me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.pos { font: 700 16px var(--font-display); width: 2.2em; }
+.pitchip { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; color: var(--warn); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 6px; }
+.best { color: var(--good); font-weight: 600; }
+
+/* radio log */
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filters button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+#log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 460px; overflow-y: auto; }
+#log li { display: grid; grid-template-columns: 4.6em auto 1fr; gap: 10px; align-items: baseline; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--line); }
+#log li.p0 { border-left-color: var(--bad); } #log li.p1 { border-left-color: var(--warn); } #log li.p2 { border-left-color: var(--accent); }
+#log time { font: 12px var(--font-mono); color: var(--muted); }
+#log .cat { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+#log .txt { min-width: 0; }
+#log li.fresh { animation: fresh 1.2s ease-out; }
+@keyframes fresh { from { background: var(--accent-soft); } }
+
+@media (max-width: 1100px) {
+  .strip { grid-template-columns: repeat(3, 1fr); }
+  .span-4 { grid-column: span 6; } .span-5, .span-7 { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .span-4, .span-5, .span-6, .span-7 { grid-column: 1 / -1; }
+  .strip { grid-template-columns: 1fr 1fr; }
+  .strip .tile.wide { grid-column: 1 / -1; }
+  .clock .num { font-size: 22px; }
+  .radio { grid-template-columns: auto 1fr; }
+  .radio time { display: none; }
+  header { position: static; }
+}
+@media (max-width: 420px) {
+  .hero { font-size: 34px; }
+  .gear { font-size: 60px; }
+  .compare .row2 { grid-template-columns: 7.5em 1fr 3.8em; }
+  .dmg { grid-template-columns: 1fr 1fr; }
+  .tires .car { width: 84px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
-</head>
-<body>
+
 <header>
-  <h1>Race <span>Engineer</span></h1>
-  <span id="conn" class="pill off">Keine Verbindung</span>
-  <span id="session"></span>
-  <div class="controls">
-    <label class="chk"><input type="checkbox" id="browserVoice"> Im Browser vorlesen</label>
-    <button class="ghost" id="muteBtn">PC-Stimme: an</button>
-    <button id="statusBtn">Status abfragen</button>
+  <div class="gutter bar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13a8 8 0 0 1 16 0" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/><rect x="2.5" y="12" width="4.5" height="8" rx="2" fill="var(--ink)"/><rect x="17" y="12" width="4.5" height="8" rx="2" fill="var(--ink)"/></svg>
+      Race <b>Engineer</b>
+    </div>
+    <span id="conn" class="chip off">Verbinde …</span>
+    <span id="meta" class="meta"></span>
+    <div class="clock"><span class="lbl" id="clockLbl">Restzeit</span><span class="num" id="clock">–</span></div>
+  </div>
+  <div class="gutter actions">
+    <div class="ask" role="group" aria-label="Frag den Engineer">
+      <span>Frag ihn</span>
+      <button class="btn primary" data-ask="status" type="button">Lage</button>
+      <button class="btn" data-ask="fuel" type="button">Sprit</button>
+      <button class="btn" data-ask="gaps" type="button">Abstände</button>
+      <button class="btn" data-ask="tires" type="button">Reifen</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="toggles">
+      <button class="btn" id="pcVoice" type="button" aria-pressed="true" title="Sprachausgabe am PC">PC-Stimme</button>
+      <button class="btn" id="browserVoice" type="button" aria-pressed="false" title="Ansagen auf diesem Gerät vorlesen">Hier vorlesen</button>
+      <button class="btn" id="wake" type="button" aria-pressed="false" title="Bildschirm nicht ausschalten">Display wach</button>
+      <button class="btn" id="fs" type="button" title="Vollbild">Vollbild</button>
+    </div>
+  </div>
+  <div class="gutter replay" id="replayBar" hidden>
+    <button class="btn" id="rpPlay" type="button">Pause</button>
+    <select id="rpSpeed" aria-label="Abspielgeschwindigkeit">
+      <option value="1">1×</option><option value="4" selected>4×</option><option value="10">10×</option><option value="25">25×</option>
+    </select>
+    <input type="range" id="rpSeek" min="0" max="1000" value="0" aria-label="Rennverlauf">
+    <span class="note" id="rpNote">Aufgezeichnetes Demo-Rennen, 12 Runden</span>
+  </div>
+  <div class="gutter radio" id="radio">
+    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="msg" id="radioMsg" aria-live="polite">Funk ist offen. Der Engineer meldet sich, sobald du fährst.</div>
+    <time id="radioTime"></time>
   </div>
 </header>
-<div id="flag"></div>
-<main>
-  <section class="card">
-    <h2>Rennen</h2>
-    <div class="big">
-      <div><div class="lbl">Position</div><div class="val" id="pos">–</div></div>
-      <div><div class="lbl">Runde</div><div class="val" id="lap">–</div></div>
-      <div><div class="lbl">Restzeit</div><div class="val sm" id="remain">–</div></div>
+<div id="flag" class="gutter" hidden></div>
+
+<main class="gutter">
+  <section class="strip" aria-label="Rennlage">
+    <div class="tile">
+      <span class="lbl">Position</span>
+      <span class="hero num" id="pos">–</span>
+      <span class="sub" id="posSub">&nbsp;</span>
+    </div>
+    <div class="tile">
+      <span class="lbl">Runde</span>
+      <span class="hero num" id="lap">–</span>
+      <div class="progress" title="Fortschritt der aktuellen Runde"><i id="lapProg" style="width:0"></i></div>
+      <span class="sub" id="lapSub">&nbsp;</span>
+    </div>
+    <div class="tile wide">
+      <span class="lbl">Delta zur Bestzeit</span>
+      <span class="hero num" id="delta">–</span>
+      <div class="deltabar"><i id="deltaBar"></i></div>
+      <div class="deltascale"><span>−1,0 s schneller</span><span>langsamer +1,0 s</span></div>
+    </div>
+    <div class="tile">
+      <span class="lbl">Vorne</span>
+      <span class="hero num" id="gapA">–</span>
+      <span class="sub" id="nameA">&nbsp;</span>
+      <span class="trend flat" id="trendA">&nbsp;</span>
+    </div>
+    <div class="tile">
+      <span class="lbl">Hinten</span>
+      <span class="hero num" id="gapB">–</span>
+      <span class="sub" id="nameB">&nbsp;</span>
+      <span class="trend flat" id="trendB">&nbsp;</span>
     </div>
   </section>
 
-  <section class="card">
-    <h2>Zeiten</h2>
-    <div class="big">
-      <div><div class="lbl">Aktuell</div><div class="val sm" id="cur">–</div></div>
-      <div><div class="lbl">Letzte</div><div class="val sm" id="last">–</div></div>
-      <div><div class="lbl">Beste</div><div class="val sm" id="best">–</div></div>
+  <section class="panel span-4" aria-labelledby="h-tires">
+    <h2 id="h-tires">Reifen &amp; Bremsen <span class="h-extra">außen · Mitte · innen</span></h2>
+    <div class="tires">
+      <div class="tinfo" id="ti0"></div>
+      <svg class="car" viewBox="0 0 120 230" role="img" aria-label="Reifentemperaturen von oben">
+        <path d="M40 18 h40 l6 22 v50 l10 18 v80 l-8 34 h-56 l-8 -34 v-80 l10 -18 v-50z" fill="var(--panel-2)" stroke="var(--line)" stroke-width="2"/>
+        <rect x="24" y="6" width="72" height="9" rx="3" fill="var(--line)"/>
+        <rect x="20" y="214" width="80" height="10" rx="3" fill="var(--line)"/>
+        <ellipse cx="60" cy="112" rx="13" ry="22" fill="var(--line)"/>
+        <g id="tireSvg"></g>
+      </svg>
+      <div class="tinfo r" id="ti1"></div>
+      <div class="tinfo" id="ti2"></div>
+      <div class="tinfo r" id="ti3"></div>
     </div>
-    <div class="row" style="margin-top:8px"><span>Delta zur Bestzeit</span><b id="delta">–</b></div>
-  </section>
-
-  <section class="card">
-    <h2>Abstände</h2>
-    <div class="gap">
-      <div><div class="lbl">Vorne</div><div class="name" id="nameAhead">–</div></div>
-      <div class="val sm" id="gapAhead">–</div>
-      <div><div class="lbl">Hinten</div><div class="name" id="nameBehind">–</div></div>
-      <div class="val sm" id="gapBehind">–</div>
+    <div class="scale" aria-hidden="true">
+      <div class="ramp"></div>
+      <div class="ticks"><span id="scCold">kalt</span><span id="scOpt">optimal</span><span id="scHot">heiß</span></div>
     </div>
   </section>
 
-  <section class="card">
-    <h2>Sprit</h2>
-    <div class="row"><span>Im Tank</span><b id="fuel">–</b></div>
-    <div class="row"><span>Verbrauch / Runde</span><b id="fuelPer">–</b></div>
-    <div class="row"><span>Reicht für</span><b id="fuelLaps">–</b></div>
-    <div class="row"><span>Rennrunden übrig</span><b id="raceLaps">–</b></div>
-    <div class="row"><span>Nachtanken bis Ziel</span><b id="fuelAdd">–</b></div>
+  <section class="panel span-4" aria-labelledby="h-fuel">
+    <h2 id="h-fuel">Sprit-Strategie <span class="h-extra" id="fuelSince"></span></h2>
+    <div class="fuelhead">
+      <div><div class="lbl">Im Tank</div><div class="hero num" id="fuel">–</div></div>
+      <span class="verdict wait" id="verdict">Messe Verbrauch …</span>
+    </div>
+    <div class="compare">
+      <div class="row2"><span>Sprit reicht für</span><div class="track"><i id="barFuel" style="width:0;background:var(--accent)"></i></div><b id="fuelLaps">–</b></div>
+      <div class="row2"><span>Rennen noch</span><div class="track"><i id="barRace" style="width:0;background:var(--ink-2)"></i></div><b id="raceLaps">–</b></div>
+    </div>
+    <div class="kv">
+      <span>Verbrauch pro Runde (Ø)</span><b id="fuelPer">–</b>
+      <span>Letzte Runde verbraucht</span><b id="fuelLast">–</b>
+      <span>Nachtanken bis ins Ziel</span><b id="fuelAdd">–</b>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>Reifen &amp; Bremsen</h2>
-    <div class="car" id="tires"></div>
+  <section class="panel span-4" aria-labelledby="h-car">
+    <h2 id="h-car">Fahrzeug <span class="h-extra" id="carName"></span></h2>
+    <div class="cockpit">
+      <div class="gear num" id="gear">–</div>
+      <div class="speed">
+        <div class="hero num" id="speed">–<small>km/h</small></div>
+        <div class="lights" id="lights" aria-hidden="true"></div>
+        <div class="sub num" id="rpm" style="margin-top:4px">– U/min</div>
+      </div>
+      <div class="pedals" aria-label="Pedale">
+        <div class="thr" title="Gas"><i id="thr"></i></div>
+        <div class="brk" title="Bremse"><i id="brk"></i></div>
+      </div>
+    </div>
+    <div class="dmg" id="dmg"></div>
   </section>
 
-  <section class="card">
-    <h2>Auto</h2>
-    <div class="row"><span>Speed</span><b id="speed">–</b></div>
-    <div class="row"><span>Gang</span><b id="gear">–</b></div>
-    <div id="damage"></div>
+  <section class="panel span-6" aria-labelledby="h-laps">
+    <h2 id="h-laps">Rundenzeiten
+      <span class="seg" role="group" aria-label="Ansicht">
+        <button type="button" id="lapViewChart" aria-pressed="true">Grafik</button>
+        <button type="button" id="lapViewTable" aria-pressed="false">Tabelle</button>
+      </span>
+    </h2>
+    <div class="chart" id="lapChart"></div>
+    <div class="tablewrap" id="lapTable" hidden></div>
   </section>
 
-  <section class="card wide">
-    <h2>Funk</h2>
+  <section class="panel span-6" aria-labelledby="h-gaps">
+    <h2 id="h-gaps">Abstände pro Runde</h2>
+    <div class="legend">
+      <span><i style="border-color:var(--series-1)"></i>Vorne</span>
+      <span><i style="border-color:var(--series-2);border-top-style:dashed"></i>Hinten</span>
+    </div>
+    <div class="chart" id="gapChart"></div>
+  </section>
+
+  <section class="panel span-5" aria-labelledby="h-field">
+    <h2 id="h-field">Klassement <span class="h-extra">Abstand zu dir</span></h2>
+    <div class="tablewrap" id="field"></div>
+  </section>
+
+  <section class="panel span-7" aria-labelledby="h-log">
+    <h2 id="h-log">Funkprotokoll</h2>
+    <div class="filters" role="group" aria-label="Filter">
+      <button type="button" data-filter="all" aria-pressed="true">Alles</button>
+      <button type="button" data-filter="race" aria-pressed="false">Rennen</button>
+      <button type="button" data-filter="strategy" aria-pressed="false">Strategie</button>
+      <button type="button" data-filter="flags" aria-pressed="false">Flaggen &amp; Strafen</button>
+      <button type="button" data-filter="car" aria-pressed="false">Auto</button>
+    </div>
     <ul id="log"></ul>
   </section>
 </main>
 
 <script>
+"use strict";
 const $ = id => document.getElementById(id);
-const TIRES = ["VL", "VR", "HL", "HR"];
+const TIRE_LABEL = ["Vorne links", "Vorne rechts", "Hinten links", "Hinten rechts"];
+const CAT_GROUP = { start: "race", race: "race", position: "race", gap: "race", battle: "race", lap: "race", session: "race",
+  fuel: "strategy", pit: "strategy", status: "strategy", flag: "flags", penalty: "flags", tires: "car", brakes: "car", damage: "car" };
+const CAT_NAME = { start: "Start", race: "Rennen", position: "Position", gap: "Abstand", battle: "Duell", lap: "Runde", session: "Session",
+  fuel: "Sprit", pit: "Box", status: "Abfrage", flag: "Flagge", penalty: "Strafe", tires: "Reifen", brakes: "Bremsen", damage: "Schaden", system: "System" };
 
-function fmtLap(t) {
-  if (t == null || t <= 0) return "–";
+// ---------------------------------------------------------------- formatting
+const de = (v, d = 1) => v.toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
+const ok = v => typeof v === "number" && isFinite(v) && v >= 0;
+function fmtLap(t, d = 3) {
+  if (!(t > 0)) return "–";
   const m = Math.floor(t / 60), s = t - m * 60;
-  return m ? `${m}:${s.toFixed(3).padStart(6, "0")}` : s.toFixed(3);
+  const ss = de(s, d);
+  return m ? `${m}:${s < 10 ? "0" : ""}${ss}` : ss;
 }
-function fmtGap(g) { return g == null || g <= 0 ? "–" : g.toFixed(1) + " s"; }
-function fmtTime(t) {
-  if (t == null || t < 0) return "–";
+function fmtClock(t) {
+  if (!ok(t)) return "–";
   const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = Math.floor(t % 60);
   return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
 }
-const n = (v, d = 1, unit = "") => v == null || v < 0 ? "–" : v.toFixed(d) + unit;
+const gapTxt = g => ok(g) && g > 0 ? de(g, 1) : "–";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-for (let i = 0; i < 4; i++) {
-  $("tires").insertAdjacentHTML("beforeend",
-    `<div class="tire" id="t${i}"><div class="lbl">${TIRES[i]}</div>
-     <div class="t" id="tt${i}">–</div>
-     <div class="sub" id="tw${i}">Abnutzung –</div>
-     <div class="bar"><i id="tb${i}" style="width:0"></i></div>
-     <div class="sub" id="tp${i}">–</div><div class="sub" id="tbk${i}">–</div></div>`);
+// theme tokens for colors computed in JS
+function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function hexToRgb(h) {
+  h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255];
+}
+function mix(a, b, f) { const A = hexToRgb(a), B = hexToRgb(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(",")})`; }
+function tempColor(t, cold, opt, hot) {
+  if (!(t > 0) || !(hot > 0)) return token("--line");
+  const C = token("--cold"), G = token("--good"), Y = token("--warn"), R = token("--bad");
+  if (t <= cold) return C;
+  if (t < opt - 3) return mix(C, G, (t - cold) / Math.max(1, opt - 3 - cold));
+  if (t <= opt + 3) return G;
+  const mid = (opt + 3 + hot) / 2;
+  if (t < mid) return mix(G, Y, (t - opt - 3) / Math.max(1, mid - opt - 3));
+  if (t < hot) return mix(Y, R, (t - mid) / Math.max(1, hot - mid));
+  return R;
 }
 
+// ---------------------------------------------------------------- state
+let state = null, mode = "live", lapView = "chart", filter = "all";
+let startPos = null, sessionKey = null;
+const logItems = [];
+let lastLapCount = -1;
+
+// diff > 0 is always good for the driver: closing on the car ahead / pulling away from the car behind
+function setTrend(el, diff, side) {
+  if (diff == null || Math.abs(diff) < 0.05) { el.className = "trend flat"; el.textContent = diff == null ? "\u00a0" : "± 0,0 s letzte Runde"; return; }
+  el.className = "trend " + (diff > 0 ? "good" : "bad");
+  const verb = side === "ahead" ? (diff > 0 ? "aufgeholt" : "verloren") : (diff > 0 ? "rausgefahren" : "kommt näher");
+  el.textContent = `${diff > 0 ? "▲" : "▼"} ${de(Math.abs(diff), 1)} s ${verb}`;
+}
+
+// ---------------------------------------------------------------- render
 function render(st) {
-  const s = st.snapshot, g = st.strategy;
+  state = st;
+  const s = st.snapshot, g = st.strategy || {}, laps = g.laps || [];
+  const key = [s.session_type, s.track, s.car].join("|");
+  if (key !== sessionKey) { sessionKey = key; startPos = null; }
+
+  // connection + meta
   const conn = $("conn");
-  if (!s.connected) { conn.textContent = "Warte auf " + st.source + " …"; conn.className = "pill off"; }
-  else if (!s.active) { conn.textContent = st.source + ": im Menü"; conn.className = "pill"; }
-  else { conn.textContent = st.source + " verbunden"; conn.className = "pill on"; }
+  if (mode === "replay") { conn.className = "chip demo"; conn.textContent = "Demo-Aufzeichnung"; }
+  else if (!s.connected) { conn.className = "chip off"; conn.textContent = "Warte auf " + st.source; }
+  else if (!s.active) { conn.className = "chip"; conn.textContent = st.source + ": Menü"; }
+  else { conn.className = "chip on"; conn.textContent = st.source + " live"; }
+  const names = { practice: "Training", qualify: "Qualifying", race: "Rennen", warmup: "Warm-up" };
+  $("meta").textContent = [names[s.session_type], s.track, s.driver && s.driver !== "Du" ? s.driver : ""].filter(Boolean).join(" · ") || "Keine Session";
+  $("carName").textContent = s.car || "";
+  if (ok(s.session_time_remaining)) { $("clockLbl").textContent = "Restzeit"; $("clock").textContent = fmtClock(s.session_time_remaining); }
+  else { $("clockLbl").textContent = "Rundenzeit"; $("clock").textContent = s.lap_time_current > 0 ? fmtLap(s.lap_time_current, 1) : "–"; }
+  if ("voice_on" in st) $("pcVoice").setAttribute("aria-pressed", st.voice_on ? "true" : "false");
 
-  const names = {practice: "Training", qualify: "Qualifying", race: "Rennen", warmup: "Warm-up"};
-  $("session").textContent = [names[s.session_type], s.track, s.car].filter(Boolean).join(" · ");
+  // position
+  if (s.position > 0) {
+    if (startPos == null && s.session_type === "race") startPos = s.position;
+    $("pos").innerHTML = `P${s.position}<small>/${s.num_cars}</small>`;
+    if (startPos != null && s.session_type === "race") {
+      const d = startPos - s.position;
+      $("posSub").innerHTML = d === 0 ? `Gestartet von P${startPos}` :
+        `<span class="${d > 0 ? "good-t" : "bad-t"}">${d > 0 ? "▲" : "▼"} ${Math.abs(d)}</span> seit dem Start (P${startPos})`;
+    } else $("posSub").textContent = s.best_lap > 0 ? "Bestzeit " + fmtLap(s.best_lap) : " ";
+  } else { $("pos").textContent = "–"; $("posSub").textContent = " "; }
 
-  $("pos").textContent = s.position > 0 ? `P${s.position}/${s.num_cars}` : "–";
+  // lap
   const lapNo = s.completed_laps >= 0 ? s.completed_laps + 1 : null;
-  $("lap").textContent = lapNo ? (s.total_laps > 0 ? `${Math.min(lapNo, s.total_laps)}/${s.total_laps}` : lapNo) : "–";
-  $("remain").textContent = fmtTime(s.session_time_remaining);
+  if (lapNo) {
+    $("lap").innerHTML = s.total_laps > 0 ? `${Math.min(lapNo, s.total_laps)}<small>/${s.total_laps}</small>` : String(lapNo);
+    const left = s.total_laps > 0 ? s.total_laps - s.completed_laps : null;
+    $("lapSub").textContent = s.flag_checkered ? "Im Ziel" : left === 1 ? "Letzte Runde" : left ? `Noch ${left} Runden` :
+      (g.race_laps_left != null ? `ca. ${de(g.race_laps_left, 1)} Runden übrig` : " ");
+  } else { $("lap").textContent = "–"; $("lapSub").textContent = " "; }
+  $("lapProg").style.width = (ok(s.lap_fraction) ? Math.min(1, s.lap_fraction) * 100 : 0) + "%";
 
-  $("cur").textContent = fmtLap(s.lap_time_current);
-  $("last").textContent = fmtLap(s.last_lap);
-  $("best").textContent = fmtLap(s.best_lap);
-  const d = $("delta");
-  if (s.delta_best > -100 && s.best_lap > 0) {
-    d.textContent = (s.delta_best > 0 ? "+" : "") + s.delta_best.toFixed(2);
-    d.className = s.delta_best > 0 ? "pos" : "neg";
-  } else { d.textContent = "–"; d.className = ""; }
+  // delta
+  const delta = $("delta"), bar = $("deltaBar");
+  if (s.best_lap > 0 && s.delta_best > -100) {
+    const d = s.delta_best;
+    delta.textContent = (d > 0 ? "+" : d < 0 ? "−" : "") + de(Math.abs(d), 2);
+    delta.className = "hero num " + (d > 0.02 ? "bad-t" : d < -0.02 ? "good-t" : "");
+    const w = Math.min(1, Math.abs(d)) * 50;
+    bar.style.left = d < 0 ? (50 - w) + "%" : "50%";
+    bar.style.width = w + "%";
+    bar.style.background = d < 0 ? "var(--good)" : "var(--bad)";
+  } else { delta.textContent = "–"; delta.className = "hero num"; bar.style.width = "0"; }
 
-  $("gapAhead").textContent = fmtGap(s.gap_ahead);
-  $("gapBehind").textContent = fmtGap(s.gap_behind);
-  $("nameAhead").textContent = s.name_ahead || "–";
-  $("nameBehind").textContent = s.name_behind || "–";
+  // gaps + trends (per lap, from history)
+  $("gapA").innerHTML = s.position > 1 && ok(s.gap_ahead) && s.gap_ahead > 0 ? `${gapTxt(s.gap_ahead)}<small>s</small>` : "–";
+  $("gapB").innerHTML = s.position < s.num_cars && ok(s.gap_behind) && s.gap_behind > 0 ? `${gapTxt(s.gap_behind)}<small>s</small>` : "–";
+  $("nameA").textContent = s.position === 1 ? "Du führst" : s.name_ahead || " ";
+  $("nameB").textContent = s.name_behind || " ";
+  const L = laps.length;
+  const ga = L >= 2 && laps[L - 1].gap_ahead && laps[L - 2].gap_ahead ? laps[L - 2].gap_ahead - laps[L - 1].gap_ahead : null;
+  const gb = L >= 2 && laps[L - 1].gap_behind && laps[L - 2].gap_behind ? laps[L - 1].gap_behind - laps[L - 2].gap_behind : null;
+  setTrend($("trendA"), ga, "ahead");
+  setTrend($("trendB"), gb, "behind");
 
-  $("fuel").textContent = n(s.fuel_left, 1, " l");
-  $("fuelPer").textContent = n(g.fuel_per_lap, 2, " l");
-  $("fuelLaps").textContent = n(g.fuel_laps_left, 1, " Rd");
-  $("raceLaps").textContent = n(g.race_laps_left, 1, " Rd");
-  const add = $("fuelAdd");
-  add.textContent = g.fuel_to_add == null ? "–" : g.fuel_to_add < 0.5 ? "reicht ✓" : g.fuel_to_add.toFixed(1) + " l";
-  add.className = g.fuel_to_add == null ? "" : g.fuel_to_add < 0.5 ? "neg" : "pos";
+  renderTires(s);
+  renderFuel(s, g, laps);
+  renderCar(s);
+  renderFlag(s);
+  renderField(s);
+  if (L !== lastLapCount) { lastLapCount = L; renderLapViews(laps); renderGapChart(laps); }
+}
 
+function renderTires(s) {
+  const pos = [[6, 34], [92, 34], [4, 150], [94, 150]];
+  let svg = "";
   for (let i = 0; i < 4; i++) {
-    const t = s.tire_temp[i], cold = s.tire_temp_cold[i], opt = s.tire_temp_optimal[i], hot = s.tire_temp_hot[i];
-    let cls = "tire";
-    if (t > 0 && hot > 0) {
-      if (t > hot) cls += " hot";
-      else if (t < cold) cls += " cold";
-      else if (Math.abs(t - opt) <= (hot - cold) * 0.2) cls += " opt";
-      else cls += " warm";
+    const [x, y] = pos[i], z = (s.tire_temp_zones || [])[i] || [-1, -1, -1];
+    const c = s.tire_temp_cold[i], o = s.tire_temp_optimal[i], h = s.tire_temp_hot[i];
+    for (let k = 0; k < 3; k++) {
+      svg += `<rect x="${x + k * 7.4}" y="${y}" width="6.6" height="46" rx="${k === 1 ? 0 : 2.5}" fill="${tempColor(z[k] > 0 ? z[k] : s.tire_temp[i], c, o, h)}"/>`;
     }
-    $("t" + i).className = cls;
-    $("tt" + i).textContent = t > 0 ? Math.round(t) + "°" : "–";
-    const w = s.tire_wear[i];
-    $("tw" + i).textContent = w >= 0 ? `Gummi ${Math.round(w * 100)} %` : "Abnutzung –";
-    const bar = $("tb" + i);
-    bar.style.width = (w >= 0 ? w * 100 : 0) + "%";
-    bar.style.background = w < 0.3 ? "var(--bad)" : w < 0.5 ? "var(--warn)" : "var(--good)";
-    const p = s.tire_pressure[i], b = s.brake_temp[i];
-    $("tp" + i).textContent = "Druck " + (p > 0 ? (p / 100).toFixed(2) + " bar" : "–");
-    $("tbk" + i).textContent = "Bremse " + (b > 0 ? Math.round(b) + "°" : "–");
+    const b = s.brake_temp[i], bh = s.brake_temp_hot[i];
+    const bc = b > 0 && bh > 0 ? (b > bh ? token("--bad") : b > bh * 0.8 ? token("--warn") : token("--muted")) : token("--line");
+    const bx = i % 2 === 0 ? x + 24 : x - 6;
+    svg += `<rect x="${bx}" y="${y + 13}" width="4" height="20" rx="2" fill="${bc}"/>`;
+    const t = s.tire_temp[i], w = s.tire_wear[i], p = s.tire_pressure[i];
+    const wcol = w < 0.3 ? "var(--bad)" : w < 0.5 ? "var(--warn)" : "var(--good)";
+    const zones = z[0] > 0 ? z.map(v => Math.round(v)).join(" · ") : "";
+    $("ti" + i).innerHTML = `
+      <span class="lbl">${TIRE_LABEL[i]}</span>
+      <span class="t num" style="color:${t > h && h > 0 ? "var(--bad)" : t > 0 && t < c ? "var(--cold)" : "var(--ink)"}">${t > 0 ? Math.round(t) + "°" : "–"}</span>
+      <span class="z">${zones}</span>
+      <div class="wear" title="Gummi"><i style="width:${w >= 0 ? w * 100 : 0}%;background:${wcol}"></i></div>
+      <span class="d">Gummi ${w >= 0 ? Math.round(w * 100) + " %" : "–"} · ${p > 0 ? de(p / 100, 2) + " bar" : "–"}</span>
+      <span class="d">Bremse ${b > 0 ? Math.round(b) + "°" : "–"}</span>`;
   }
+  $("tireSvg").innerHTML = svg;
+  if (s.tire_temp_hot[0] > 0) {
+    $("scCold").textContent = `kalt < ${Math.round(s.tire_temp_cold[0])}°`;
+    $("scOpt").textContent = `optimal ${Math.round(s.tire_temp_optimal[0])}°`;
+    $("scHot").textContent = `heiß > ${Math.round(s.tire_temp_hot[0])}°`;
+  }
+}
 
-  $("speed").textContent = Math.round(s.speed_kmh) + " km/h";
+function renderFuel(s, g, laps) {
+  $("fuel").innerHTML = ok(s.fuel_left) ? `${de(s.fuel_left, 1)}<small>l</small>` : "–";
+  $("fuelPer").textContent = g.fuel_per_lap ? de(g.fuel_per_lap, 2) + " l" : "–";
+  const lastUsed = [...laps].reverse().find(l => l.fuel);
+  $("fuelLast").textContent = lastUsed ? de(lastUsed.fuel, 2) + " l" : "–";
+  $("fuelSince").textContent = g.fuel_per_lap ? `Ø der letzten ${Math.min(5, laps.filter(l => l.fuel).length)} Runden` : "";
+  const fl = g.fuel_laps_left, rl = g.race_laps_left;
+  $("fuelLaps").textContent = fl != null ? de(fl, 1) + " Rd" : "–";
+  $("raceLaps").textContent = rl != null ? de(rl, 1) + " Rd" : "–";
+  const max = Math.max(fl || 0, rl || 0, 1);
+  $("barFuel").style.width = (fl != null ? fl / max * 100 : 0) + "%";
+  $("barRace").style.width = (rl != null ? rl / max * 100 : 0) + "%";
+  const v = $("verdict"), add = g.fuel_to_add;
+  if (!s.fuel_use_active) { v.className = "verdict wait"; v.textContent = "Verbrauch aus"; $("fuelAdd").textContent = "–"; }
+  else if (add == null) {
+    v.className = "verdict wait"; v.textContent = g.fuel_per_lap ? "Kein Rennen" : "Messe Verbrauch …";
+    $("fuelAdd").textContent = "–";
+  } else if (add < 0.5) {
+    v.className = "verdict good"; v.textContent = "✓ Reicht bis ins Ziel";
+    $("fuelAdd").textContent = "nichts";
+  } else {
+    v.className = "verdict bad"; v.textContent = `✕ Es fehlen ${de(add, 1)} l`;
+    $("fuelAdd").textContent = de(add, 1) + " l";
+  }
+  $("barFuel").style.background = add != null && add >= 0.5 ? "var(--bad)" : "var(--accent)";
+}
+
+function renderCar(s) {
   $("gear").textContent = s.gear === -1 ? "R" : s.gear === 0 ? "N" : s.gear > 0 ? s.gear : "–";
-  const dmg = [["Motor", s.damage_engine], ["Getriebe", s.damage_transmission],
-               ["Aero", s.damage_aero], ["Fahrwerk", s.damage_suspension]];
-  $("damage").innerHTML = dmg.map(([k, v]) => v < 0 ? "" :
-    `<div class="row"><span>${k}</span><b style="color:${v < .4 ? "var(--bad)" : v < .95 ? "var(--warn)" : "var(--good)"}">${Math.round(v * 100)} %</b></div>`).join("");
-
-  const flag = $("flag");
-  let f = "", txt = "";
-  if (s.flag_black) { f = "black"; txt = "SCHWARZE FLAGGE"; }
-  else if (s.flag_checkered) { f = "checkered"; txt = "ZIELFLAGGE"; }
-  else if (s.flag_yellow) { f = "yellow"; txt = "GELB" + (s.yellow_sector > 0 ? " – SEKTOR " + s.yellow_sector : ""); }
-  else if (s.flag_blue) { f = "blue"; txt = "BLAUE FLAGGE"; }
-  else if (s.in_pitlane && !s.pit_limiter) { f = "pit"; txt = "PIT LIMITER!"; }
-  else if (s.flag_white) { f = "white"; txt = "LETZTE RUNDE"; }
-  flag.className = f; flag.textContent = txt;
+  $("speed").innerHTML = `${Math.round(s.speed_kmh || 0)}<small>km/h</small>`;
+  $("rpm").textContent = s.rpm > 0 ? Math.round(s.rpm).toLocaleString("de-DE") + " U/min" : "– U/min";
+  const lights = $("lights");
+  if (!lights.children.length) lights.innerHTML = "<i></i>".repeat(12);
+  const max = s.rpm_max > 0 ? s.rpm_max : 8000, shift = s.rpm_shift > 0 ? s.rpm_shift : max * 0.93;
+  const lo = shift * 0.65, n = Math.max(0, Math.min(12, Math.round((s.rpm - lo) / (shift - lo) * 12)));
+  [...lights.children].forEach((el, i) => { el.className = i < n ? (i < 6 ? "g" : i < 10 ? "y" : "r") : ""; });
+  lights.classList.toggle("flash", s.rpm >= shift);
+  $("thr").style.height = (ok(s.throttle) ? s.throttle * 100 : 0) + "%";
+  $("brk").style.height = (ok(s.brake) ? s.brake * 100 : 0) + "%";
+  const dmg = [["Motor", s.damage_engine], ["Getriebe", s.damage_transmission], ["Aero", s.damage_aero], ["Fahrwerk", s.damage_suspension]];
+  $("dmg").innerHTML = dmg.map(([k, v]) => {
+    const col = v < 0 ? "var(--muted)" : v < 0.4 ? "var(--bad)" : v < 0.95 ? "var(--warn)" : "var(--good)";
+    const word = v < 0 ? "–" : v < 0.4 ? "schwer" : v < 0.75 ? "deutlich" : v < 0.95 ? "leicht" : "ok";
+    return `<div><span>${k} · ${word}</span><b style="color:${col}">${v >= 0 ? Math.round(v * 100) + "%" : "–"}</b></div>`;
+  }).join("");
 }
 
-function addCallout(c, speak) {
-  const li = document.createElement("li");
-  li.className = "p" + c.priority;
-  const t = new Date(c.time * 1000).toLocaleTimeString("de-DE");
-  li.innerHTML = `<time>${t}</time>`;
-  li.appendChild(document.createTextNode(c.text));
-  $("log").prepend(li);
-  while ($("log").children.length > 60) $("log").lastChild.remove();
-  if (speak && $("browserVoice").checked && "speechSynthesis" in window) {
-    const u = new SpeechSynthesisUtterance(c.text);
-    u.lang = "de-DE";
-    if (c.priority === 0) speechSynthesis.cancel();
-    speechSynthesis.speak(u);
+function renderFlag(s) {
+  const f = $("flag");
+  let cls = "", txt = "";
+  if (s.flag_black) { cls = "black"; txt = "Schwarze Flagge"; }
+  else if (s.in_pitlane && !s.pit_limiter && s.speed_kmh > 20) { cls = "pit"; txt = "Pit Limiter!"; }
+  else if (s.flag_checkered) { cls = "checkered"; txt = "Zielflagge"; }
+  else if (s.flag_yellow) { cls = "yellow"; txt = "Gelb" + (s.yellow_sector > 0 ? " · Sektor " + s.yellow_sector : "") + " · nicht überholen"; }
+  else if (s.flag_blue) { cls = "blue"; txt = "Blaue Flagge · Platz machen"; }
+  else if (s.flag_white) { cls = "white"; txt = "Letzte Runde"; }
+  f.hidden = !cls; f.className = "gutter " + cls; f.textContent = txt;
+}
+
+function renderField(s) {
+  const rows = s.standings || [];
+  if (!rows.length) { $("field").innerHTML = `<p class="empty">Das Feld erscheint, sobald die Session läuft.</p>`; return; }
+  let list = rows;
+  const me = rows.findIndex(r => r.me);
+  if (rows.length > 12 && me >= 0) {
+    const from = Math.max(0, Math.min(me - 5, rows.length - 11));
+    list = rows.slice(0, 1).concat(from > 1 ? [{ sep: true }] : [], rows.slice(Math.max(1, from), from + 11));
   }
+  const bestLast = Math.min(...rows.filter(r => r.last > 0).map(r => r.last));
+  $("field").innerHTML = `<table><thead><tr><th>Pos</th><th>Fahrer</th><th class="r">Abstand</th><th class="r">Letzte</th><th class="r">Rd</th></tr></thead><tbody>${
+    list.map(r => r.sep ? `<tr><td colspan="5" style="color:var(--muted);text-align:center">…</td></tr>` :
+      `<tr class="${r.me ? "me" : ""}"><td class="pos">${r.pos}</td>
+       <td>${esc(r.me ? (r.name === "Du" ? "Du" : r.name + " (du)") : r.name)}${r.pit ? '<span class="pitchip">BOX</span>' : ""}</td>
+       <td class="r">${r.me ? "–" : r.gap == null ? "–" : (r.gap < 0 ? "−" : "+") + de(Math.abs(r.gap), 1) + " s"}</td>
+       <td class="r ${r.last > 0 && r.last === bestLast ? "best" : ""}">${fmtLap(r.last)}</td>
+       <td class="r">${r.laps >= 0 ? r.laps : "–"}</td></tr>`).join("")}</tbody></table>`;
 }
 
-try { $("browserVoice").checked = localStorage.getItem("browserVoice") === "1"; } catch (e) {}
-$("browserVoice").onchange = e => { try { localStorage.setItem("browserVoice", e.target.checked ? "1" : "0"); } catch (_) {} };
-$("statusBtn").onclick = () => fetch("/api/status", {method: "POST"});
-$("muteBtn").onclick = () => fetch("/api/toggle_voice", {method: "POST"});
+// ---------------------------------------------------------------- charts
+const charts = {};
+function chartFrame(id, height) {
+  const el = $(id);
+  const w = Math.max(280, el.clientWidth || 600);
+  return { el, w, h: height, m: { l: 52, r: 96, t: 10, b: 26 } };
+}
+function niceTicks(lo, hi, n = 4) {
+  const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(k => span / k <= n) || 10 * mag;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+function attachHover(id, xs, onHover) {
+  const el = $(id), svg = el.querySelector("svg");
+  if (!svg) return;
+  let tip = el.querySelector(".tip");
+  if (!tip) { tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; el.appendChild(tip); }
+  const cross = svg.querySelector(".cross");
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    const x = (ev.clientX - r.left) * vb.width / r.width;
+    let best = 0; xs.forEach((v, i) => { if (Math.abs(v - x) < Math.abs(xs[best] - x)) best = i; });
+    const info = onHover(best);
+    if (!info) return;
+    cross.setAttribute("x1", xs[best]); cross.setAttribute("x2", xs[best]); cross.style.opacity = 1;
+    tip.innerHTML = info.html; tip.hidden = false;
+    tip.style.left = Math.min(Math.max(xs[best] * r.width / vb.width, 70), r.width - 70) + "px";
+    tip.style.top = (info.y * r.height / vb.height - 8) + "px";
+  };
+  svg.onpointermove = move; svg.onpointerdown = move;
+  svg.onpointerleave = () => { tip.hidden = true; cross.style.opacity = 0; };
+}
 
-let historyDone = false;
-function connect() {
-  const es = new EventSource("/events");
-  es.addEventListener("callout", e => addCallout(JSON.parse(e.data), historyDone));
-  es.addEventListener("state", e => {
-    historyDone = true;
-    const st = JSON.parse(e.data);
-    $("muteBtn").textContent = st.voice_on ? "PC-Stimme: an" : "PC-Stimme: aus";
-    render(st);
+function renderLapViews(laps) {
+  const timed = laps.filter(l => l.time > 0);
+  // ---- table
+  const best = Math.min(...timed.filter(l => l.valid).map(l => l.time));
+  $("lapTable").innerHTML = timed.length ? `<table><thead><tr><th>Rd</th><th class="r">Zeit</th><th class="r">zur Besten</th><th class="r">Sprit</th><th class="r">Pos</th><th class="r">Vorne</th><th class="r">Hinten</th></tr></thead><tbody>${
+    [...timed].reverse().map(l => `<tr><td>${l.lap}</td><td class="r ${l.time === best ? "best" : ""}">${fmtLap(l.time)}${l.valid ? "" : " ✕"}</td>
+      <td class="r">${l.time === best ? "Beste" : "+" + de(l.time - best, 3)}</td><td class="r">${l.fuel ? de(l.fuel, 2) + " l" : "–"}</td>
+      <td class="r">P${l.pos}</td><td class="r">${l.gap_ahead ? de(l.gap_ahead, 1) : "–"}</td><td class="r">${l.gap_behind ? de(l.gap_behind, 1) : "–"}</td></tr>`).join("")}</tbody></table>`
+    : `<p class="empty">Noch keine Runde gefahren.</p>`;
+
+  // ---- chart
+  const f = chartFrame("lapChart", 220), { w, h, m } = f;
+  if (timed.length < 2) { f.el.innerHTML = `<p class="empty">Ab der zweiten Runde siehst du hier deinen Rundenverlauf.</p>`; return; }
+  const valid = timed.filter(l => l.valid).map(l => l.time);
+  const bestT = Math.min(...(valid.length ? valid : timed.map(l => l.time)));
+  const cap = bestT + 4;
+  const top = Math.min(cap, Math.max(...timed.map(l => l.time)));
+  const lo = bestT - 0.3, hi = Math.max(top + 0.3, bestT + 1.2);
+  const x0 = m.l, x1 = w - m.r, y0 = h - m.b, y1 = m.t;
+  const n = timed.length;
+  const X = i => n === 1 ? (x0 + x1) / 2 : x0 + (x1 - x0) * i / (n - 1);
+  const Y = v => y0 - (Math.min(v, hi) - lo) / (hi - lo) * (y0 - y1);
+  const ticks = niceTicks(lo, hi, 4);
+  let svg = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Rundenzeiten pro Runde">`;
+  ticks.forEach(t => { svg += `<line class="grid" x1="${x0}" x2="${x1}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${x0 - 8}" y="${Y(t) + 4}" text-anchor="end">${fmtLap(t, 1)}</text>`; });
+  const step = Math.ceil(n / 12);
+  timed.forEach((l, i) => { if (i % step === 0 || i === n - 1) svg += `<text x="${X(i)}" y="${h - 8}" text-anchor="middle">${l.lap}</text>`; });
+  svg += `<line class="cross" x1="0" x2="0" y1="${y1}" y2="${y0}" stroke="var(--ink-2)" stroke-dasharray="3 3" style="opacity:0"/>`;
+  svg += `<line x1="${x0}" x2="${x1}" y1="${Y(bestT)}" y2="${Y(bestT)}" stroke="var(--good)" stroke-width="1" stroke-dasharray="4 4"/>`;
+  svg += `<text x="${x1 + 6}" y="${Y(bestT) + 4}" style="fill:var(--ink-2)">Beste ${fmtLap(bestT, 1)}</text>`;
+  svg += `<path d="${timed.map((l, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(l.time).toFixed(1)).join(" ")}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round"/>`;
+  timed.forEach((l, i) => {
+    const isBest = l.time === bestT, capped = l.time > hi;
+    const fill = !l.valid ? "var(--panel)" : isBest ? "var(--good)" : "var(--series-1)";
+    svg += capped ? `<path d="M${X(i) - 5} ${Y(hi) + 6} L${X(i)} ${Y(hi) - 2} L${X(i) + 5} ${Y(hi) + 6}z" fill="var(--series-1)"/>`
+      : `<circle cx="${X(i)}" cy="${Y(l.time)}" r="${isBest ? 5.5 : 4}" fill="${fill}" stroke="${l.valid ? "var(--panel)" : "var(--series-1)"}" stroke-width="2"/>`;
   });
-  es.onerror = () => { $("conn").textContent = "Engineer-Programm nicht erreichbar"; $("conn").className = "pill off"; };
+  const last = timed[n - 1];
+  if (last.time !== bestT) {
+    let ly = Y(Math.min(last.time, hi)) + 4;
+    if (Math.abs(ly - (Y(bestT) + 4)) < 14) ly = Y(bestT) - 12;   // keep clear of the best-lap label
+    svg += `<text x="${x1 + 6}" y="${ly}" style="fill:var(--ink)">Letzte ${fmtLap(last.time, 1)}</text>`;
+  }
+  svg += `</svg>`;
+  f.el.innerHTML = svg;
+  attachHover("lapChart", timed.map((_, i) => X(i)), i => {
+    const l = timed[i];
+    return { y: Y(Math.min(l.time, hi)), html: `Runde ${l.lap}<br><b>${fmtLap(l.time)}</b> ${l.time === bestT ? "· Beste" : "· +" + de(l.time - bestT, 3)}${l.valid ? "" : " · ungültig"}` };
+  });
 }
-connect();
+
+function renderGapChart(laps) {
+  const f = chartFrame("gapChart", 220), { w, h, m } = f;
+  const pts = laps.filter(l => l.gap_ahead || l.gap_behind);
+  if (pts.length < 2) { f.el.innerHTML = `<p class="empty">Hier siehst du ab der zweiten Rennrunde, ob du auf deinen Vordermann aufholst.</p>`; return; }
+  const max = Math.max(2, ...pts.map(l => Math.max(l.gap_ahead || 0, l.gap_behind || 0))) * 1.12;
+  const x0 = m.l, x1 = w - m.r, y0 = h - m.b, y1 = m.t, n = pts.length;
+  const X = i => x0 + (x1 - x0) * i / (n - 1);
+  const Y = v => y0 - v / max * (y0 - y1);
+  let svg = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Abstand nach vorne und hinten pro Runde">`;
+  niceTicks(0, max, 4).forEach(t => { svg += `<line class="grid" x1="${x0}" x2="${x1}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${x0 - 8}" y="${Y(t) + 4}" text-anchor="end">${de(t, t % 1 ? 1 : 0)} s</text>`; });
+  const step = Math.ceil(n / 12);
+  pts.forEach((l, i) => { if (i % step === 0 || i === n - 1) svg += `<text x="${X(i)}" y="${h - 8}" text-anchor="middle">${l.lap}</text>`; });
+  svg += `<line class="cross" x1="0" x2="0" y1="${y1}" y2="${y0}" stroke="var(--ink-2)" stroke-dasharray="3 3" style="opacity:0"/>`;
+  const line = (k, color, dash) => {
+    const seg = pts.map((l, i) => l[k] ? [X(i), Y(l[k])] : null);
+    let d = "", pen = false;
+    seg.forEach(p => { if (!p) { pen = false; return; } d += (pen ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1) + " "; pen = true; });
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" ${dash ? 'stroke-dasharray="6 4"' : ""}/>`;
+  };
+  svg += line("gap_ahead", "var(--series-1)", false) + line("gap_behind", "var(--series-2)", true);
+  const end = (k, label, color) => {
+    const l = [...pts].reverse().find(p => p[k]); if (!l) return { y: null, s: "" };
+    const i = pts.indexOf(l);
+    return { y: Y(l[k]), s: `<circle cx="${X(i)}" cy="${Y(l[k])}" r="4.5" fill="${color}" stroke="var(--panel)" stroke-width="2"/>`, label: `${label} ${de(l[k], 1)} s` };
+  };
+  const a = end("gap_ahead", "Vorne", "var(--series-1)"), b = end("gap_behind", "Hinten", "var(--series-2)");
+  svg += a.s + b.s;
+  if (a.y != null && b.y != null && Math.abs(a.y - b.y) < 16) { const mid = (a.y + b.y) / 2; a.y = mid - 8; b.y = mid + 8; if (a.y > b.y) [a.y, b.y] = [b.y, a.y]; }
+  if (a.label) svg += `<text x="${x1 + 8}" y="${a.y + 4}" style="fill:var(--ink)">${a.label}</text>`;
+  if (b.label) svg += `<text x="${x1 + 8}" y="${b.y + 4}" style="fill:var(--ink)">${b.label}</text>`;
+  svg += `</svg>`;
+  f.el.innerHTML = svg;
+  attachHover("gapChart", pts.map((_, i) => X(i)), i => {
+    const l = pts[i];
+    return { y: Y(Math.max(l.gap_ahead || 0, l.gap_behind || 0)), html: `Runde ${l.lap} · P${l.pos}<br>Vorne <b>${l.gap_ahead ? de(l.gap_ahead, 1) + " s" : "–"}</b> · Hinten <b>${l.gap_behind ? de(l.gap_behind, 1) + " s" : "–"}</b>` };
+  });
+}
+
+// ---------------------------------------------------------------- radio + log
+let radioTimer = null;
+function speak(c) {
+  if ($("browserVoice").getAttribute("aria-pressed") !== "true" || !("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(c.text);
+  u.lang = "de-DE";
+  const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("de"));
+  if (v) u.voice = v;
+  if (c.priority === 0) speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+function clockOf(c) {
+  if (c.clock) return c.clock;
+  return new Date(c.time * 1000).toLocaleTimeString("de-DE");
+}
+function addCallout(c, opts = {}) {
+  logItems.unshift(c);
+  if (logItems.length > 150) logItems.pop();
+  if (opts.quiet) return;
+  $("radioMsg").textContent = c.text;
+  $("radioMsg").className = "msg p" + c.priority;
+  $("radioTime").textContent = clockOf(c);
+  const r = $("radio"); r.classList.add("live");
+  clearTimeout(radioTimer); radioTimer = setTimeout(() => r.classList.remove("live"), Math.min(9000, 1500 + c.text.length * 70));
+  renderLog(true);
+  if (opts.speak !== false) speak(c);
+}
+function renderLog(fresh) {
+  const items = logItems.filter(c => filter === "all" || CAT_GROUP[c.category] === filter);
+  $("log").innerHTML = items.length ? items.slice(0, 80).map((c, i) =>
+    `<li class="p${c.priority}${fresh && i === 0 && c === logItems[0] ? " fresh" : ""}"><time>${clockOf(c)}</time><span class="cat">${CAT_NAME[c.category] || c.category}</span><span class="txt">${esc(c.text)}</span></li>`).join("")
+    : `<li style="border:0;background:none;display:block" class="empty">Noch keine Ansagen in dieser Kategorie.</li>`;
+}
+function clearLog() { logItems.length = 0; renderLog(false); }
+
+// ---------------------------------------------------------------- engineer questions (replay only; live asks the real engineer)
+function localReport(kind) {
+  if (!state) return "Ich habe noch keine Daten.";
+  const s = state.snapshot, g = state.strategy || {};
+  const laps = g.laps || [];
+  const gapW = x => x < 1 ? `${Math.max(1, Math.round(x * 10))} Zehntel` : `${de(x, 1)} Sekunden`;
+  if (kind === "fuel") {
+    if (!g.fuel_per_lap) return `Im Tank sind ${de(s.fuel_left, 1)} Liter. Für den Verbrauch brauche ich noch eine volle Runde.`;
+    let t = `${de(s.fuel_left, 1)} Liter im Tank, Verbrauch ${de(g.fuel_per_lap, 1)} pro Runde, das reicht für ${Math.floor(g.fuel_laps_left)} Runden.`;
+    if (g.fuel_to_add != null) t += g.fuel_to_add > 0.5 ? ` Bis ins Ziel fehlen ${Math.round(g.fuel_to_add)} Liter.` : " Reicht bis ins Ziel.";
+    return t;
+  }
+  if (kind === "gaps") {
+    let t = `P${s.position} von ${s.num_cars}.`;
+    if (s.gap_ahead > 0 && s.position > 1) t += ` Vorne ${gapW(s.gap_ahead)} auf ${s.name_ahead}.`;
+    if (s.gap_behind > 0 && s.position < s.num_cars) t += ` Hinten ${gapW(s.gap_behind)} zu ${s.name_behind}.`;
+    return t;
+  }
+  if (kind === "tires") {
+    const hot = [0, 1, 2, 3].filter(i => s.tire_temp[i] > s.tire_temp_hot[i]);
+    const worst = [0, 1, 2, 3].reduce((a, i) => s.tire_wear[i] < s.tire_wear[a] ? i : a, 0);
+    return (hot.length ? `${hot.map(i => TIRE_LABEL[i]).join(" und ")} zu heiß.` : "Reifentemperaturen sind im Fenster.") +
+      ` Am meisten abgefahren: ${TIRE_LABEL[worst].toLowerCase()} mit ${Math.round(s.tire_wear[worst] * 100)} Prozent.`;
+  }
+  let t = `P${s.position} von ${s.num_cars}.`;
+  if (s.gap_ahead > 0 && s.position > 1) t += ` Vorne ${gapW(s.gap_ahead)} auf ${s.name_ahead}.`;
+  if (g.fuel_laps_left != null) t += ` Sprit für ${Math.floor(g.fuel_laps_left)} Runden.`;
+  const w = Math.min(...s.tire_wear.filter(x => x >= 0));
+  if (isFinite(w)) t += ` Reifen bei ${Math.round(w * 100)} Prozent.`;
+  return t;
+}
+function ask(kind) {
+  if (mode === "live") { fetch("/api/" + kind, { method: "POST" }).catch(() => {}); return; }
+  addCallout({ text: localReport(kind), priority: 1, category: "status", clock: replayClock() });
+}
+
+// ---------------------------------------------------------------- live mode
+function connectLive() {
+  mode = "live";
+  let gotState = false;
+  const es = new EventSource("/events");
+  es.addEventListener("callout", e => addCallout(JSON.parse(e.data), { speak: gotState }));
+  es.addEventListener("state", e => { gotState = true; render(JSON.parse(e.data)); });
+  es.onerror = () => { const c = $("conn"); c.className = "chip off"; c.textContent = "Engineer-Programm nicht erreichbar"; };
+}
+
+// ---------------------------------------------------------------- replay mode (online preview)
+let rp = null;
+function replayClock() {
+  if (!rp) return "";
+  const t = rp.t, m = Math.floor(t / 60), s = Math.floor(t % 60);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+function startReplay(data) {
+  mode = "replay";
+  let laps = [];
+  data.frames.forEach(f => { if (f.strategy.laps) laps = f.strategy.laps; else f.strategy.laps = laps; });
+  rp = { data, t: 0, speed: 4, playing: true, ci: 0, fi: 0, end: data.frames[data.frames.length - 1].t, lastReal: performance.now() };
+  $("replayBar").hidden = false;
+  $("pcVoice").hidden = true;
+  $("rpPlay").onclick = () => { rp.playing = !rp.playing; $("rpPlay").textContent = rp.playing ? "Pause" : "Weiter"; };
+  $("rpSpeed").onchange = e => { rp.speed = +e.target.value; };
+  $("rpSeek").oninput = e => seek(e.target.value / 1000 * rp.end);
+  seek(0);
+  requestAnimationFrame(tick);
+}
+function frameAt(t) {
+  const fr = rp.data.frames; let lo = 0, hi = fr.length - 1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (fr[mid].t <= t) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+function stamp(c) { const m = Math.floor(c.t / 60), s = Math.floor(c.t % 60); return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`; }
+function seek(t) {
+  rp.t = t; clearLog(); lastLapCount = -1; startPos = null;
+  const cs = rp.data.callouts; rp.ci = 0;
+  while (rp.ci < cs.length && cs[rp.ci].t <= t) { addCallout({ ...cs[rp.ci], clock: stamp(cs[rp.ci]) }, { quiet: true }); rp.ci++; }
+  renderLog(false);
+  const lastC = logItems[0];
+  if (lastC) { $("radioMsg").textContent = lastC.text; $("radioTime").textContent = lastC.clock; }
+  rp.fi = frameAt(t);
+  const f = rp.data.frames[rp.fi];
+  render({ source: rp.data.source, snapshot: f.snapshot, strategy: f.strategy });
+}
+function tick(now) {
+  const dt = Math.min(0.25, (now - rp.lastReal) / 1000); rp.lastReal = now;
+  if (rp.playing) {
+    rp.t += dt * rp.speed;
+    if (rp.t > rp.end + 8) { seek(0); }
+    const cs = rp.data.callouts;
+    while (rp.ci < cs.length && cs[rp.ci].t <= rp.t) { addCallout({ ...cs[rp.ci], clock: stamp(cs[rp.ci]) }); rp.ci++; }
+    const fi = frameAt(rp.t);
+    if (fi !== rp.fi) {
+      rp.fi = fi; const f = rp.data.frames[fi];
+      render({ source: rp.data.source, snapshot: f.snapshot, strategy: f.strategy });
+      $("rpSeek").value = Math.round(Math.min(1, rp.t / rp.end) * 1000);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------- controls
+document.querySelectorAll("[data-ask]").forEach(b => b.onclick = () => ask(b.dataset.ask));
+document.querySelectorAll("[data-filter]").forEach(b => b.onclick = () => {
+  filter = b.dataset.filter;
+  document.querySelectorAll("[data-filter]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  renderLog(false);
+});
+$("pcVoice").onclick = () => fetch("/api/toggle_voice", { method: "POST" }).catch(() => {});
+try { if (localStorage.getItem("browserVoice") === "1") $("browserVoice").setAttribute("aria-pressed", "true"); } catch (e) {}
+$("browserVoice").onclick = () => {
+  const on = $("browserVoice").getAttribute("aria-pressed") !== "true";
+  $("browserVoice").setAttribute("aria-pressed", on ? "true" : "false");
+  try { localStorage.setItem("browserVoice", on ? "1" : "0"); } catch (e) {}
+  if (on && "speechSynthesis" in window) speak({ text: "Funk aktiv. Ich bin bei dir.", priority: 1 });
+  else if ("speechSynthesis" in window) speechSynthesis.cancel();
+};
+let wakeLock = null;
+async function wantWake(on) {
+  try {
+    if (on) { wakeLock = await navigator.wakeLock.request("screen"); $("wake").setAttribute("aria-pressed", "true"); }
+    else { await wakeLock?.release(); wakeLock = null; $("wake").setAttribute("aria-pressed", "false"); }
+  } catch (e) { $("wake").setAttribute("aria-pressed", "false"); $("wake").title = "Wird von diesem Browser nicht unterstützt"; }
+}
+$("wake").onclick = () => wantWake(!wakeLock);
+document.addEventListener("visibilitychange", () => { if (wakeLock && document.visibilityState === "visible") wantWake(true); });
+$("fs").onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+};
+$("lapViewChart").onclick = () => { lapView = "chart"; $("lapChart").hidden = false; $("lapTable").hidden = true; $("lapViewChart").setAttribute("aria-pressed", "true"); $("lapViewTable").setAttribute("aria-pressed", "false"); };
+$("lapViewTable").onclick = () => { lapView = "table"; $("lapChart").hidden = true; $("lapTable").hidden = false; $("lapViewChart").setAttribute("aria-pressed", "false"); $("lapViewTable").setAttribute("aria-pressed", "true"); };
+let resizeT, lastWidth = 0;
+new ResizeObserver(entries => {
+  const width = entries[0].contentRect.width;
+  if (Math.abs(width - lastWidth) < 1) return;   // only redraw charts when the width changes
+  lastWidth = width;
+  clearTimeout(resizeT); resizeT = setTimeout(() => { if (state) { lastLapCount = -1; render(state); } }, 120); }).observe(document.querySelector("main"));
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => state && render(state));
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
+
+// ---------------------------------------------------------------- boot
+renderLog(false);
+(async () => {
+  try {
+    const r = await fetch("demo-replay.json", { cache: "no-store" });
+    if (r.ok) { startReplay(await r.json()); return; }
+  } catch (e) { /* no recording next to the page: live mode */ }
+  connectLive();
+})();
 </script>
-</body>
-</html>

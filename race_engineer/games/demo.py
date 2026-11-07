@@ -111,6 +111,13 @@ class DemoSource:
             s.gap_behind = (self.player.dist - order[idx + 1].dist) / speed_ms
             s.name_behind = order[idx + 1].name
 
+        for i, car in enumerate(order):
+            lap_done = int(max(car.dist, 0) // self.LAP_LEN)
+            s.standings.append({"pos": i + 1, "name": car.name,
+                                "gap": round((self.player.dist - car.dist) / speed_ms, 2),
+                                "laps": lap_done, "pit": False,
+                                "last": round(car.pace + math.sin(lap_done + car.phase) * 0.4, 3) if lap_done else -1.0,
+                                "me": car is self.player})
         s.completed_laps = self.completed
         frac = (max(self.player.dist, 0) % self.LAP_LEN) / self.LAP_LEN
         s.lap_fraction = frac
@@ -124,6 +131,13 @@ class DemoSource:
         s.speed_kmh = (150 + 90 * math.sin(frac * 2 * math.pi * 6)) if moving else 0.0
         s.gear = max(1, min(6, int(s.speed_kmh / 45) + 1)) if moving else 1
         s.rpm = 4000 + (s.speed_kmh % 45) * 80
+        s.rpm_max, s.rpm_shift = 8000.0, 7400.0
+        wave = math.sin(frac * 2 * math.pi * 6)
+        if moving:
+            s.throttle = max(0.0, min(1.0, 0.55 + wave * 0.9))
+            s.brake = max(0.0, min(1.0, -wave * 1.4 - 0.4))
+        else:
+            s.throttle, s.brake = 0.0, 0.3
 
         s.fuel_left, s.fuel_capacity = self.fuel, 100.0
         overheating = self.completed in (6, 7)
@@ -132,6 +146,10 @@ class DemoSource:
             if overheating and i < 2:
                 base += 22
             s.tire_temp[i] = base + 2 * math.sin(self.t / 7 + i)
+            # front tyres run hotter on the inside (camber); left = outside for left tyres
+            spread = 6.0 if i < 2 else 3.0
+            inner, outer = s.tire_temp[i] + spread, s.tire_temp[i] - spread
+            s.tire_temp_zones[i] = [outer, s.tire_temp[i], inner] if i % 2 == 0 else [inner, s.tire_temp[i], outer]
             s.tire_temp_cold[i], s.tire_temp_optimal[i], s.tire_temp_hot[i] = 70.0, 85.0, 100.0
             s.tire_wear[i] = max(0.0, self.wear - 0.02 * (i < 2))
             s.tire_pressure[i] = 178.0 + (s.tire_temp[i] - 85) * 0.4
