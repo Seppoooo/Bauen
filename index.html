@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyrox Trainingslog</title>
+<style>
+:root{
+  --bg:#f6f5f2; --card:#ffffff; --ink:#1b1b1b; --muted:#6b6b6b; --line:#e3e1dc;
+  --accent:#e8b400; --accent-ink:#1b1b1b; --good:#1f8a4c; --bad:#c0392b; --field:#fbfaf8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111111; --card:#1b1b1b; --ink:#f1f1f1; --muted:#a0a0a0; --line:#2d2d2d;
+    --accent:#ffd21f; --accent-ink:#111; --good:#3ecf7a; --bad:#ff6b5b; --field:#151515;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111111; --card:#1b1b1b; --ink:#f1f1f1; --muted:#a0a0a0; --line:#2d2d2d;
+  --accent:#ffd21f; --accent-ink:#111; --good:#3ecf7a; --bad:#ff6b5b; --field:#151515;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:26px;margin:0;letter-spacing:-.02em}
+h1 span{background:var(--accent);color:var(--accent-ink);padding:0 6px;border-radius:4px}
+h2{font-size:17px;margin:0 0 12px}
+.sub{color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.stat .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .h{font-size:12px;color:var(--muted)}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+nav.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer;font:inherit}
+nav.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{min-height:70px;resize:vertical}
+.seg{display:grid;grid-template-columns:28px 1fr 110px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.seg:last-child{border-bottom:0}
+.seg .n{font-size:12px;color:var(--muted);text-align:right}
+.seg .nm{font-size:14px}
+.seg .nm small{color:var(--muted)}
+.seg.run .nm{color:var(--muted)}
+.seg input{text-align:center;font-variant-numeric:tabular-nums}
+.total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:2px solid var(--ink);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.btn{border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;padding:10px 16px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--line);padding:6px 10px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hidden{display:none!important}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.tbl{overflow-x:auto}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.pb{color:var(--good);font-weight:600}
+.delta-good{color:var(--good)} .delta-bad{color:var(--bad)}
+svg text{fill:var(--muted);font-size:11px}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:520px){.seg{grid-template-columns:22px 1fr 92px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span>HYROX</span> Trainingslog</h1>
+      <div class="sub" id="raceLine">Ziel: Hyrox @ FIBO</div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="exportBtn" type="button">Export</button>
+      <label class="btn ghost" style="margin:0;color:var(--ink);font-size:15px">Import<input type="file" id="importFile" accept="application/json" class="hidden"></label>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Countdown</div><div class="v" id="sDays">–</div><div class="h" id="sWeeks"></div></div>
+    <div class="stat"><div class="k">Zielzeit</div><div class="v" id="sGoal">–</div><div class="h" id="sGoalDiv"></div></div>
+    <div class="stat"><div class="k">Beste Simulation</div><div class="v" id="sBest">–</div><div class="h" id="sBestGap"></div></div>
+    <div class="stat"><div class="k">Einheiten</div><div class="v" id="sCount">0</div><div class="h" id="sLast"></div></div>
+  </div>
+
+  <nav class="tabs">
+    <button type="button" data-tab="log" class="on">+ Eintrag</button>
+    <button type="button" data-tab="history">Verlauf</button>
+    <button type="button" data-tab="pbs">Bestzeiten</button>
+    <button type="button" data-tab="settings">Wettkampf</button>
+  </nav>
+
+  <!-- NEW ENTRY -->
+  <section id="tab-log">
+    <form id="entryForm" class="card" autocomplete="off">
+      <h2 id="formTitle">Neue Einheit</h2>
+      <div class="grid">
+        <div><label for="fDate">Datum</label><input type="date" id="fDate" required></div>
+        <div><label for="fType">Art</label>
+          <select id="fType">
+            <option value="sim">Komplette Simulation</option>
+            <option value="half">Halbe Simulation</option>
+            <option value="station">Einzelne Stationen</option>
+            <option value="run">Lauf</option>
+            <option value="strength">Kraft / Sonstiges</option>
+          </select>
+        </div>
+        <div><label for="fFeel">Gefühl (1–10)</label><input type="number" id="fFeel" min="1" max="10" placeholder="7"></div>
+        <div><label for="fHr">Ø Puls</label><input type="number" id="fHr" min="40" max="230" placeholder="165"></div>
+      </div>
+
+      <div id="segBlock" style="margin-top:16px">
+        <div class="sub" style="margin-bottom:6px">Zeiten als <b>mm:ss</b> eintragen (z. B. 4:35). Leere Felder werden ignoriert.</div>
+        <div id="segs"></div>
+        <div class="total"><span>Gesamt</span><span id="fTotal">0:00</span></div>
+      </div>
+
+      <div id="runBlock" class="grid hidden" style="margin-top:16px">
+        <div><label for="fDist">Distanz (km)</label><input type="number" step="0.01" id="fDist" placeholder="8"></div>
+        <div><label for="fDur">Dauer (h:mm:ss oder mm:ss)</label><input id="fDur" placeholder="40:00"></div>
+        <div><label>Pace</label><input id="fPace" disabled placeholder="–"></div>
+      </div>
+
+      <div style="margin-top:14px"><label for="fNotes">Notizen</label><textarea id="fNotes" placeholder="Gewichte, Wetter, was lief gut / schlecht …"></textarea></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn" type="submit" id="saveBtn">Speichern</button>
+        <button class="btn ghost hidden" type="button" id="cancelEdit">Abbrechen</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="tab-history" class="hidden">
+    <div class="card">
+      <h2>Entwicklung Simulationen</h2>
+      <div id="chart"></div>
+    </div>
+    <div class="card">
+      <h2>Alle Einheiten</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Datum</th><th>Art</th><th>Zeit</th><th>Details</th><th></th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- PBS -->
+  <section id="tab-pbs" class="hidden">
+    <div class="card">
+      <h2>Bestzeiten je Station</h2>
+      <div class="sub" style="margin-bottom:10px">Vergleich zur Ziel-Aufteilung (aus deiner Zielzeit berechnet).</div>
+      <div class="tbl"><table>
+        <thead><tr><th>Station</th><th>Bestzeit</th><th>Letzte</th><th>Ziel</th><th>Δ Ziel</th></tr></thead>
+        <tbody id="pbBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="hidden">
+    <form id="setForm" class="card">
+      <h2>Mein Wettkampf</h2>
+      <div class="grid">
+        <div><label for="sName">Event</label><input id="sName" placeholder="Hyrox @ FIBO Köln"></div>
+        <div><label for="sDate">Datum</label><input type="date" id="sDate"></div>
+        <div><label for="sDiv">Division</label>
+          <select id="sDiv">
+            <option>Open Men</option><option>Open Women</option>
+            <option>Pro Men</option><option>Pro Women</option>
+            <option>Doubles Men</option><option>Doubles Women</option><option>Doubles Mixed</option>
+          </select>
+        </div>
+        <div><label for="sGoalIn">Zielzeit (h:mm:ss)</label><input id="sGoalIn" placeholder="1:25:00"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="btn" type="submit">Speichern</button></div>
+      <p class="sub" style="margin-top:14px">Alle Daten bleiben nur in diesem Browser gespeichert. Nutze <b>Export</b> regelmäßig als Backup oder um sie auf ein anderes Gerät zu übertragen.</p>
+    </form>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Hyrox format ----------
+const STATIONS = [
+  {id:"ski",  name:"SkiErg", detail:"1000 m", share:.085},
+  {id:"push", name:"Sled Push", detail:"50 m", share:.055},
+  {id:"pull", name:"Sled Pull", detail:"50 m", share:.075},
+  {id:"bbj",  name:"Burpee Broad Jumps", detail:"80 m", share:.065},
+  {id:"row",  name:"Rudern", detail:"1000 m", share:.09},
+  {id:"farm", name:"Farmers Carry", detail:"200 m", share:.03},
+  {id:"lunge",name:"Sandbag Lunges", detail:"100 m", share:.06},
+  {id:"wall", name:"Wall Balls", detail:"100 Wdh.", share:.08},
+];
+// Segments: run1, st1, run2, st2 ... + roxzone
+const SEGS = [];
+STATIONS.forEach((s,i)=>{
+  SEGS.push({id:"run"+(i+1), name:`Lauf ${i+1}`, detail:"1 km", run:true});
+  SEGS.push({id:s.id, name:s.name, detail:s.detail});
+});
+SEGS.push({id:"rox", name:"Roxzone gesamt", detail:"Wechsel", run:true});
+const RUN_SHARE = .045, ROX_SHARE = .045; // per run / total roxzone (rough averages)
+const TYPES = {sim:"Simulation",half:"Halbe Sim.",station:"Stationen",run:"Lauf",strength:"Kraft"};
+
+// ---------- time helpers ----------
+function parseT(str){
+  if(str==null) return null; str=String(str).trim().replace(",",".");
+  if(!str) return null;
+  const p=str.split(":").map(Number);
+  if(p.some(isNaN)) return null;
+  let s=0; for(const x of p) s=s*60+x;
+  return s>0?Math.round(s):null;
+}
+function fmt(s){
+  if(s==null||isNaN(s)) return "–";
+  s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return h?`${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}`:`${m}:${String(x).padStart(2,"0")}`;
+}
+function fmtDate(d){ return new Date(d+"T12:00").toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"}); }
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// ---------- storage ----------
+const KEY="hyrox-log-v1";
+let state={settings:{name:"Hyrox @ FIBO Köln",date:"2027-04-17",div:"Open Men",goal:5100},entries:[]};
+try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw); state={settings:{...state.settings,...d.settings},entries:d.entries||[]}; } }catch(e){}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){ toast("Speichern im Browser nicht möglich – bitte exportieren"); } }
+
+// ---------- UI ----------
+const $=id=>document.getElementById(id);
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("on"),2200); }
+
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+function showTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  ["log","history","pbs","settings"].forEach(x=>$("tab-"+x).classList.toggle("hidden",x!==t));
+  render();
+}
+
+// segment inputs
+$("segs").innerHTML = SEGS.map((s,i)=>`
+  <div class="seg ${s.run?"run":""}">
+    <div class="n">${s.id==="rox"?"":i+1}</div>
+    <div class="nm">${s.name} <small>· ${s.detail}</small></div>
+    <input id="seg-${s.id}" inputmode="numeric" placeholder="mm:ss">
+  </div>`).join("");
+$("segs").addEventListener("input",updTotal);
+function updTotal(){ let t=0; SEGS.forEach(s=>{ const v=parseT($("seg-"+s.id).value); if(v) t+=v; }); $("fTotal").textContent=fmt(t); }
+
+function updType(){
+  const t=$("fType").value, isRun=t==="run", noSeg=isRun||t==="strength";
+  $("segBlock").classList.toggle("hidden",noSeg);
+  $("runBlock").classList.toggle("hidden",!isRun);
+}
+$("fType").onchange=updType;
+function updPace(){ const d=parseFloat($("fDist").value), s=parseT($("fDur").value); $("fPace").value=(d>0&&s)?fmt(s/d)+" /km":""; }
+$("fDist").oninput=updPace; $("fDur").oninput=updPace;
+
+let editing=null;
+function resetForm(){
+  editing=null; $("entryForm").reset(); $("fDate").value=new Date().toISOString().slice(0,10);
+  $("formTitle").textContent="Neue Einheit"; $("saveBtn").textContent="Speichern"; $("cancelEdit").classList.add("hidden");
+  updType(); updTotal(); updPace();
+}
+$("cancelEdit").onclick=resetForm;
+
+$("entryForm").onsubmit=e=>{
+  e.preventDefault();
+  const type=$("fType").value;
+  const entry={id:editing||Date.now().toString(36),date:$("fDate").value,type,
+    feel:+$("fFeel").value||null,hr:+$("fHr").value||null,notes:$("fNotes").value.trim(),segs:{}};
+  if(type==="run"){ entry.dist=parseFloat($("fDist").value)||null; entry.dur=parseT($("fDur").value); }
+  else if(type!=="strength"){ SEGS.forEach(s=>{ const v=parseT($("seg-"+s.id).value); if(v) entry.segs[s.id]=v; }); }
+  if(type!=="strength" && type!=="run" && !Object.keys(entry.segs).length && !entry.notes){ toast("Bitte mindestens eine Zeit eintragen"); return; }
+  if(editing){ state.entries=state.entries.map(x=>x.id===editing?entry:x); toast("Eintrag aktualisiert"); }
+  else { state.entries.push(entry); toast("Eintrag gespeichert 💪"); }
+  save(); resetForm(); render();
+};
+
+function editEntry(id){
+  const en=state.entries.find(x=>x.id===id); if(!en) return;
+  showTab("log"); editing=id;
+  $("fDate").value=en.date; $("fType").value=en.type; $("fFeel").value=en.feel||""; $("fHr").value=en.hr||""; $("fNotes").value=en.notes||"";
+  SEGS.forEach(s=>$("seg-"+s.id).value=en.segs?.[s.id]?fmt(en.segs[s.id]):"");
+  $("fDist").value=en.dist||""; $("fDur").value=en.dur?fmt(en.dur):"";
+  $("formTitle").textContent="Eintrag bearbeiten"; $("saveBtn").textContent="Änderungen speichern"; $("cancelEdit").classList.remove("hidden");
+  updType(); updTotal(); updPace(); window.scrollTo({top:0,behavior:"smooth"});
+}
+function delEntry(id){ if(!confirm("Eintrag wirklich löschen?")) return; state.entries=state.entries.filter(x=>x.id!==id); save(); render(); toast("Gelöscht"); }
+
+const total=en=>en.type==="run"?en.dur:Object.values(en.segs||{}).reduce((a,b)=>a+b,0)||null;
+const sorted=()=>[...state.entries].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+function goalSplit(id){
+  const g=state.settings.goal; if(!g) return null;
+  const st=STATIONS.find(s=>s.id===id); if(st) return g*st.share;
+  if(id==="rox") return g*ROX_SHARE;
+  return g*RUN_SHARE;
+}
+
+function render(){
+  const S=state.settings;
+  // header + stats
+  const days=S.date?Math.ceil((new Date(S.date+"T09:00")-new Date())/864e5):null;
+  $("raceLine").textContent=`Ziel: ${S.name||"Hyrox"}${S.date?" · "+new Date(S.date+"T12:00").toLocaleDateString("de-DE",{day:"numeric",month:"long",year:"numeric"}):""}`;
+  $("sDays").textContent=days==null?"–":days>0?days+" Tage":days===0?"Heute!":"Vorbei";
+  $("sWeeks").textContent=days>0?`≈ ${Math.floor(days/7)} Wochen ${days%7} Tage`:"";
+  $("sGoal").textContent=fmt(S.goal); $("sGoalDiv").textContent=S.div||"";
+  const sims=state.entries.filter(e=>e.type==="sim"&&Object.keys(e.segs||{}).length>=16);
+  const best=sims.length?Math.min(...sims.map(total)):null;
+  $("sBest").textContent=fmt(best);
+  $("sBestGap").innerHTML=best&&S.goal?(best<=S.goal?`<span class="delta-good">Ziel erreicht!</span>`:`noch ${fmt(best-S.goal)} bis zum Ziel`):"vollständige Simulation eintragen";
+  $("sCount").textContent=state.entries.length;
+  const last=sorted()[0]; $("sLast").textContent=last?"zuletzt "+fmtDate(last.date):"";
+
+  // history
+  const rows=sorted();
+  $("histBody").innerHTML=rows.length?rows.map(en=>{
+    let det="";
+    if(en.type==="run"&&en.dist) det=`${en.dist} km${en.dur?" · "+fmt(en.dur/en.dist)+"/km":""}`;
+    else { const k=Object.keys(en.segs||{}); det=k.length?k.length+" Segmente":""; }
+    const extra=[en.feel?`Gefühl ${en.feel}/10`:"",en.hr?`Ø ${en.hr} bpm`:""].filter(Boolean).join(" · ");
+    return `<tr>
+      <td>${fmtDate(en.date)}</td><td><span class="tag">${TYPES[en.type]||en.type}</span></td>
+      <td><b>${fmt(total(en))}</b></td>
+      <td>${esc(det)}${extra?`<div class="sub">${esc(extra)}</div>`:""}${en.notes?`<div class="sub">${esc(en.notes)}</div>`:""}</td>
+      <td style="white-space:nowrap"><button class="btn danger" onclick="editEntry('${en.id}')">✎</button> <button class="btn danger" onclick="delEntry('${en.id}')">✕</button></td></tr>`;
+  }).join(""):`<tr><td colspan="5" class="empty">Noch keine Einträge – leg los!</td></tr>`;
+
+  // chart
+  drawChart(sims.sort((a,b)=>a.date.localeCompare(b.date)));
+
+  // PBs
+  $("pbBody").innerHTML=SEGS.map(s=>{
+    const vals=sorted().filter(e=>e.segs?.[s.id]);
+    const pb=vals.length?Math.min(...vals.map(e=>e.segs[s.id])):null;
+    const lastV=vals[0]?.segs[s.id]??null;
+    const g=goalSplit(s.id), d=pb&&g?pb-g:null;
+    return `<tr><td>${s.name} <span class="sub">${s.detail}</span></td>
+      <td class="${pb?"pb":""}">${fmt(pb)}</td><td>${fmt(lastV)}</td><td class="sub">${fmt(g)}</td>
+      <td class="${d==null?"":d<=0?"delta-good":"delta-bad"}">${d==null?"–":(d<=0?"−":"+")+fmt(Math.abs(d))}</td></tr>`;
+  }).join("");
+}
+
+function drawChart(sims){
+  const el=$("chart");
+  if(sims.length<1){ el.innerHTML=`<div class="empty">Trag eine komplette Simulation (alle 16 Segmente + Roxzone optional) ein, um deinen Fortschritt zu sehen.</div>`; return; }
+  const W=Math.max(320,el.clientWidth||600),H=240,P={l:56,r:12,t:16,b:30};
+  const vals=sims.map(total), goal=state.settings.goal;
+  let lo=Math.min(...vals,goal||Infinity), hi=Math.max(...vals,goal||0);
+  const pad=Math.max(60,(hi-lo)*.15); lo-=pad; hi+=pad;
+  const x=i=>P.l+(sims.length===1?(W-P.l-P.r)/2:i*(W-P.l-P.r)/(sims.length-1));
+  const yy=v=>P.t+(v-lo)/(hi-lo)*(H-P.t-P.b); // schneller (kleiner) = oben
+  let ticks=""; for(let k=0;k<=4;k++){ const v=lo+(hi-lo)*k/4; ticks+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy(v)}" y2="${yy(v)}" stroke="var(--line)"/><text x="${P.l-8}" y="${yy(v)+4}" text-anchor="end">${fmt(v)}</text>`; }
+  const pts=sims.map((e,i)=>`${x(i)},${yy(vals[i])}`).join(" ");
+  const goalLine=goal?`<line x1="${P.l}" x2="${W-P.r}" y1="${yy(goal)}" y2="${yy(goal)}" stroke="var(--good)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-P.r}" y="${yy(goal)-6}" text-anchor="end" style="fill:var(--good)">Ziel ${fmt(goal)}</text>`:"";
+  const dots=sims.map((e,i)=>`<circle cx="${x(i)}" cy="${yy(vals[i])}" r="4.5" fill="var(--accent)" stroke="var(--ink)" stroke-width="1"><title>${fmtDate(e.date)}: ${fmt(vals[i])}</title></circle>`).join("");
+  const labels=sims.map((e,i)=>(sims.length<=8||i%Math.ceil(sims.length/8)===0)?`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${fmtDate(e.date)}</text>`:"").join("");
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Simulationszeiten">${ticks}${goalLine}<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2"/>${dots}${labels}</svg><div class="sub">Oben = schneller.</div>`;
+}
+
+// settings
+function fillSettings(){ const S=state.settings; $("sName").value=S.name||""; $("sDate").value=S.date||""; $("sDiv").value=S.div||"Open Men"; $("sGoalIn").value=S.goal?fmt(S.goal):""; }
+$("setForm").onsubmit=e=>{ e.preventDefault();
+  state.settings={name:$("sName").value.trim(),date:$("sDate").value,div:$("sDiv").value,goal:parseT($("sGoalIn").value)};
+  save(); render(); toast("Wettkampf gespeichert"); };
+
+// export / import
+$("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`hyrox-log-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$("importFile").onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{ const d=JSON.parse(await f.text()); if(!Array.isArray(d.entries)) throw 0;
+    if(!confirm(`${d.entries.length} Einträge importieren? Aktuelle Daten werden ersetzt.`)) return;
+    state={settings:{...state.settings,...d.settings},entries:d.entries}; save(); fillSettings(); render(); toast("Import erfolgreich");
+  }catch(err){ toast("Datei konnte nicht gelesen werden"); }
+  e.target.value="";
+};
+
+resetForm(); fillSettings(); render();
+</script>
+</body>
+</html>
