@@ -81,6 +81,7 @@ svg text{fill:var(--muted);font-size:11px}
     <div>
       <h1><span>HYROX</span> Trainingslog</h1>
       <div class="sub" id="raceLine">Ziel: Hyrox @ FIBO</div>
+      <div class="sub" id="syncLine">Gespeichert in diesem Browser</div>
     </div>
     <div class="row">
       <button class="btn ghost" id="exportBtn" type="button">Export</button>
@@ -211,7 +212,7 @@ svg text{fill:var(--muted);font-size:11px}
         <div><label for="sGoalIn">Zielzeit (h:mm:ss)</label><input id="sGoalIn" placeholder="1:25:00"></div>
       </div>
       <div class="row" style="margin-top:14px"><button class="btn" type="submit">Speichern</button></div>
-      <p class="sub" style="margin-top:14px">Alle Daten bleiben nur in diesem Browser gespeichert. Nutze <b>Export</b> regelmäßig als Backup oder um sie auf ein anderes Gerät zu übertragen.</p>
+      <p class="sub" style="margin-top:14px">Auf claude.ai werden deine Daten privat in deinem Konto gespeichert (nur du siehst sie) und sind auf Handy und PC gleich. Als lokale Datei geöffnet bleiben sie nur in diesem Browser. <b>Export</b> macht jederzeit ein Backup.</p>
     </form>
   </section>
 </div>
@@ -386,7 +387,7 @@ $("entryForm").onsubmit=e=>{
   if(type!=="strength" && type!=="run" && type!=="club" && !Object.keys(entry.segs).length && !entry.notes){ toast("Bitte mindestens eine Zeit eintragen"); return; }
   if(editing){ state.entries=state.entries.map(x=>x.id===editing?entry:x); toast("Eintrag aktualisiert"); }
   else { state.entries.push(entry); toast("Eintrag gespeichert 💪"); }
-  save(); resetForm(); render();
+  save(); cloudPut(entry); resetForm(); render();
 };
 
 function editEntry(id){
@@ -400,7 +401,7 @@ function editEntry(id){
   $("formTitle").textContent="Eintrag bearbeiten"; $("saveBtn").textContent="Änderungen speichern"; $("cancelEdit").classList.remove("hidden");
   updType(); updTotal(); updPace(); window.scrollTo({top:0,behavior:"smooth"});
 }
-function delEntry(id){ if(!confirm("Eintrag wirklich löschen?")) return; state.entries=state.entries.filter(x=>x.id!==id); save(); render(); toast("Gelöscht"); }
+function delEntry(id){ if(!confirm("Eintrag wirklich löschen?")) return; state.entries=state.entries.filter(x=>x.id!==id); save(); cloudDel(id); render(); toast("Gelöscht"); }
 
 const total=en=>en.type==="club"?(/^\d+(:\d+){1,2}$/.test(en.result||"")?parseT(en.result):null):en.type==="run"?en.dur:Object.values(en.segs||{}).reduce((a,b)=>a+b,0)||null;
 const sorted=()=>[...state.entries].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
@@ -482,24 +483,65 @@ function drawChart(sims){
 function fillSettings(){ const S=state.settings; $("sName").value=S.name||""; $("sDate").value=S.date||""; $("sDiv").value=S.div||"Open Men"; $("sGoalIn").value=S.goal?fmt(S.goal):""; }
 $("setForm").onsubmit=e=>{ e.preventDefault();
   state.settings={name:$("sName").value.trim(),date:$("sDate").value,div:$("sDiv").value,goal:parseT($("sGoalIn").value)};
-  save(); render(); toast("Wettkampf gespeichert"); };
+  save(); cloudSettings(); render(); toast("Wettkampf gespeichert"); };
 
 // export / import
-$("exportBtn").onclick=()=>{
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`hyrox-log-${new Date().toISOString().slice(0,10)}.json`; a.click();
+$("exportBtn").onclick=async()=>{
+  const json=JSON.stringify(state,null,2), filename=`hyrox-log-${new Date().toISOString().slice(0,10)}.json`;
+  const dl=window.claude?.use?await window.claude.use("downloads").catch(()=>null):null;
+  if(dl){ try{ await dl.save({filename,data:json}); toast("Backup gespeichert"); }catch(e){ if(e?.code!=="declined") toast("Export hier nicht möglich"); } return; }
+  const blob=new Blob([json],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
 $("importFile").onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
   try{ const d=JSON.parse(await f.text()); if(!Array.isArray(d.entries)) throw 0;
     if(!confirm(`${d.entries.length} Einträge importieren? Aktuelle Daten werden ersetzt.`)) return;
-    state={settings:{...state.settings,...d.settings},entries:d.entries}; save(); fillSettings(); render(); toast("Import erfolgreich");
+    const old=state.entries.map(x=>x.id);
+    state={settings:{...state.settings,...d.settings},entries:d.entries}; save(); fillSettings(); render();
+    if(cloud){ toast("Import läuft …"); await cloudSettings(); for(const id of old) if(!d.entries.some(x=>x.id===id)) await cloudDel(id); for(const en of d.entries) await cloudPut(en); }
+    toast("Import erfolgreich");
   }catch(err){ toast("Datei konnte nicht gelesen werden"); }
   e.target.value="";
 };
 
+// ---------- Sync im claude.ai-Konto (nur wenn die Seite dort läuft) ----------
+let cloud=null;
+function setSync(t){ $("syncLine").textContent=t; }
+async function cloudPut(en){ if(!cloud) return; try{ await cloud.entries.doc(en.id).set(en); }catch(e){ syncErr(e); } }
+async function cloudDel(id){ if(!cloud) return; try{ await cloud.entries.doc(id).delete(); }catch(e){ syncErr(e); } }
+async function cloudSettings(){ if(!cloud) return; try{ await cloud.root.set({settings:state.settings}); }catch(e){ syncErr(e); } }
+function syncErr(e){ setSync("⚠︎ Sync-Fehler – Daten sind lokal gespeichert, bitte exportieren"); console.warn(e); }
+async function initCloud(){
+  if(!window.claude?.use) return;
+  const [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+  const uid=user?await user.id():null;
+  if(!db||!uid) return;
+  const root=db.doc(`data/users/${uid}/hyrox`);
+  cloud={root,entries:root.collection("entries")};
+  setSync("☁︎ Verbinde …");
+  const timer=setTimeout(()=>setSync("☁︎ Konto gerade nicht erreichbar – lokal gespeichert"),10000);
+  let migrated=false;
+  root.onSnapshot(snap=>{
+    if(snap.metadata.fromCache) return;
+    if(snap.exists&&snap.data().settings){ state.settings={...state.settings,...snap.data().settings}; save(); fillSettings(); render(); }
+    else cloudSettings();
+  },syncErr);
+  cloud.entries.onSnapshot(async snap=>{
+    if(snap.metadata.fromCache) return;
+    clearTimeout(timer);
+    if(!migrated){ migrated=true;
+      const have=new Set(snap.docs.map(d=>d.id)), local=state.entries.filter(e=>!have.has(e.id));
+      if(local.length){ setSync(`☁︎ Übertrage ${local.length} Einträge …`); for(const en of local) await cloudPut(en); return; }
+    }
+    state.entries=snap.docs.map(d=>({...d.data()})); save(); render();
+    setSync("☁︎ In deinem Konto gespeichert – auf allen Geräten gleich");
+  },syncErr);
+}
+
 resetForm(); fillSettings(); render();
+initCloud().catch(e=>console.warn(e));
 </script>
 </body>
 </html>
