@@ -63,6 +63,13 @@ th{font-size:12px;color:var(--muted);font-weight:500;text-transform:uppercase;le
 .delta-good{color:var(--good)} .delta-bad{color:var(--bad)}
 svg text{fill:var(--muted);font-size:11px}
 .empty{color:var(--muted);text-align:center;padding:24px 0}
+.ex{display:grid;grid-template-columns:1fr 96px 70px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.ex .t{font-size:14px;overflow-wrap:anywhere}
+.ex .t small{color:var(--good)}
+.ex input{text-align:center;padding:8px 4px}
+.exh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:12px 0 2px}
+.exhead{display:grid;grid-template-columns:1fr 96px 70px;gap:8px;font-size:11px;color:var(--muted);text-transform:uppercase}
+.exhead span:not(:first-child){text-align:center}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 @media (max-width:520px){.seg{grid-template-columns:22px 1fr 92px}h1{font-size:22px}}
@@ -103,6 +110,7 @@ svg text{fill:var(--muted);font-size:11px}
         <div><label for="fDate">Datum</label><input type="date" id="fDate" required></div>
         <div><label for="fType">Art</label>
           <select id="fType">
+            <option value="club">Club-Workout (Power, Engine …)</option>
             <option value="sim">Komplette Simulation</option>
             <option value="half">Halbe Simulation</option>
             <option value="station">Einzelne Stationen</option>
@@ -124,6 +132,24 @@ svg text{fill:var(--muted);font-size:11px}
         <div><label for="fDist">Distanz (km)</label><input type="number" step="0.01" id="fDist" placeholder="8"></div>
         <div><label for="fDur">Dauer (h:mm:ss oder mm:ss)</label><input id="fDur" placeholder="40:00"></div>
         <div><label>Pace</label><input id="fPace" disabled placeholder="–"></div>
+      </div>
+
+      <div id="clubBlock" class="hidden" style="margin-top:16px">
+        <label for="cPaste">Workout von der Hyrox-Seite hier einfügen</label>
+        <textarea id="cPaste" style="min-height:150px" placeholder="Einfach den Workout-Text kopieren und hier einfügen, z. B.&#10;&#10;POWER – Week 12&#10;For Time&#10;1000m SkiErg&#10;50m Sled Push @ 152kg&#10;20 Wall Balls 6kg"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button type="button" class="btn ghost" id="cClip">📋 Aus Zwischenablage</button>
+          <button type="button" class="btn ghost" id="cParse">Neu erkennen</button>
+        </div>
+        <datalist id="catList"><option>Power</option><option>Engine</option><option>Endurance</option><option>Strength</option><option>Speed</option><option>Hybrid</option><option>Recovery</option></datalist>
+        <div class="grid" style="margin-top:14px">
+          <div><label for="cCat">Bereich</label><input id="cCat" list="catList" placeholder="Power"></div>
+          <div><label for="cTitle">Titel</label><input id="cTitle" placeholder="Week 12 – Power"></div>
+          <div><label for="cFormat">Format</label><input id="cFormat" placeholder="For Time, AMRAP 20 …"></div>
+          <div><label for="cResult">Ergebnis gesamt</label><input id="cResult" placeholder="23:45 oder 5 Runden + 12"></div>
+        </div>
+        <div id="cPrev" class="sub" style="margin-top:8px"></div>
+        <div id="cEx" style="margin-top:12px"></div>
       </div>
 
       <div style="margin-top:14px"><label for="fNotes">Notizen</label><textarea id="fNotes" placeholder="Gewichte, Wetter, was lief gut / schlecht …"></textarea></div>
@@ -157,6 +183,13 @@ svg text{fill:var(--muted);font-size:11px}
       <div class="tbl"><table>
         <thead><tr><th>Station</th><th>Bestzeit</th><th>Letzte</th><th>Ziel</th><th>Δ Ziel</th></tr></thead>
         <tbody id="pbBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Club-Workouts nach Bereich</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Bereich</th><th>Anzahl</th><th>Zuletzt</th></tr></thead>
+        <tbody id="catBody"></tbody>
       </table></div>
     </div>
   </section>
@@ -204,7 +237,7 @@ STATIONS.forEach((s,i)=>{
 });
 SEGS.push({id:"rox", name:"Roxzone gesamt", detail:"Wechsel", run:true});
 const RUN_SHARE = .045, ROX_SHARE = .045; // per run / total roxzone (rough averages)
-const TYPES = {sim:"Simulation",half:"Halbe Sim.",station:"Stationen",run:"Lauf",strength:"Kraft"};
+const TYPES = {club:"Club",sim:"Simulation",half:"Halbe Sim.",station:"Stationen",run:"Lauf",strength:"Kraft"};
 
 // ---------- time helpers ----------
 function parseT(str){
@@ -251,10 +284,77 @@ $("segs").addEventListener("input",updTotal);
 function updTotal(){ let t=0; SEGS.forEach(s=>{ const v=parseT($("seg-"+s.id).value); if(v) t+=v; }); $("fTotal").textContent=fmt(t); }
 
 function updType(){
-  const t=$("fType").value, isRun=t==="run", noSeg=isRun||t==="strength";
+  const t=$("fType").value, isRun=t==="run", isClub=t==="club", noSeg=isRun||isClub||t==="strength";
   $("segBlock").classList.toggle("hidden",noSeg);
   $("runBlock").classList.toggle("hidden",!isRun);
+  $("clubBlock").classList.toggle("hidden",!isClub);
 }
+
+// ---------- Club-Workout: Text von der Hyrox-Seite erkennen ----------
+const ST_MATCH=[
+  {id:"ski",  re:/ski\s*-?\s*erg|\bski\b/i,         std:1000, unit:"m"},
+  {id:"push", re:/sled\s*push|schlitten\s*schieb/i, std:50,   unit:"m"},
+  {id:"pull", re:/sled\s*pull|schlitten\s*zieh/i,   std:50,   unit:"m"},
+  {id:"bbj",  re:/burpee\s*broad|broad\s*jump/i,     std:80,   unit:"m"},
+  {id:"row",  re:/\brow(ing|er)?\b|ruder/i,          std:1000, unit:"m"},
+  {id:"farm", re:/farmer/i,                          std:200,  unit:"m"},
+  {id:"lunge",re:/lunge|ausfallschritt/i,            std:100,  unit:"m"},
+  {id:"wall", re:/wall\s*ball/i,                     std:100,  unit:"reps"},
+];
+const CATS={power:"Power",engine:"Engine",endurance:"Endurance",strength:"Strength",kraft:"Strength",ausdauer:"Endurance",speed:"Speed",hybrid:"Hybrid",recovery:"Recovery",mobility:"Recovery"};
+const FORMAT_RE=/\b(amrap|emom|e\d+mom|for\s*time|tabata|intervals?|intervalle?|\d+\s*(?:rounds?|runden|rft)|rft|chipper|ladder|every\s+\d)/i;
+const DATE_RE=/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b|\b(\d{4})-(\d{2})-(\d{2})\b/;
+function matchStation(line){ const s=ST_MATCH.find(s=>s.re.test(line)); return s||null; }
+function qtyOf(line){
+  const m=line.match(/(\d+(?:[.,]\d+)?)\s*(km|m|cal|kcal|reps?|wdh\.?)\b/i); if(m){ let v=parseFloat(m[1].replace(",",".")), u=m[2].toLowerCase(); if(u==="km"){v*=1000;u="m";} if(/rep|wdh/.test(u)) u="reps"; return {v,u}; }
+  const n=line.match(/^\s*(\d+)\s*x?\s+[a-zäöü]/i); return n?{v:+n[1],u:"reps"}:null;
+}
+function parseWorkout(text){
+  const lines=text.split(/\r?\n/).map(l=>l.replace(/^[\s•\-–*·▪︎]+/,"").trim()).filter(Boolean);
+  const out={cat:"",title:"",format:"",date:"",ex:[]};
+  const cm=text.match(new RegExp("\\b("+Object.keys(CATS).join("|")+")\\b","i")); if(cm) out.cat=CATS[cm[1].toLowerCase()];
+  const dm=text.match(DATE_RE);
+  if(dm){ out.date=dm[4]?`${dm[4]}-${dm[5]}-${dm[6]}`:`${dm[3].length===2?"20"+dm[3]:dm[3]}-${dm[2].padStart(2,"0")}-${dm[1].padStart(2,"0")}`; }
+  lines.forEach((l,i)=>{
+    const st=matchStation(l), q=qtyOf(l), hasNum=/\d/.test(l);
+    if(!out.title && !st && !(q&&hasNum&&i>0)){ out.title=l.replace(DATE_RE,"").replace(/\s*[|·–-]\s*$/,"").trim()||l; return; }
+    if(!out.format && FORMAT_RE.test(l) && !st && l.length<60){ out.format=l; return; }
+    if(DATE_RE.test(l) && l.replace(DATE_RE,"").trim().length<3) return;
+    const head=!hasNum && !st && l.length<40;
+    if(head){ out.ex.push({head:true,text:l.replace(/:$/,"")}); return; }
+    const kg=l.match(/(\d+(?:[.,]\d+)?)\s*kg/i);
+    out.ex.push({text:l,station:st?.id||null,qty:q?.v??null,unit:q?.u??null,kg:kg?parseFloat(kg[1].replace(",",".")):null,res:"",w:""});
+  });
+  if(!out.title && out.cat) out.title=out.cat;
+  return out;
+}
+let curEx=[];
+function lastClub(title){ if(!title) return null; const t=title.trim().toLowerCase(); return sorted().find(e=>e.type==="club"&&e.id!==editing&&(e.title||"").trim().toLowerCase()===t)||null; }
+function renderEx(){
+  const prev=lastClub($("cTitle").value);
+  $("cPrev").innerHTML=prev?`↺ Dieses Workout hast du am <b>${fmtDate(prev.date)}</b> schon gemacht – Ergebnis: <b>${esc(prev.result||"–")}</b>. Die alten Werte stehen grau in den Feldern.`:"";
+  if(!curEx.length){ $("cEx").innerHTML=""; return; }
+  const pv=i=>prev?.ex?.find(x=>x.text===curEx[i].text)||{};
+  $("cEx").innerHTML=`<div class="exhead"><span>Übung</span><span>Zeit / Wdh.</span><span>kg</span></div>`+curEx.map((x,i)=>x.head?`<div class="exh">${esc(x.text)}</div>`:`
+    <div class="ex"><div class="t">${esc(x.text)}${x.station&&ST_MATCH.find(s=>s.id===x.station).std===x.qty?` <small>· zählt für Bestzeit</small>`:""}</div>
+    <input data-i="${i}" data-k="res" value="${esc(x.res)}" placeholder="${esc(pv(i).res||"mm:ss")}">
+    <input data-i="${i}" data-k="w" inputmode="decimal" value="${esc(x.w)}" placeholder="${esc(pv(i).w||x.kg||"")}"></div>`).join("");
+}
+$("cEx").addEventListener("input",e=>{ const i=e.target.dataset.i; if(i!=null) curEx[i][e.target.dataset.k]=e.target.value; });
+$("cTitle").addEventListener("input",renderEx);
+function doParse(){
+  const txt=$("cPaste").value; if(!txt.trim()) return;
+  const p=parseWorkout(txt);
+  if(p.cat) $("cCat").value=p.cat; if(p.title) $("cTitle").value=p.title; if(p.format) $("cFormat").value=p.format; if(p.date) $("fDate").value=p.date;
+  curEx=p.ex; renderEx();
+  toast(`${p.ex.filter(x=>!x.head).length} Übungen erkannt`);
+}
+$("cParse").onclick=doParse;
+$("cPaste").addEventListener("paste",()=>setTimeout(doParse,0));
+$("cClip").onclick=async()=>{
+  try{ const t=await navigator.clipboard.readText(); if(!t) throw 0; $("cPaste").value=t; doParse(); }
+  catch(e){ $("cPaste").focus(); toast("Bitte lang drücken → Einfügen"); }
+};
 $("fType").onchange=updType;
 function updPace(){ const d=parseFloat($("fDist").value), s=parseT($("fDur").value); $("fPace").value=(d>0&&s)?fmt(s/d)+" /km":""; }
 $("fDist").oninput=updPace; $("fDur").oninput=updPace;
@@ -263,6 +363,7 @@ let editing=null;
 function resetForm(){
   editing=null; $("entryForm").reset(); $("fDate").value=new Date().toISOString().slice(0,10);
   $("formTitle").textContent="Neue Einheit"; $("saveBtn").textContent="Speichern"; $("cancelEdit").classList.add("hidden");
+  curEx=[]; renderEx();
   updType(); updTotal(); updPace();
 }
 $("cancelEdit").onclick=resetForm;
@@ -273,8 +374,16 @@ $("entryForm").onsubmit=e=>{
   const entry={id:editing||Date.now().toString(36),date:$("fDate").value,type,
     feel:+$("fFeel").value||null,hr:+$("fHr").value||null,notes:$("fNotes").value.trim(),segs:{}};
   if(type==="run"){ entry.dist=parseFloat($("fDist").value)||null; entry.dur=parseT($("fDur").value); }
+  else if(type==="club"){
+    Object.assign(entry,{cat:$("cCat").value.trim(),title:$("cTitle").value.trim(),format:$("cFormat").value.trim(),
+      result:$("cResult").value.trim(),raw:$("cPaste").value,ex:curEx.map(x=>({...x}))});
+    if(!entry.title&&!entry.ex.length&&!entry.result){ toast("Bitte Workout einfügen oder Titel eintragen"); return; }
+    // volle Stationsdistanz mit Zeit → zählt für die Bestzeiten
+    entry.ex.forEach(x=>{ const st=ST_MATCH.find(s=>s.id===x.station), t=parseT(x.res);
+      if(st&&t&&x.qty===st.std&&(x.unit===st.unit)&&(!entry.segs[st.id]||t<entry.segs[st.id])) entry.segs[st.id]=t; });
+  }
   else if(type!=="strength"){ SEGS.forEach(s=>{ const v=parseT($("seg-"+s.id).value); if(v) entry.segs[s.id]=v; }); }
-  if(type!=="strength" && type!=="run" && !Object.keys(entry.segs).length && !entry.notes){ toast("Bitte mindestens eine Zeit eintragen"); return; }
+  if(type!=="strength" && type!=="run" && type!=="club" && !Object.keys(entry.segs).length && !entry.notes){ toast("Bitte mindestens eine Zeit eintragen"); return; }
   if(editing){ state.entries=state.entries.map(x=>x.id===editing?entry:x); toast("Eintrag aktualisiert"); }
   else { state.entries.push(entry); toast("Eintrag gespeichert 💪"); }
   save(); resetForm(); render();
@@ -286,12 +395,14 @@ function editEntry(id){
   $("fDate").value=en.date; $("fType").value=en.type; $("fFeel").value=en.feel||""; $("fHr").value=en.hr||""; $("fNotes").value=en.notes||"";
   SEGS.forEach(s=>$("seg-"+s.id).value=en.segs?.[s.id]?fmt(en.segs[s.id]):"");
   $("fDist").value=en.dist||""; $("fDur").value=en.dur?fmt(en.dur):"";
+  $("cCat").value=en.cat||""; $("cTitle").value=en.title||""; $("cFormat").value=en.format||""; $("cResult").value=en.result||""; $("cPaste").value=en.raw||"";
+  curEx=(en.ex||[]).map(x=>({...x})); renderEx();
   $("formTitle").textContent="Eintrag bearbeiten"; $("saveBtn").textContent="Änderungen speichern"; $("cancelEdit").classList.remove("hidden");
   updType(); updTotal(); updPace(); window.scrollTo({top:0,behavior:"smooth"});
 }
 function delEntry(id){ if(!confirm("Eintrag wirklich löschen?")) return; state.entries=state.entries.filter(x=>x.id!==id); save(); render(); toast("Gelöscht"); }
 
-const total=en=>en.type==="run"?en.dur:Object.values(en.segs||{}).reduce((a,b)=>a+b,0)||null;
+const total=en=>en.type==="club"?(/^\d+(:\d+){1,2}$/.test(en.result||"")?parseT(en.result):null):en.type==="run"?en.dur:Object.values(en.segs||{}).reduce((a,b)=>a+b,0)||null;
 const sorted=()=>[...state.entries].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
 function goalSplit(id){
   const g=state.settings.goal; if(!g) return null;
@@ -320,11 +431,12 @@ function render(){
   $("histBody").innerHTML=rows.length?rows.map(en=>{
     let det="";
     if(en.type==="run"&&en.dist) det=`${en.dist} km${en.dur?" · "+fmt(en.dur/en.dist)+"/km":""}`;
+    else if(en.type==="club") det=[en.title,en.format,(en.ex||[]).filter(x=>!x.head).length+" Übungen"].filter(Boolean).join(" · ");
     else { const k=Object.keys(en.segs||{}); det=k.length?k.length+" Segmente":""; }
     const extra=[en.feel?`Gefühl ${en.feel}/10`:"",en.hr?`Ø ${en.hr} bpm`:""].filter(Boolean).join(" · ");
     return `<tr>
-      <td>${fmtDate(en.date)}</td><td><span class="tag">${TYPES[en.type]||en.type}</span></td>
-      <td><b>${fmt(total(en))}</b></td>
+      <td>${fmtDate(en.date)}</td><td><span class="tag">${esc(en.type==="club"?(en.cat||"Club"):(TYPES[en.type]||en.type))}</span></td>
+      <td><b>${en.type==="club"&&en.result&&!total(en)?esc(en.result):fmt(total(en))}</b></td>
       <td>${esc(det)}${extra?`<div class="sub">${esc(extra)}</div>`:""}${en.notes?`<div class="sub">${esc(en.notes)}</div>`:""}</td>
       <td style="white-space:nowrap"><button class="btn danger" onclick="editEntry('${en.id}')">✎</button> <button class="btn danger" onclick="delEntry('${en.id}')">✕</button></td></tr>`;
   }).join(""):`<tr><td colspan="5" class="empty">Noch keine Einträge – leg los!</td></tr>`;
@@ -342,6 +454,11 @@ function render(){
       <td class="${pb?"pb":""}">${fmt(pb)}</td><td>${fmt(lastV)}</td><td class="sub">${fmt(g)}</td>
       <td class="${d==null?"":d<=0?"delta-good":"delta-bad"}">${d==null?"–":(d<=0?"−":"+")+fmt(Math.abs(d))}</td></tr>`;
   }).join("");
+
+  // Club categories
+  const cats={}; sorted().filter(e=>e.type==="club").forEach(e=>{ const c=e.cat||"Ohne Bereich"; (cats[c]=cats[c]||[]).push(e); });
+  const ck=Object.keys(cats);
+  $("catBody").innerHTML=ck.length?ck.sort((a,b)=>cats[b].length-cats[a].length).map(c=>`<tr><td><span class="tag">${esc(c)}</span></td><td>${cats[c].length}</td><td>${fmtDate(cats[c][0].date)} <span class="sub">${esc(cats[c][0].title||"")}</span></td></tr>`).join(""):`<tr><td colspan="3" class="empty">Noch keine Club-Workouts</td></tr>`;
 }
 
 function drawChart(sims){
