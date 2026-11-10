@@ -345,9 +345,11 @@ footer .in{padding-block:18px}
     <div id="raceList">
       <div class="h"><h2>Rennkalender</h2><span class="sub" id="racesSub"></span></div>
       <div class="toolbar">
+        <div class="seg" id="raceKind"><button type="button" data-rk="races" class="on">Rennen</button><button type="button" data-rk="tests">Saisontests</button></div>
         <select id="raceSeason" style="width:auto" aria-label="Saison"></select>
         <span class="grow"></span>
         <button class="btn owner-only" type="button" id="newRace">Neues Rennwochenende</button>
+        <button class="btn owner-only" type="button" id="newTest" hidden>Neuer Testtag</button>
       </div>
       <div class="panel tw" id="raceTable"></div>
     </div>
@@ -411,7 +413,7 @@ footer .in{padding-block:18px}
           <label class="f w2"><span>Name der Karriere</span><input id="nc-name" required placeholder="z. B. Karriere 2 – Rookie bei Tech3"></label>
           <label class="f"><span>Klasse</span><select id="nc-cls"><option>MotoGP</option><option>Moto2</option><option>Moto3</option></select></label>
           <label class="f"><span>Startsaison</span><input id="nc-season" type="number" min="1949" max="2100" required></label>
-          <label class="f"><span>Rennen pro Saison</span><input id="nc-per" type="number" min="1" max="40" value="22"></label>
+          <label class="f"><span>Rennen pro Saison</span><input id="nc-per" type="number" min="1" max="40" placeholder="laut Kalender"></label>
           <label class="f w2"><span>Starterfeld</span><select id="nc-tpl"><option value="2025">MotoGP 2025 (Original-Starterfeld)</option><option value="copy">Aus aktueller Karriere übernehmen</option><option value="empty">Leer – alles selbst anlegen</option></select></label>
         </div>
         <div class="h" style="margin:20px 0 10px"><h2 style="font-size:20px">Dein Fahrer</h2></div>
@@ -446,6 +448,7 @@ footer .in{padding-block:18px}
 
 <datalist id="trackList"></datalist>
 <datalist id="bikeList"></datalist>
+<datalist id="testList"></datalist>
 
 <div class="modal" id="modal" hidden>
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="mTitle">
@@ -466,6 +469,9 @@ const RACE_PTS=[25,20,16,13,11,10,9,8,7,6,5,4,3,2,1];
 const SPRINT_PTS=[12,9,7,6,5,4,3,2,1];
 const LKEY='gp-career-v3';
 const TRACKS=['Grand Prix von Thailand – Buriram','Grand Prix von Argentinien – Termas de Río Hondo','Grand Prix von Amerika – COTA','Grand Prix von Katar – Losail','Grand Prix von Spanien – Jerez','Grand Prix von Frankreich – Le Mans','Grand Prix von Großbritannien – Silverstone','Grand Prix von Aragón – MotorLand','Grand Prix von Italien – Mugello','Dutch TT – Assen','Grand Prix von Deutschland – Sachsenring','Grand Prix von Tschechien – Brünn','Grand Prix von Österreich – Red Bull Ring','Grand Prix von Ungarn – Balaton Park','Grand Prix von Katalonien – Barcelona','Grand Prix von San Marino – Misano','Grand Prix von Japan – Motegi','Grand Prix von Indonesien – Mandalika','Grand Prix von Australien – Phillip Island','Grand Prix von Malaysia – Sepang','Grand Prix von Portugal – Portimão','Grand Prix von Valencia – Ricardo Tormo'];
+const CAL_2024=['Grand Prix von Katar – Losail','Grand Prix von Portugal – Portimão','Grand Prix von Amerika – COTA','Grand Prix von Spanien – Jerez','Grand Prix von Frankreich – Le Mans','Grand Prix von Katalonien – Barcelona','Grand Prix von Italien – Mugello','Dutch TT – Assen','Grand Prix von Deutschland – Sachsenring','Grand Prix von Großbritannien – Silverstone','Grand Prix von Österreich – Red Bull Ring','Grand Prix von Aragón – MotorLand','Grand Prix von San Marino – Misano','Grand Prix der Emilia-Romagna – Misano','Grand Prix von Indonesien – Mandalika','Grand Prix von Japan – Motegi','Grand Prix von Australien – Phillip Island','Grand Prix von Thailand – Buriram','Grand Prix von Malaysia – Sepang','Solidaritäts-Grand-Prix – Barcelona'];
+const calendar=season=>Number(season)===2024?CAL_2024:TRACKS;
+const TEST_NAMES=['Shakedown – Sepang','Testfahrten – Sepang','Testfahrten – Losail','Testfahrten – Buriram','Testfahrten – Portimão','Testfahrten – Jerez','Testfahrten – Mugello','Testfahrten – Misano','Testfahrten – Barcelona','Testfahrten – Valencia'];
 const MAKERS={ducati:'#d4001e',aprilia:'#9b1b30',ktm:'#ff6600',honda:'#e2231a',yamaha:'#1b4fd8',kalex:'#9aa0a6',boscoscuro:'#e23c3c',triumph:'#c2a26a','gas gas':'#e03a3e',husqvarna:'#1d3c78',cfmoto:'#00a3e0',suzuki:'#2b6cff'};
 /* Vorlage für neue Karrieren: Starterfeld MotoGP 2025 */
 const GRID_2025=[
@@ -519,7 +525,7 @@ const Store={
 const sub=(cid,name)=>`careers/${cid}/${name}`;
 
 /* ================= Zustand ================= */
-let S={careers:[],cid:null,teams:[],riders:[],races:[]};
+let S={careers:[],cid:null,teams:[],riders:[],races:[],tests:[]};
 let canWrite=true, loaded=false;
 let tab=lsGet('gp-tab')||'home';
 let detailRider=null, raceDraft=null, tapCol=null, stKind='riders';
@@ -595,11 +601,11 @@ function makerStandings(season){
   }
   return Object.values(m).sort((a,b)=>b.pts-a.pts||b.wins-a.wins);
 }
-const perSeason=()=>Number(career()?.racesPerSeason)||22;
+const perSeason=season=>Number(career()?.racesPerSeason)||calendar(season??career()?.season).length;
 const maxWeekend=()=>(career()?.cls==='Moto2'||career()?.cls==='Moto3')?25:37;
 function titleMath(season){
   const list=standings(season); const done=S.races.filter(r=>r.season===season).length;
-  const left=Math.max(0,perSeason()-done); const maxLeft=left*maxWeekend();
+  const left=Math.max(0,perSeason(season)-done); const maxLeft=left*maxWeekend();
   const closed=(career()?.closed||[]).includes(season);
   const leadPts=list[0]?.pts||0, second=list[1]?.pts||0;
   const clinched=list.length>0&&(closed||left===0||leadPts>second+maxLeft);
@@ -645,7 +651,7 @@ function render(){
   if(tab==='records')renderRecords();
 }
 function go(t){
-  if(raceDraft&&t!=='races')raceDraft=null;
+  if(t!=='races'){raceDraft=null;testDraft=null;}
   tab=t; lsSet('gp-tab',t); if(t!=='riders')detailRider=null; render(); window.scrollTo({top:0});
 }
 function renderCareerSel(){
@@ -685,7 +691,8 @@ function renderHero(){
 }
 function fillDatalists(){
   const dl=(id,vals)=>$(id).innerHTML=[...new Set(vals.filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('');
-  dl('#trackList',[...S.races.map(r=>r.track),...TRACKS]);
+  dl('#trackList',[...S.races.map(r=>r.track),...TRACKS,...CAL_2024]);
+  dl('#testList',[...(S.tests||[]).map(t=>t.name),...TEST_NAMES]);
   dl('#bikeList',[...S.teams.map(t=>t.bike),'Ducati','Aprilia','KTM','Honda','Yamaha','Kalex','Boscoscuro','Triumph','Gas Gas','Husqvarna','CFMoto']);
 }
 
@@ -693,14 +700,14 @@ function fillDatalists(){
 function renderStrip(){
   const c=career(); if(!c){$('#homeStripWrap').hidden=true;return;} $('#homeStripWrap').hidden=false;
   const ss=seasons(); let cur=ss.at(-1)??c.season; let done=S.races.filter(r=>r.season===cur).length;
-  const n=perSeason(); if(done>=n&&ss.length){cur=cur+1;done=0;}
+  let n=perSeason(cur); if(done>=n&&ss.length){cur=cur+1;done=0;n=perSeason(cur);}
   const rs=racesSorted().filter(r=>r.season===cur); const me=playerId();
-  const nextTrack=TRACKS[done]||'';
+  const CAL=calendar(cur); const nextTrack=CAL[done]||'';
   $('#stripTitle').textContent=`Saison ${cur}`; $('#stripSub').textContent=done>=n?'Saison beendet':`${n-done} Rennwochenenden übrig`;
   const tm=titleMath(cur); const myRank=me?wmRank(me,cur):null;
   $('#homeStrip').innerHTML=`<div class="strip-top"><div class="big">Runde <b>${Math.min(done+1,n)}</b> / ${n}</div>
     <div class="nextgp">${done<n?`<span>Nächster Grand Prix <b>${esc(nextTrack||'frei wählbar')}</b></span>`:''}${myRank?`<span>Dein WM-Platz <b>P${myRank}</b></span>`:''}${me&&tm.status[me]?`<span>Titelchance <b>${tm.status[me]==='won'?'Weltmeister!':tm.status[me]==='in'?'lebt':'vorbei'}</b></span>`:''}</div></div>
-    <div class="segs" aria-label="Saisonfortschritt">${Array.from({length:n},(_,i)=>{const r=rs[i];if(!r)return `<i class="${i===done?'next':''}" title="Runde ${i+1}${TRACKS[i]?' · '+esc(TRACKS[i]):''}"></i>`;
+    <div class="segs" aria-label="Saisonfortschritt">${Array.from({length:n},(_,i)=>{const r=rs[i];if(!r)return `<i class="${i===done?'next':''}" title="Runde ${i+1}${CAL[i]?' · '+esc(CAL[i]):''}"></i>`;
       const w=Object.entries(r.results||{}).find(([,x])=>st(x)==='OK'&&x.pos===1);const col=w?riderColor(rider(w[0])):'var(--line-2)';const mine=me&&w&&w[0]===me;
       return `<i class="${mine?'mine':''}" style="background:${esc(col)}" title="R${r.round||i+1} ${esc(r.track)}${w?' · Sieg '+esc(shortName(rider(w[0]))):''}"></i>`;}).join('')}</div>
     ${canWrite&&done<n?`<div><button class="btn sm" type="button" id="stripNext">${esc(nextTrack?nextTrack.split(' – ').pop():'Nächstes Rennen')} eintragen</button></div>`:''}`;
@@ -738,8 +745,13 @@ function renderHome(){
 
 /* ---------- Rennen ---------- */
 function renderRaces(){
-  $('#raceList').hidden=!!raceDraft; $('#raceEditor').hidden=!raceDraft;
+  $('#raceList').hidden=!!(raceDraft||testDraft); $('#raceEditor').hidden=!(raceDraft||testDraft);
   if(raceDraft){renderEditor();return;}
+  if(testDraft){renderTestEditor();return;}
+  document.querySelectorAll('#raceKind button').forEach(b=>b.classList.toggle('on',b.dataset.rk===raceKind));
+  $('#newRace').hidden=raceKind!=='races'; $('#newTest').hidden=raceKind!=='tests';
+  $('#raceList .h h2').textContent=raceKind==='tests'?'Saisontests':'Rennkalender';
+  if(raceKind==='tests'){renderTests();return;}
   if(!career()){$('#raceTable').innerHTML='<div class="empty">Leg zuerst eine Karriere an.</div>';return;}
   const ss=seasons().reverse(); const sel=$('#raceSeason'); const cur=sel.value;
   sel.innerHTML=`<option value="">Alle Saisons</option>`+ss.map(s=>`<option${String(s)===cur?' selected':''}>${s}</option>`).join('');
@@ -764,11 +776,11 @@ function openRace(id){
   if(r){raceDraft=JSON.parse(JSON.stringify(r));raceDraft.results||={};}
   else{
     const last=racesSorted().at(-1); let season=last?.season??c.season;
-    if(S.races.filter(x=>x.season===season).length>=perSeason())season++;
+    if(S.races.filter(x=>x.season===season).length>=perSeason(season))season++;
     const round=Math.max(0,...S.races.filter(x=>x.season===season).map(x=>x.round||0))+1;
-    raceDraft={id:genId(),season,round,track:TRACKS[round-1]||'',wet:false,hasSprint:c.cls!=='Moto2'&&c.cls!=='Moto3',results:{},fl:null,isNew:true};
+    raceDraft={id:genId(),season,round,track:calendar(season)[round-1]||'',wet:false,hasSprint:c.cls!=='Moto2'&&c.cls!=='Moto3',results:{},fl:null,isNew:true};
   }
-  tapCol=null; tab='races'; render(); window.scrollTo({top:0});
+  tapCol=null; testDraft=null; tab='races'; render(); window.scrollTo({top:0});
 }
 function editorRiders(){
   const d=raceDraft; const ids=new Set(S.riders.map(r=>r.id));
@@ -864,6 +876,111 @@ async function saveRace(){
   try{await Store.set(sub(S.cid,'races'),id,doc);raceDraft=null;toast(isNew?'Rennen gespeichert':'Änderung gespeichert');render();}catch(e){toast('Speichern fehlgeschlagen');}
 }
 
+/* ---------- Saisontests ---------- */
+let raceKind=lsGet('gp-rkind')||'races', testDraft=null, testSort='team';
+function parseTime(t){
+  t=String(t||'').trim().replace(/[’'′]/g,':').replace(',','.'); if(!t)return null;
+  if((t.match(/\./g)||[]).length===2&&!t.includes(':'))t=t.replace('.',':');
+  const m=t.match(/^(?:(\d{1,2}):)?(\d{1,3}(?:\.\d{1,3})?)$/); if(!m)return null;
+  const v=(m[1]?Number(m[1])*60:0)+Number(m[2]); return isFinite(v)&&v>0?v:null;
+}
+function fmtTime(sec){const m=Math.floor(sec/60),r=sec-m*60;return m?`${m}:${r.toFixed(3).padStart(6,'0')}`:r.toFixed(3);}
+function testRanking(t){return Object.entries(t.results||{}).map(([rid,x])=>({rid,...x,sec:parseTime(x.time)})).filter(x=>x.sec!=null).sort((a,b)=>a.sec-b.sec).map((x,i,arr)=>({...x,pos:i+1,gap:x.sec-arr[0].sec}));}
+const testsSorted=()=>[...(S.tests||[])].sort((a,b)=>(a.season-b.season)||((a.order??0)-(b.order??0))||String(a.name).localeCompare(b.name)||((a.day||1)-(b.day||1)));
+function renderTests(){
+  const all=[...new Set([...seasons(),...(S.tests||[]).map(t=>t.season)])].sort((a,b)=>b-a);
+  const sel=$('#raceSeason'); const cur=sel.value;
+  sel.innerHTML=`<option value="">Alle Saisons</option>`+all.map(x=>`<option${String(x)===cur?' selected':''}>${x}</option>`).join('');
+  const rows=testsSorted().reverse().filter(t=>!sel.value||String(t.season)===sel.value);
+  $('#racesSub').textContent=rows.length?`${rows.length} Testtage · zählen nicht zur WM`:'Zählen nicht zur WM';
+  if(!rows.length){$('#raceTable').innerHTML=`<div class="empty">Noch keine Saisontests eingetragen.${canWrite?'<br><button class="btn" type="button" id="emptyNewTest">Ersten Testtag eintragen</button>':''}</div>`;return;}
+  const me=playerId();
+  $('#raceTable').innerHTML=`<table><thead><tr><th>Saison</th><th>Test</th><th>Schnellster</th><th class="n">Bestzeit</th>${me?'<th class="c">Du</th><th class="n">Deine Zeit</th><th class="n">Abstand</th>':''}<th class="n">Fahrer</th><th class="owner-only"></th></tr></thead><tbody>${rows.map(t=>{
+    const rk=testRanking(t); const top=rk[0]; const mine=me?rk.find(x=>x.rid===me):null;
+    return `<tr><td><b>${t.season}</b></td><td><span class="rd"><span><span class="t">${esc(t.name)}</span><span class="tag">Tag ${t.day||1}</span>${t.wet?'<span class="tag wet">Nass</span>':''}</span></span></td>
+      <td>${top?riderCell(rider(top.rid),null,{short:true}):'<span class="hint">–</span>'}</td><td class="n"><span class="pts">${top?fmtTime(top.sec):'–'}</span></td>
+      ${me?`<td class="c">${mine?posBox(mine.pos,null,true):posBox(null,null,true)}</td><td class="n">${mine?fmtTime(mine.sec):'<span class="hint">–</span>'}</td><td class="n gap">${mine&&mine.pos>1?'+'+mine.gap.toFixed(3):''}</td>`:''}
+      <td class="n">${rk.length}</td>
+      <td class="owner-only"><div class="rowact"><button class="ib" type="button" data-tedit2="${esc(t.id)}" aria-label="Bearbeiten">${icon.edit}</button><button class="ib del" type="button" data-tdel2="${esc(t.id)}" aria-label="Löschen">${icon.del}</button></div></td></tr>`;}).join('')}</tbody></table>`;
+}
+function openTest(id){
+  const t=id?S.tests.find(x=>x.id===id):null; const c=career();
+  if(t){testDraft=JSON.parse(JSON.stringify(t));testDraft.results||={};}
+  else{
+    // Vorsaison-Test der Saison, die als Nächstes gefahren wird
+    const last=racesSorted().at(-1); let season=last?.season??c.season;
+    if(last&&S.races.filter(x=>x.season===season).length>=perSeason(season))season++;
+    const prev=testsSorted().filter(x=>x.season===season).at(-1);
+    testDraft={id:genId(),season,name:prev?.name||(season===2024?'Testfahrten – Sepang':'Testfahrten – Sepang'),day:prev?Math.min((prev.day||1)+1,5):1,wet:false,results:{},isNew:true};
+  }
+  raceDraft=null; tab='races'; render(); window.scrollTo({top:0});
+}
+function renderTestEditor(){
+  const d=testDraft; const rk=testRanking(d); const pos={}; rk.forEach(x=>pos[x.rid]=x);
+  let rows=[...S.riders]; const tOrd=id=>team(id)?.order??999;
+  rows.sort(testSort==='time'?((a,b)=>(pos[a.id]?.pos??999)-(pos[b.id]?.pos??999)||tOrd(a.teamId)-tOrd(b.teamId)):((a,b)=>tOrd(a.teamId)-tOrd(b.teamId)||(Number(a.number)||999)-(Number(b.number)||999)));
+  $('#raceEditor').innerHTML=`
+  <div class="h"><h2>${d.isNew?'Neuer Testtag':'Testtag bearbeiten'}</h2><span class="sub">Saisontests zählen nicht zur WM. Platzierung ergibt sich aus der Bestzeit.</span></div>
+  <div class="panel">
+    <div class="form" style="padding-bottom:4px">
+      <div class="grid">
+        <label class="f"><span>Saison</span><input id="t-season" type="number" min="1949" max="2100" value="${esc(d.season)}"></label>
+        <label class="f w2"><span>Test</span><input id="t-name" list="testList" value="${esc(d.name)}" placeholder="z. B. Testfahrten – Sepang"></label>
+        <label class="f"><span>Tag</span><input id="t-day" type="number" min="1" max="10" value="${esc(d.day||1)}"></label>
+      </div>
+      <div class="checks" style="margin:14px 0"><label><input type="checkbox" id="t-wet"${d.wet?' checked':''}> Nasse Strecke</label></div>
+    </div>
+    <div class="tapbar"><span class="lbl">Zeiten</span><span class="hint">Format 1:58.123 – auch 1'58.123 oder 1.58.123 geht.</span><span style="flex:1"></span>
+      <div class="seg" id="tSortSeg"><button type="button" data-tsort="team" class="${testSort==='team'?'on':''}">Nach Team</button><button type="button" data-tsort="time" class="${testSort==='time'?'on':''}">Nach Zeit</button></div></div>
+    <div class="tw"><table class="etab"><thead><tr><th class="c">Pos</th><th>Fahrer</th><th class="c">Bestzeit</th><th class="c">Runden</th><th class="n">Abstand</th></tr></thead><tbody>${rows.map(r=>{const x=d.results[r.id]||{};const p=pos[r.id];const bad=x.time&&parseTime(x.time)==null;const t=team(r.teamId);
+      return `<tr class="${r.id===playerId()?'me':''}"><td class="c">${p?posBox(p.pos,null,true):posBox(null,null,true)}</td>
+      <td><span class="rd"><span class="nr" style="color:${esc(teamColor(t))}">${esc(r.number||'')}</span><i class="stripe" style="background:${esc(teamColor(t))}"></i><span><span class="t">${esc(shortName(r))}${r.id===playerId()?'<span class="tag me">Du</span>':''}</span><span class="s" style="display:block">${esc(t?.name||'Ohne Team')}</span></span></span></td>
+      <td class="c"><input id="t-time-${esc(r.id)}" data-trid="${esc(r.id)}" data-tcol="time" value="${esc(x.time||'')}" placeholder="m:ss.000" inputmode="decimal" class="${bad?'dup':''}" style="width:110px;text-align:center"></td>
+      <td class="c"><input id="t-laps-${esc(r.id)}" data-trid="${esc(r.id)}" data-tcol="laps" type="number" min="0" max="200" value="${esc(x.laps??'')}" style="width:72px;text-align:center"></td>
+      <td class="n gap">${p?(p.pos===1?'<b style="color:var(--fg)">Bestzeit</b>':'+'+p.gap.toFixed(3)):''}</td></tr>`;}).join('')}</tbody></table></div>
+    <div class="form" style="padding-top:4px"><div class="actions">
+      <button class="btn" type="button" id="tSave">Testtag speichern</button>
+      <button class="btn ghost" type="button" id="tCancel">Abbrechen</button>
+      ${d.isNew?'':'<button class="btn warn" type="button" id="tDel">Testtag löschen</button>'}
+      ${Object.values(d.results).some(x=>x.time&&parseTime(x.time)==null)?'<span class="hint" style="color:var(--bad)">Rot markierte Zeiten sind nicht lesbar.</span>':''}
+    </div></div>
+  </div>`;
+}
+function setTestRes(rid,col,val){
+  const x=(testDraft.results[rid]||={}); if(val==null||val==='')delete x[col]; else x[col]=val;
+  if(!x.time&&x.laps==null)delete testDraft.results[rid];
+}
+async function saveTest(){
+  const d=testDraft; d.season=num($('#t-season').value); d.name=$('#t-name').value.trim(); d.day=num($('#t-day').value)||1; d.wet=$('#t-wet').checked;
+  if(!d.season||!d.name){toast('Saison und Test fehlen');return;}
+  const {isNew,id,...doc}=d;
+  try{await Store.set(sub(S.cid,'tests'),id,doc);testDraft=null;raceKind='tests';toast(isNew?'Testtag gespeichert':'Änderung gespeichert');render();}catch(e){toast('Speichern fehlgeschlagen');}
+}
+$('#raceKind').addEventListener('click',e=>{const k=e.target.closest('button')?.dataset.rk;if(!k)return;raceKind=k;lsSet('gp-rkind',k);renderRaces();});
+$('#raceEditor').addEventListener('click',async e=>{
+  const b=e.target.closest('button'); if(!b||!testDraft)return;
+  if(b.dataset.tsort){testSort=b.dataset.tsort;renderTestEditor();return;}
+  if(b.id==='tSave'){saveTest();return;}
+  if(b.id==='tCancel'){testDraft=null;render();return;}
+  if(b.id==='tDel'){if(await ask('Testtag löschen?','Der Testtag wird mit allen Zeiten gelöscht.',{ok:'Löschen',danger:true})){try{await Store.del(sub(S.cid,'tests'),testDraft.id);testDraft=null;toast('Testtag gelöscht');render();}catch(err){toast('Löschen fehlgeschlagen');}}}
+});
+$('#raceEditor').addEventListener('change',e=>{
+  const el=e.target; if(!testDraft)return;
+  if(el.dataset.trid){let v=el.dataset.tcol==='laps'?num(el.value):el.value.trim();if(el.dataset.tcol==='time'&&parseTime(v)!=null)v=fmtTime(parseTime(v));setTestRes(el.dataset.trid,el.dataset.tcol,v);
+    const nxt=document.activeElement?.id; renderTestEditor(); if(nxt&&document.getElementById(nxt))document.getElementById(nxt).focus();}
+});
+$('#raceEditor').addEventListener('keydown',e=>{
+  if(!testDraft||e.key!=='Enter'||!e.target.dataset.trid)return; e.preventDefault();
+  const td=e.target.closest('td'),tr=td.closest('tr'),idx=[...tr.children].indexOf(td);
+  const id=tr.nextElementSibling?.children[idx]?.querySelector('input')?.id; e.target.blur(); if(id)setTimeout(()=>document.getElementById(id)?.focus(),0);
+});
+function riderTests(r){
+  const list=testsSorted().filter(t=>t.results?.[r.id]&&parseTime(t.results[r.id].time)!=null).reverse();
+  if(!list.length)return '';
+  return `<div><div class="h"><h2>Saisontests</h2><span class="sub">Zählen nicht zur Statistik</span></div><div class="panel tw"><table><thead><tr><th>Saison</th><th>Test</th><th class="c">Pos</th><th class="n">Bestzeit</th><th class="n">Abstand</th><th class="n">Runden</th></tr></thead><tbody>${list.map(t=>{const rk=testRanking(t);const x=rk.find(y=>y.rid===r.id);
+    return `<tr><td><b>${t.season}</b></td><td><span class="t" style="font:800 16px/1 var(--display);text-transform:uppercase">${esc(t.name)}</span><span class="tag">Tag ${t.day||1}</span></td><td class="c">${posBox(x.pos,null,true)}<span class="hint"> / ${rk.length}</span></td><td class="n"><span class="pts">${fmtTime(x.sec)}</span></td><td class="n gap">${x.pos>1?'+'+x.gap.toFixed(3):''}</td><td class="n">${x.laps??'–'}</td></tr>`;}).join('')}</tbody></table></div></div>`;
+}
+
 /* ---------- WM-Stand ---------- */
 function renderStandings(){
   const ss=seasons().reverse(); const sel=$('#stSeason'); const cur=num(sel.value)??ss[0];
@@ -878,7 +995,7 @@ function renderStandings(){
   if(stKind==='riders'){
     const lead=list[0]?.pts||0; const tm=titleMath(cur);
     const fl={won:'<span class="fight won">Weltmeister</span>',in:'<span class="fight in">Im Titelkampf</span>',out:'<span class="fight out">–</span>'};
-    $('#stTable').innerHTML=`<div class="mathbar"><span>Gefahren <b>${tm.done}</b> von <b>${perSeason()}</b> Rennwochenenden</span><span>Noch zu vergeben <b>${tm.maxLeft}</b> Punkte</span><span>Im Titelkampf <b>${Object.values(tm.status).filter(v=>v!=='out').length}</b> Fahrer</span></div><table><thead><tr><th class="c">Pos</th><th>Fahrer</th><th>Team</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Punkte</th><th class="n">Rückstand</th><th>Titel</th></tr></thead><tbody>${list.map(e=>{const r=rider(e.id);const tn=[...e.teams].map(t=>team(t)?.name).filter(Boolean).join(' / ');
+    $('#stTable').innerHTML=`<div class="mathbar"><span>Gefahren <b>${tm.done}</b> von <b>${perSeason(cur)}</b> Rennwochenenden</span><span>Noch zu vergeben <b>${tm.maxLeft}</b> Punkte</span><span>Im Titelkampf <b>${Object.values(tm.status).filter(v=>v!=='out').length}</b> Fahrer</span></div><table><thead><tr><th class="c">Pos</th><th>Fahrer</th><th>Team</th><th class="n">Siege</th><th class="n">Podien</th><th class="n">Poles</th><th class="n">Punkte</th><th class="n">Rückstand</th><th>Titel</th></tr></thead><tbody>${list.map(e=>{const r=rider(e.id);const tn=[...e.teams].map(t=>team(t)?.name).filter(Boolean).join(' / ');
       return `<tr class="${e.id===playerId()?'me':''}"><td class="c tc" style="--tcol:${esc(riderColor(r))}">${posBox(e.rank)}</td><td>${riderCell(r,natCell(r?.nation))}</td><td class="mute">${esc(tn||team(r?.teamId)?.name||'–')}</td><td class="n">${e.wins}</td><td class="n">${e.podiums}</td><td class="n">${e.poles}</td><td class="n"><span class="pts">${fmt(e.pts)}</span></td><td class="n gap">${e.rank===1?'':'−'+fmt(lead-e.pts)}</td><td>${fl[tm.status[e.id]]}</td></tr>`;}).join('')}</tbody></table>`;
   }else if(stKind==='teams'){
     const tl=teamStandings(cur);
@@ -958,6 +1075,7 @@ function renderRiderDetail(){
     const tn=[...new Set(sr.map(x=>x.results?.[r.id]?.teamId).filter(Boolean))].map(t=>team(t)?.name).filter(Boolean).join(' / ');
     const champ=championOf(s)===r.id;
     return `<tr><td><b>${s}</b>${closed.includes(s)?'':'<div class="hint">läuft</div>'}</td><td class="mute">${esc(tn||'–')}</td><td class="n">${sa.entries}</td><td class="n">${sa.wins}</td><td class="n">${sa.podiums}</td><td class="n">${sa.poles}</td><td class="n">${sa.dnf}</td><td class="n"><span class="pts">${fmt(sa.pts)}</span></td><td class="c">${posBox(rk,null,true)}${champ?'<span class="tag" style="background:var(--gold);color:#111">Weltmeister</span>':''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Noch keine Rennen mit diesem Fahrer.</div>'}</div></div>
+  ${riderTests(r)}
   ${races.length?`<div><div class="h"><h2>Alle Ergebnisse</h2></div><div class="panel tw"><table><thead><tr><th>Saison</th><th>Grand Prix</th><th>Team</th><th class="c">Start</th><th class="c">Sprint</th><th class="c">Rennen</th><th class="n">Pkt</th></tr></thead><tbody>${races.map(race=>{const x=race.results[r.id];
     return `<tr><td><b>${race.season}</b><div class="hint">Runde ${race.round||'–'}</div></td><td><span class="t" style="font:800 16px/1 var(--display);text-transform:uppercase">${esc(race.track)}</span>${x.grid===1?'<span class="tag pole">Pole</span>':''}${race.fl===r.id?'<span class="tag fl">SR</span>':''}${race.wet?'<span class="tag wet">Regen</span>':''}</td><td class="mute">${esc(team(x.teamId)?.name||'–')}</td><td class="c">${x.grid||'<span class="hint">–</span>'}</td><td class="c">${x.sprint?posBox(x.sprint,null,true):'<span class="hint">–</span>'}</td><td class="c">${posBox(x.pos,st(x))}</td><td class="n"><span class="pts${resPts(x,race)?'':' zero'}">${fmt(resPts(x,race))}</span></td></tr>`;}).join('')}</tbody></table></div></div>`:''}`;
 }
@@ -1146,7 +1264,7 @@ function ncSync(keepTeam){
   ts.innerHTML=teams.map(t=>`<option value="${esc(t.id)}"${t.id===prev?' selected':''}>${esc(t.name)}</option>`).join('');
   const t=teams.find(x=>x.id===ts.value)||teams[0];
   $('#nc-repl').innerHTML=`<option value="">Niemanden – zusätzlicher Fahrer</option>`+(t?.riders||[]).map(r=>`<option value="${esc(r.id)}"${r.id===prevRepl?' selected':''}>${esc(r.label)} (geht zu „Ohne Team“)</option>`).join('');
-  if(!$('#nc-season').value)$('#nc-season').value=2025;
+  if(!$('#nc-season').value)$('#nc-season').value=2024;
 }
 $('#nc-tpl').addEventListener('change',()=>ncSync());
 $('#nc-team').addEventListener('change',()=>{$('#nc-repl').value='';ncSync(true);});
@@ -1164,7 +1282,7 @@ $('#newCareer').addEventListener('submit',async e=>{
   $('#nc-go').disabled=true; $('#nc-hint').textContent='Karriere wird angelegt…';
   try{
     await Promise.all([...teams.map(t=>Store.set(sub(cid,'teams'),t.id,t)),...riders.map(r=>Store.set(sub(cid,'riders'),r.id,r))]);
-    await Store.set('careers',cid,{name:v('#nc-name'),cls:$('#nc-cls').value,season:num($('#nc-season').value),racesPerSeason:num($('#nc-per').value)||22,playerId:me.id,createdAt:Date.now(),closed:[]});
+    await Store.set('careers',cid,{name:v('#nc-name'),cls:$('#nc-cls').value,season:num($('#nc-season').value),racesPerSeason:num($('#nc-per').value)||null,playerId:me.id,createdAt:Date.now(),closed:[]});
     $('#newCareer').reset(); switchCareer(cid); tab='home'; lsSet('gp-tab','home'); render(); window.scrollTo({top:0});
     toast('Neue Karriere gestartet');
   }catch(err){toast('Anlegen fehlgeschlagen');}
@@ -1173,7 +1291,7 @@ $('#newCareer').addEventListener('submit',async e=>{
 async function deleteCareer(c){
   if(!(await ask('Karriere löschen?',`„${c.name}“ mit allen Rennen, Fahrern und Teams wird endgültig gelöscht.`,{ok:'Endgültig löschen',danger:true})))return;
   try{
-    for(const col of ['races','riders','teams']){const docs=await Store.getAll(sub(c.id,col));await Promise.all(docs.map(d=>Store.del(sub(c.id,col),d.id)));}
+    for(const col of ['races','tests','riders','teams']){const docs=await Store.getAll(sub(c.id,col));await Promise.all(docs.map(d=>Store.del(sub(c.id,col),d.id)));}
     await Store.del('careers',c.id); toast('Karriere gelöscht');
   }catch(e){toast('Löschen fehlgeschlagen');}
 }
@@ -1181,12 +1299,13 @@ async function deleteCareer(c){
 /* ---------- Verbindung & Abos ---------- */
 function switchCareer(cid){
   if(S.cid===cid)return; unsubs.forEach(u=>{try{u();}catch(e){}}); unsubs=[];
-  S.cid=cid; S.teams=[];S.riders=[];S.races=[]; detailRider=null; raceDraft=null; lsSet('gp-cid',cid||'');
+  S.cid=cid; S.teams=[];S.riders=[];S.races=[];S.tests=[];testDraft=null; detailRider=null; raceDraft=null; lsSet('gp-cid',cid||'');
   if(!cid){render();return;}
   const fail=e=>setSync('local',e?.code==='not_granted'?'Kein Zugriff':'Verbindungsfehler');
   unsubs.push(Store.listen(sub(cid,'teams'),d=>{S.teams=d;render();},fail));
   unsubs.push(Store.listen(sub(cid,'riders'),d=>{S.riders=d;render();},fail));
   unsubs.push(Store.listen(sub(cid,'races'),d=>{S.races=d;render();},fail));
+  unsubs.push(Store.listen(sub(cid,'tests'),d=>{S.tests=d;render();},fail));
   render();
 }
 function onCareers(list){
@@ -1236,9 +1355,12 @@ document.addEventListener('click',async e=>{
   if(b.id==='heroOwn'||b.id==='addOwnRider'){if(canWrite)editRider(null,'',true);return;}
   if(b.id==='addTeam'){if(canWrite)editTeam(null);return;}
   if(['homeNewRace','homeFirstRace','newRace','emptyNewRace','stripNext'].includes(b.id)){if(canWrite&&career())openRace(null);return;}
+  if(['newTest','emptyNewTest'].includes(b.id)){if(canWrite&&career())openTest(null);return;}
   if(b.id==='backRiders'){detailRider=null;render();return;}
   if(!canWrite)return;
   if(d.redit){openRace(d.redit);return;}
+  if(d.tedit2){openTest(d.tedit2);return;}
+  if(d.tdel2){const t=S.tests.find(x=>x.id===d.tdel2);if(await ask('Testtag löschen?',`${t.season} · ${t.name} (Tag ${t.day||1}) wird gelöscht.`,{ok:'Löschen',danger:true})){try{await Store.del(sub(S.cid,'tests'),t.id);toast('Testtag gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}}return;}
   if(d.rdel){const r=S.races.find(x=>x.id===d.rdel);if(await ask('Rennen löschen?',`${r.season} · ${r.track} wird mit allen Ergebnissen gelöscht.`,{ok:'Löschen',danger:true})){try{await Store.del(sub(S.cid,'races'),r.id);toast('Rennen gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}}return;}
   if(d.padd){editRider(null,d.padd==='_free'?'':d.padd,false);return;}
   if(d.pedit){const r=rider(d.pedit);if(r)editRider(r);return;}
@@ -1247,7 +1369,7 @@ document.addEventListener('click',async e=>{
   if(d.tdel){const t=team(d.tdel);const n=S.riders.filter(r=>r.teamId===t.id).length;
     if(await ask('Team löschen?',`${t.name} wird gelöscht.${n?` ${n} Fahrer landen unter „Ohne Team“.`:''}`,{ok:'Löschen',danger:true})){try{await Promise.all(S.riders.filter(r=>r.teamId===t.id).map(r=>Store.set(sub(S.cid,'riders'),r.id,{...r,teamId:''})));await Store.del(sub(S.cid,'teams'),t.id);toast('Team gelöscht');}catch(err){toast('Löschen fehlgeschlagen');}}return;}
   if(d.copen){switchCareer(d.copen);go('home');toast('Karriere geöffnet');return;}
-  if(d.cren){const c=S.careers.find(x=>x.id===d.cren);if(await ask('Karriere bearbeiten','',{ok:'Speichern',extra:`<div class="mgrid"><label class="f w2"><span>Name</span><input id="m-cname" value="${esc(c.name)}"></label><label class="f"><span>Rennen pro Saison</span><input id="m-cper" type="number" min="1" max="40" value="${esc(c.racesPerSeason||22)}"></label><label class="f"><span>Klasse</span><select id="m-ccls">${['MotoGP','Moto2','Moto3'].map(k=>`<option${(c.cls||'MotoGP')===k?' selected':''}>${k}</option>`).join('')}</select></label></div>`})){const n=$('#m-cname').value.trim();if(n)await Store.set('careers',c.id,{...c,name:n,racesPerSeason:num($('#m-cper').value)||22,cls:$('#m-ccls').value});toast('Karriere gespeichert');}return;}
+  if(d.cren){const c=S.careers.find(x=>x.id===d.cren);if(await ask('Karriere bearbeiten','',{ok:'Speichern',extra:`<div class="mgrid"><label class="f w2"><span>Name</span><input id="m-cname" value="${esc(c.name)}"></label><label class="f"><span>Rennen pro Saison</span><input id="m-cper" type="number" min="1" max="40" value="${esc(c.racesPerSeason||'')}" placeholder="laut Kalender"></label><label class="f"><span>Klasse</span><select id="m-ccls">${['MotoGP','Moto2','Moto3'].map(k=>`<option${(c.cls||'MotoGP')===k?' selected':''}>${k}</option>`).join('')}</select></label></div>`})){const n=$('#m-cname').value.trim();if(n)await Store.set('careers',c.id,{...c,name:n,racesPerSeason:num($('#m-cper').value)||null,cls:$('#m-ccls').value});toast('Karriere gespeichert');}return;}
   if(d.cdel){deleteCareer(S.careers.find(x=>x.id===d.cdel));return;}
 });
 /* Rennen-Editor */
@@ -1266,7 +1388,7 @@ $('#raceEditor').addEventListener('change',e=>{
   if(el.id==='e-sprint'){d.hasSprint=el.checked;if(tapCol==='sprint')tapCol=null;renderEditor();return;}
   if(el.id==='e-wet'){d.wet=el.checked;return;}
   if(el.id==='e-half'){d.half=el.checked;renderEditor();return;}
-  if(el.id==='e-round'){d.round=num(el.value);if(d.isNew&&(!d.track||TRACKS.includes(d.track))&&TRACKS[d.round-1]){d.track=TRACKS[d.round-1];renderEditor();}return;}
+  if(el.id==='e-round'){d.round=num(el.value);const CAL=calendar(d.season);if(d.isNew&&(!d.track||CAL.includes(d.track)||TRACKS.includes(d.track))&&CAL[d.round-1]){d.track=CAL[d.round-1];renderEditor();}return;}
   if(el.id==='e-season'){d.season=num(el.value);return;}
   if(el.id==='e-round'){d.round=num(el.value);return;}
   if(el.id==='e-track'){d.track=el.value;return;}
@@ -1301,7 +1423,7 @@ async function offerFile(name,text,type){
   if(dl){try{await dl.save({filename:name,data:new Blob([text],{type})});return;}catch(e){if(e?.code==='declined')return;}}
   if(await ask('Daten kopieren','Kopiere den Text und speichere ihn als Datei.',{ok:'Kopieren',extra:`<textarea readonly>${esc(text)}</textarea>`})){try{await navigator.clipboard.writeText(text);toast('Kopiert');}catch(e){toast('Bitte manuell kopieren');}}
 }
-$('#exportBtn').onclick=()=>{const c=career();if(!c)return;offerFile(`${c.name.replace(/[^\wäöüÄÖÜß -]/g,'')||'karriere'}.json`,JSON.stringify({format:'gp-karriere-3',career:c,teams:S.teams,riders:S.riders,races:S.races},null,2),'application/json');};
+$('#exportBtn').onclick=()=>{const c=career();if(!c)return;offerFile(`${c.name.replace(/[^\wäöüÄÖÜß -]/g,'')||'karriere'}.json`,JSON.stringify({format:'gp-karriere-3',career:c,teams:S.teams,riders:S.riders,races:S.races,tests:S.tests},null,2),'application/json');};
 $('#csvBtn').onclick=()=>{
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`; const lines=['Saison;Runde;Grand Prix;Nr;Fahrer;Team;Start;Sprint;Status;Rennen;Punkte'];
   for(const race of racesSorted())for(const [rid,x] of Object.entries(race.results||{})){const r=rider(rid);lines.push([race.season,race.round??'',q(race.track),q(r?.number),q(fullName(r)),q(team(x.teamId)?.name),x.grid??'',x.sprint??'',st(x),x.pos??'',resPts(x,race)].join(';'));}
@@ -1314,7 +1436,7 @@ $('#importFile').onchange=async e=>{
   if(!(await ask('Karriere importieren?',`„${d.career.name}“ wird als neue Karriere mit ${d.races?.length||0} Rennen angelegt.`,{ok:'Importieren'})))return;
   const cid=genId();
   try{
-    await Promise.all([...(d.teams||[]).map(t=>Store.set(sub(cid,'teams'),t.id,t)),...d.riders.map(r=>Store.set(sub(cid,'riders'),r.id,r)),...(d.races||[]).map(r=>Store.set(sub(cid,'races'),r.id,r))]);
+    await Promise.all([...(d.teams||[]).map(t=>Store.set(sub(cid,'teams'),t.id,t)),...d.riders.map(r=>Store.set(sub(cid,'riders'),r.id,r)),...(d.races||[]).map(r=>Store.set(sub(cid,'races'),r.id,r)),...(d.tests||[]).map(t=>Store.set(sub(cid,'tests'),t.id,t))]);
     const {id,...c}=d.career; await Store.set('careers',cid,{...c,name:c.name+' (Import)',createdAt:Date.now()});
     switchCareer(cid); toast('Import fertig');
   }catch(err){toast('Import fehlgeschlagen');}
