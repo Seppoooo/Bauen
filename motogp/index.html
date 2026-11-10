@@ -173,6 +173,10 @@ tr.me td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
 .team-h .mk{font:700 12px/1 var(--display);color:var(--mute);text-transform:uppercase;letter-spacing:1.4px;margin-top:4px}
 .rider{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 10px;border-bottom:1px solid var(--line)}
 .rider.drag{cursor:grab}
+.eat td{height:52px}
+.eat input:not([type=checkbox]):not([type=radio]),.eat select{padding:7px 8px}
+.eat input:focus,.eat select:focus{background:var(--panel-2)}
+.eat .ib{font:italic 900 15px/1 var(--display)}
 .rider.dragging{opacity:.4}
 .rider.me{background:rgba(242,194,48,.07);box-shadow:inset 3px 0 0 var(--gold)}
 .rnum{font:italic 900 32px/1 var(--display);width:50px;flex:none;text-align:center}
@@ -374,11 +378,13 @@ footer .in{padding-block:18px}
     <div id="riderGrid">
       <div class="h"><h2>Starterfeld</h2><span class="sub" id="ridersSub"></span></div>
       <div class="toolbar owner-only">
+        <div class="seg" id="riderMode"><button type="button" data-rm="cards" class="on">Teamkarten</button><button type="button" data-rm="edit">Alle bearbeiten</button></div>
         <button class="btn" type="button" id="addOwnRider">Eigenen Fahrer erstellen</button>
         <button class="btn ghost" type="button" id="addTeam">Team hinzufügen</button>
-        <span class="hint">Fahrer auf ein anderes Team ziehen, um ihn umzusetzen. Namen antippen für die Statistik.</span>
+        <span class="hint" id="riderHint">Fahrer auf ein anderes Team ziehen, um ihn umzusetzen. Namen antippen für die Statistik.</span>
       </div>
       <div class="teams" id="teams"></div>
+      <div id="editAll" hidden></div>
     </div>
     <div id="riderDetail" class="view" hidden></div>
   </section>
@@ -910,6 +916,11 @@ function renderRiders(){
   $('#riderGrid').hidden=!!detailRider; $('#riderDetail').hidden=!detailRider;
   if(detailRider){renderRiderDetail();return;}
   if(!career()){$('#teams').innerHTML='<div class="panel empty">Leg zuerst eine Karriere an.</div>';$('#ridersSub').textContent='';return;}
+  const editing=riderMode==='edit'&&canWrite;
+  document.querySelectorAll('#riderMode button').forEach(b=>b.classList.toggle('on',b.dataset.rm===(editing?'edit':'cards')));
+  $('#teams').hidden=editing; $('#editAll').hidden=!editing;
+  $('#riderHint').textContent=editing?'Einfach lostippen – jede Änderung wird sofort gespeichert.':'Fahrer auf ein anderes Team ziehen, um ihn umzusetzen. Namen antippen für die Statistik.';
+  if(editing){renderEditAll();return;}
   const teams=[...S.teams].sort(teamSort); const cur=seasons().at(-1);
   const pts={}; if(cur)for(const e of standings(cur))pts[e.id]=e.pts;
   const by={}; for(const r of S.riders)(by[team(r.teamId)?r.teamId:'_free']||=[]).push(r);
@@ -1028,6 +1039,74 @@ async function editTeam(t){
   if(!n.name){toast('Teamname fehlt');return;}
   try{await Store.set(sub(S.cid,'teams'),n.id,n);toast('Team gespeichert');}catch(e){toast('Speichern fehlgeschlagen');}
 }
+
+/* ---------- Alle Fahrer bearbeiten (Sofort-Speichern) ---------- */
+let riderMode=lsGet('gp-rmode')||'cards';
+const pendingSaves=new Map(); let saving=0;
+function editStatus(){const el=$('#eaStatus');if(!el)return;el.textContent=pendingSaves.size||saving?'Speichert…':'Alle Änderungen gespeichert';el.style.color=pendingSaves.size||saving?'var(--mute)':'var(--ok)';}
+function renderEditAll(){
+  const box=$('#editAll');
+  if(box.contains(document.activeElement)&&document.activeElement.matches('input,select'))return; // nicht beim Tippen neu zeichnen
+  const tOrd=id=>team(id)?.order??999;
+  const riders=[...S.riders].sort((a,b)=>tOrd(a.teamId)-tOrd(b.teamId)||(Number(a.number)||999)-(Number(b.number)||999));
+  const teams=[...S.teams].sort(teamSort); const pid=playerId();
+  const tsel=r=>`<select data-f="teamId" aria-label="Team">${teams.map(t=>`<option value="${esc(t.id)}"${t.id===r.teamId?' selected':''}>${esc(t.name)}</option>`).join('')}<option value=""${!team(r.teamId)?' selected':''}>Ohne Team</option></select>`;
+  box.innerHTML=`<div class="panel tw"><div class="mathbar"><span>${riders.length} Fahrer</span><span id="eaStatus" style="color:var(--ok)">Alle Änderungen gespeichert</span><span style="flex:1"></span><button class="btn sm" type="button" id="eaAdd">+ Fahrer hinzufügen</button></div>
+  <table class="etab eat"><thead><tr><th class="c">Nr</th><th>Vorname</th><th>Nachname</th><th class="c">Nation</th><th>Team</th><th class="c">Eigener</th><th class="c">Mein Fahrer</th><th></th></tr></thead><tbody>${riders.map(r=>`<tr data-erid="${esc(r.id)}" class="${r.id===pid?'me':''}">
+    <td class="c tc" style="--tcol:${esc(riderColor(r))}"><input data-f="number" value="${esc(r.number||'')}" maxlength="3" style="width:58px;text-align:center" aria-label="Startnummer"></td>
+    <td><input data-f="first" value="${esc(r.first||'')}" aria-label="Vorname" style="min-width:120px"></td>
+    <td><input data-f="last" value="${esc(r.last||'')}" aria-label="Nachname" style="min-width:140px"></td>
+    <td class="c"><input data-f="nation" value="${esc(r.nation||'')}" maxlength="3" style="width:64px;text-align:center;text-transform:uppercase" aria-label="Nation"></td>
+    <td>${tsel(r)}</td>
+    <td class="c"><input type="checkbox" data-f="custom"${r.custom?' checked':''} aria-label="Eigener Fahrer"></td>
+    <td class="c"><input type="radio" name="ea-me" data-f="me"${r.id===pid?' checked':''} aria-label="Mein Fahrer"></td>
+    <td><div class="rowact"><button class="ib" type="button" data-rider="${esc(r.id)}" aria-label="Statistik" title="Statistik">i</button><button class="ib del" type="button" data-eadel="${esc(r.id)}" aria-label="Löschen">${icon.del}</button></div></td></tr>`).join('')}</tbody></table></div>
+  <div class="h" style="margin-top:26px"><h2>Teams</h2><span class="sub">Auch hier wird sofort gespeichert</span></div>
+  <div class="panel tw"><table class="etab eat"><thead><tr><th class="c">Reihe</th><th>Teamname</th><th>Hersteller</th><th class="c">Farbe</th><th class="n">Fahrer</th></tr></thead><tbody>${teams.map(t=>`<tr data-etid="${esc(t.id)}">
+    <td class="c tc" style="--tcol:${esc(teamColor(t))}"><input type="number" data-tf="order" min="1" value="${esc(t.order??'')}" style="width:58px" aria-label="Reihenfolge"></td>
+    <td><input data-tf="name" value="${esc(t.name||'')}" style="min-width:220px" aria-label="Teamname"></td>
+    <td><input data-tf="bike" list="bikeList" value="${esc(t.bike||'')}" style="min-width:120px" aria-label="Hersteller"></td>
+    <td class="c"><input type="color" data-tf="color" value="${esc(/^#[0-9a-f]{6}$/i.test(t.color||'')?t.color:'#ff0a14')}" style="width:52px" aria-label="Teamfarbe"></td>
+    <td class="n">${S.riders.filter(r=>r.teamId===t.id).length}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function queueSave(key,fn,delay){
+  clearTimeout(pendingSaves.get(key)); editStatus();
+  pendingSaves.set(key,setTimeout(async()=>{pendingSaves.delete(key);saving++;editStatus();
+    try{await fn();}catch(e){toast('Speichern fehlgeschlagen');}
+    saving--;editStatus();},delay));
+  editStatus();
+}
+function eaField(el,immediate){
+  const tr=el.closest('tr'); if(!tr)return;
+  if(tr.dataset.erid){
+    const id=tr.dataset.erid, f=el.dataset.f; if(!f)return;
+    if(f==='me'){if(el.checked)queueSave('me',()=>setPlayer(id,true),0);return;}
+    let v=el.type==='checkbox'?el.checked:el.value.trim(); if(f==='nation')v=v.toUpperCase();
+    const r=rider(id); if(r)r[f]=v; // sofort lokal übernehmen
+    queueSave(id+':'+f,()=>{const cur=rider(id);return cur?Store.set(sub(S.cid,'riders'),id,{...cur,[f]:v}):null;},immediate?0:450);
+  }else if(tr.dataset.etid){
+    const id=tr.dataset.etid, f=el.dataset.tf; if(!f)return;
+    let v=el.value.trim(); if(f==='order')v=num(v);
+    const t=team(id); if(t)t[f]=v;
+    if(f==='color')tr.querySelector('.tc').style.setProperty('--tcol',v);
+    queueSave(id+':'+f,()=>{const cur=team(id);return cur?Store.set(sub(S.cid,'teams'),id,{...cur,[f]:v}):null;},immediate?0:450);
+  }
+}
+$('#editAll').addEventListener('input',e=>{if(e.target.matches('input:not([type=checkbox]):not([type=radio])'))eaField(e.target,false);});
+$('#editAll').addEventListener('change',e=>{if(e.target.matches('input,select'))eaField(e.target,true);});
+$('#editAll').addEventListener('focusout',e=>{if(!$('#editAll').contains(e.relatedTarget))setTimeout(()=>{if(!$('#editAll').contains(document.activeElement)&&tab==='riders'&&riderMode==='edit')renderEditAll();},300);});
+$('#editAll').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||!e.target.matches('input'))return; e.preventDefault();
+  const td=e.target.closest('td'), tr=td.closest('tr'), idx=[...tr.children].indexOf(td);
+  const next=tr.nextElementSibling?.children[idx]?.querySelector('input,select'); if(next){next.focus();next.select?.();}
+});
+$('#editAll').addEventListener('click',async e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  if(b.id==='eaAdd'){const id=genId();await Store.set(sub(S.cid,'riders'),id,{first:'',last:'Neuer Fahrer',number:'',nation:'',teamId:'',custom:true});
+    setTimeout(()=>{renderEditAll();const inp=document.querySelector(`[data-erid="${id}"] [data-f="first"]`);inp?.focus();},120);toast('Fahrer hinzugefügt');return;}
+  if(b.dataset.eadel){deleteRider(rider(b.dataset.eadel));}
+});
+$('#riderMode').addEventListener('click',e=>{const m=e.target.closest('button')?.dataset.rm;if(!m)return;riderMode=m;lsSet('gp-rmode',m);renderRiders();});
 
 /* ---------- Rekorde ---------- */
 function renderRecords(){
